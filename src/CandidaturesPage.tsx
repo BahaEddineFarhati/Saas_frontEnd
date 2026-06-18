@@ -12,29 +12,42 @@ interface JobOpening {
   candidateCount: number;
 }
 
+// Active auth promise to handle concurrent calls during StrictMode
+let activeAuthPromise: Promise<string> | null = null;
+
 // Background login fallback helper to handle authentication in development
 async function getAuthToken(): Promise<string> {
   const token = localStorage.getItem("linkup_access_token");
   if (token) return token;
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: "recruiter@acme.com",
-        password: "Recruiter1234!",
-      }),
-    });
-    const data = await res.json();
-    if (data?.success && data?.data?.accessToken) {
-      localStorage.setItem("linkup_access_token", data.data.accessToken);
-      return data.data.accessToken;
-    }
-  } catch (err) {
-    console.error("Auto-authentication failed:", err);
+  if (activeAuthPromise) {
+    return activeAuthPromise;
   }
-  return "";
+
+  activeAuthPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "recruiter@acme.com",
+          password: "Recruiter1234!",
+        }),
+      });
+      const data = await res.json();
+      if (data?.success && data?.data?.accessToken) {
+        localStorage.setItem("linkup_access_token", data.data.accessToken);
+        return data.data.accessToken;
+      }
+    } catch (err) {
+      console.error("Auto-authentication failed:", err);
+    } finally {
+      activeAuthPromise = null;
+    }
+    return "";
+  })();
+
+  return activeAuthPromise;
 }
 
 export default function CandidaturesPage() {
@@ -63,13 +76,24 @@ export default function CandidaturesPage() {
     try {
       setLoading(true);
       setError(null);
-      const token = await getAuthToken();
+      let token = await getAuthToken();
       
-      const res = await fetch(`${API_BASE_URL}/jobs`, {
+      let res = await fetch(`${API_BASE_URL}/jobs`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      // If token expired/invalid, clear local token and re-authenticate once
+      if (res.status === 401) {
+        localStorage.removeItem("linkup_access_token");
+        token = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
 
       if (!res.ok) {
         throw new Error(`Failed to fetch jobs (Status: ${res.status})`);
