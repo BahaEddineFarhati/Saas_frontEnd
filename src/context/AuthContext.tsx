@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const restoreSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiClient.post('/auth/refresh');
+      const response = await apiClient.post('/v1/auth/refresh');
       
       // Set the new access token in memory
       setAccessToken(response.data.accessToken);
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       // Call logout endpoint to invalidate refresh token in httpOnly cookie
-      await apiClient.post('/auth/logout');
+      await apiClient.post('/v1/auth/logout');
     } catch (error) {
       // Logout endpoint might fail, but we still clear client state
       console.error('Logout error:', error);

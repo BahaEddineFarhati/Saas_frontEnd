@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import GuestRoute from './components/GuestRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AuthProvider } from './context/AuthContext'
 function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
@@ -151,36 +152,38 @@ function LandingPage() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/login"
-          element={
-            <GuestRoute>
-              <Login />
-            </GuestRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <GuestRoute>
-              <Register />
-            </GuestRoute>
-          }
-        />
-        {/* /dashboard is a future route; redirect here after login/register */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-                <p className="text-white text-2xl font-bold">Dashboard coming soon</p>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/login"
+            element={
+              <GuestRoute>
+                <Login />
+              </GuestRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <GuestRoute>
+                <Register />
+              </GuestRoute>
+            }
+          />
+          {/* /dashboard is a future route; redirect here after login/register */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+                  <p className="text-white text-2xl font-bold">Dashboard coming soon</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
