@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
 import GuestRoute from './components/GuestRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
@@ -176,9 +177,7 @@ export default function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-                  <p className="text-white text-2xl font-bold">Dashboard coming soon</p>
-                </div>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

@@ -21,17 +21,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const restoreSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiClient.post('/v1/auth/refresh');
+      const refreshToken = localStorage.getItem('refreshToken');
+      const storedUser = localStorage.getItem('user');
+      
+      // If no refresh token, user is not authenticated
+      if (!refreshToken) {
+        setUser(null);
+        setAccessToken(null);
+        return;
+      }
+
+      const response = await apiClient.post('/v1/auth/refresh', {
+        refreshToken,
+      });
       
       // Set the new access token in memory
-      setAccessToken(response.data.accessToken);
+      setAccessToken(response.data.data.accessToken);
       
-      // Set the user object from the response
-      setUser(response.data.user);
+      // Parse and set the user from localStorage
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     } catch (error) {
       // Session restoration failed - user is unauthenticated
       setUser(null);
       setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
     } finally {
       setIsLoading(false);
     }
@@ -42,14 +59,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const logout = useCallback(async () => {
     try {
-      // Call logout endpoint to invalidate refresh token in httpOnly cookie
-      await apiClient.post('/v1/auth/logout');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      // Call logout endpoint to invalidate refresh token
+      if (refreshToken) {
+        await apiClient.post('/v1/auth/logout', { refreshToken });
+      }
     } catch (error) {
       // Logout endpoint might fail, but we still clear client state
       console.error('Logout error:', error);
     } finally {
       setUser(null);
       setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
     }
   }, []);
 
@@ -58,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   useEffect(() => {
     restoreSession();
-  }, [restoreSession]);
+  }, []);
 
   const value: AuthContextType = {
     user,
