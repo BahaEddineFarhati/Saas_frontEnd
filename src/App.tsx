@@ -4,8 +4,7 @@ import './App.css'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import GuestRoute from './components/GuestRoute'
-import ProtectedRoute from './components/ProtectedRoute'
-
+import { ProtectedRoute } from './components/ProtectedRoute'
 function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
@@ -42,7 +41,10 @@ function LandingPage() {
           </div>
         </div>
       </nav>
-const DARK_KEY = "linkup_dark";
+
+      {/* Hero Section */}
+      <section className="pt-40 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
             Transform Your
             <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 bg-clip-text text-transparent"> Recruitment Process</span>
