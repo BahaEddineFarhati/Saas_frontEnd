@@ -7,7 +7,6 @@ import {
   LogOut,
   Sun,
   Moon,
-  Link,
 } from "lucide-react";
 
 // ── nav items ──────────────────────────────────────────────────────────────
