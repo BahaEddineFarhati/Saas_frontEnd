@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
 import DashboardPage from "./DashboardPage";
 import CandidaturesPage from "./CandidaturesPage";
+import JobDetailPage from "./pages/JobDetailPage";
 import SettingsPage from "./SettingsPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -38,6 +39,8 @@ export default function App() {
   function handleLogout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("linkup_access_token");
     window.location.href = "/login";
   }
 
@@ -75,9 +78,10 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard"    element={<DashboardPage />} />
-          <Route path="/candidatures" element={<CandidaturesPage />} />
-          <Route path="/settings"     element={<SettingsPage />} />
+          <Route path="/dashboard"        element={<DashboardPage />} />
+          <Route path="/candidatures"     element={<CandidaturesPage />} />
+          <Route path="/candidatures/:id" element={<JobDetailPage />} />
+          <Route path="/settings"         element={<SettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
