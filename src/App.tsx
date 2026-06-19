@@ -5,6 +5,10 @@ import AuthLayout from "./AuthLayout";
 import DashboardPage from "./DashboardPage";
 import CandidaturesPage from "./CandidaturesPage";
 import SettingsPage from "./SettingsPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import GuestRoute from "./components/GuestRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import "./auth-layout.css";
 
@@ -16,7 +20,7 @@ function loadDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-// Hardcoded prototype user — replace with real auth later
+// Hardcoded prototype user — replace with real auth later (SCRUM-9)
 const PROTOTYPE_USER = {
   fullName: "Farhati Baha",
   email: "Baha@linkup.com",
@@ -31,24 +35,51 @@ export default function App() {
     localStorage.setItem(DARK_KEY, String(darkMode));
   }, [darkMode]);
 
+  function handleLogout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/login";
+  }
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestRoute>
+              <Register />
+            </GuestRoute>
+          }
+        />
+
         <Route
           element={
-            <AuthLayout
-              user={PROTOTYPE_USER}
-              onLogout={() => alert("Logout — wire in your auth logic here.")}
-              darkMode={darkMode}
-              onToggleDark={() => setDarkMode((d) => !d)}
-            />
+            <ProtectedRoute>
+              <AuthLayout
+                user={PROTOTYPE_USER}
+                onLogout={handleLogout}
+                darkMode={darkMode}
+                onToggleDark={() => setDarkMode((d) => !d)}
+              />
+            </ProtectedRoute>
           }
         >
           <Route path="/dashboard"    element={<DashboardPage />} />
           <Route path="/candidatures" element={<CandidaturesPage />} />
           <Route path="/settings"     element={<SettingsPage />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
