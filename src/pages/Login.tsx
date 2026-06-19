@@ -66,6 +66,7 @@ export default function Login() {
       if (res.status === 200 && data.success) {
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
+        localStorage.setItem('userRole', data.data.user.role)
         navigate('/dashboard')
         return
       }

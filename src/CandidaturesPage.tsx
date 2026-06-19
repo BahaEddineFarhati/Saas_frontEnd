@@ -17,7 +17,7 @@ let activeAuthPromise: Promise<string> | null = null;
 
 // Background login fallback helper to handle authentication in development
 async function getAuthToken(): Promise<string> {
-  const token = localStorage.getItem("linkup_access_token");
+  const token = localStorage.getItem("accessToken") || localStorage.getItem("linkup_access_token");
   if (token) return token;
 
   if (activeAuthPromise) {
@@ -84,9 +84,10 @@ export default function CandidaturesPage() {
         },
       });
 
-      // If token expired/invalid, clear local token and re-authenticate once
+      // If token expired/invalid, clear local tokens and re-authenticate once
       if (res.status === 401) {
         localStorage.removeItem("linkup_access_token");
+        localStorage.removeItem("accessToken");
         token = await getAuthToken();
         res = await fetch(`${API_BASE_URL}/jobs`, {
           headers: {
@@ -387,7 +388,7 @@ export default function CandidaturesPage() {
                     <td className="db-td-num">{job.candidateCount}</td>
                     <td className="db-td-link">
                       <a 
-                        href={`/openings/${job.id}`} 
+                        href={`/candidatures/${job.id}`} 
                         className="db-open-link" 
                         aria-label={`Ouvrir ${job.title}`}
                       >
