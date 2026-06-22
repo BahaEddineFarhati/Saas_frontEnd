@@ -69,12 +69,11 @@ export default function Login() {
         // Store tokens and user in localStorage
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
-        localStorage.setItem('user', JSON.stringify(data.data.user))
+        localStorage.setItem('userRole', data.data.user.role)
 
         // Also update the AuthContext immediately so the ProtectedRoute doesn't get stuck in a loop
         setAccessToken(data.data.accessToken)
         setUser(data.data.user)
-
         navigate('/dashboard')
         return
       }

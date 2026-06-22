@@ -7,7 +7,6 @@ import {
   LogOut,
   Sun,
   Moon,
-  Link,
 } from "lucide-react";
 
 // ── nav items ──────────────────────────────────────────────────────────────
@@ -34,7 +33,10 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: AuthLayoutProps) {
   const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] ?? "LinkUp";
+  let pageTitle = pageTitles[location.pathname] ?? "LinkUp";
+  if (location.pathname.startsWith("/candidatures/")) {
+    pageTitle = "Détail de l'offre";
+  }
 
   const initials = user.fullName
     .split(" ")

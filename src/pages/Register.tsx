@@ -101,6 +101,8 @@ export default function Register() {
       if (res.status === 201) {
         localStorage.setItem('accessToken', data.accessToken)
         localStorage.setItem('refreshToken', data.refreshToken)
+
+        localStorage.setItem('userRole', data.user.role)
         navigate('/dashboard')
         return
       }

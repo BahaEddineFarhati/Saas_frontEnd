@@ -11,15 +11,15 @@ function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Navigation */}
-      <nav className="fixed w-full bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <img src="/img/logolinkup.png" alt="Linkup" className="h-8 w-auto" />
-            </div>
+import AuthLayout from "./AuthLayout";
+import DashboardPage from "./DashboardPage";
+import CandidaturesPage from "./CandidaturesPage";
+import JobDetailPage from "./pages/JobDetailPage";
+import SettingsPage from "./SettingsPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import GuestRoute from "./components/GuestRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -52,9 +52,12 @@ function LandingPage() {
             <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 bg-clip-text text-transparent"> Recruitment Process</span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-gray-300 mb-8 leading-relaxed">
-            An AI-powered recruitment SaaS that helps HR teams instantly analyze, rank, and generate interview questions from CVs based on a job description.
-          </p>
+// Hardcoded prototype user — replace with real auth later (SCRUM-9)
+const PROTOTYPE_USER = {
+  fullName: "Farhati Baha",
+  email: "Baha@linkup.com",
+  firstName: "Baha",
+};
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <button
@@ -183,6 +186,56 @@ export default function App() {
           />
         </Routes>
       </AuthProvider>
+  function handleLogout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("linkup_access_token");
+    window.location.href = "/login";
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestRoute>
+              <Register />
+            </GuestRoute>
+          }
+        />
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <AuthLayout
+                user={PROTOTYPE_USER}
+                onLogout={handleLogout}
+                darkMode={darkMode}
+                onToggleDark={() => setDarkMode((d) => !d)}
+              />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard"        element={<DashboardPage />} />
+          <Route path="/candidatures"     element={<CandidaturesPage />} />
+          <Route path="/candidatures/:id" element={<JobDetailPage />} />
+          <Route path="/settings"         element={<SettingsPage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </BrowserRouter>
   )
 }
