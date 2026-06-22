@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   X,
   Mail,
+  Clock,
 } from 'lucide-react'
 
 const API_BASE = 'http://localhost:3001/api/v1'
@@ -25,6 +26,15 @@ interface Member {
   role: 'ADMIN' | 'RECRUITER'
   isActive: boolean
   createdAt: string
+}
+
+interface PendingInvite {
+  id: string
+  email: string
+  role: 'ADMIN' | 'RECRUITER'
+  isPending: true
+  createdAt: string
+  expiresAt: string
 }
 
 interface Organisation {
@@ -260,6 +270,7 @@ function ConfirmModal({
 export default function EntreprisePage() {
   /* ── state ── */
   const [members, setMembers] = useState<Member[]>([])
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
   const [org, setOrg] = useState<Organisation | null>(null)
   const [loadingMembers, setLoadingMembers] = useState(true)
   const [loadingOrg, setLoadingOrg] = useState(true)
@@ -293,7 +304,10 @@ export default function EntreprisePage() {
     try {
       const res = await fetch(`${API_BASE}/organisation/members`, { headers: authHeaders() })
       const data = await res.json()
-      if (data.success) setMembers(data.data)
+      if (data.success) {
+        setMembers(data.data.members ?? data.data)
+        setPendingInvites(data.data.pendingInvites ?? [])
+      }
     } catch {
       setToast({ message: 'Failed to load team members', type: 'error' })
     } finally {
@@ -513,6 +527,33 @@ export default function EntreprisePage() {
                         <UserX size={14} />
                       </button>
                     </td>
+                  </tr>
+                ))}
+                {pendingInvites.map((inv) => (
+                  <tr key={`invite-${inv.id}`} className="ent-row--deactivated">
+                    <td>
+                      <div className="ent-member-cell">
+                        <div className="ent-member-avatar ent-member-avatar--inactive">
+                          <Clock size={14} />
+                        </div>
+                        <span className="ent-member-name" style={{ fontStyle: 'italic', opacity: 0.7 }}>
+                          Invitation envoyée
+                        </span>
+                      </div>
+                    </td>
+                    <td className="ent-td-email">{inv.email}</td>
+                    <td>
+                      <span className={`ent-badge ${inv.role === 'ADMIN' ? 'ent-badge--purple' : 'ent-badge--blue'}`}>
+                        {inv.role}
+                      </span>
+                    </td>
+                    <td className="ent-td-date">{formatDate(inv.createdAt)}</td>
+                    <td>
+                      <span className="ent-badge ent-badge--amber">
+                        <Clock size={10} /> Pending
+                      </span>
+                    </td>
+                    <td className="ent-td-actions">—</td>
                   </tr>
                 ))}
                 {deactivatedMembers.map((m) => (
