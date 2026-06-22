@@ -1,19 +1,25 @@
+import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   Settings,
+  Building2,
   LogOut,
   Sun,
   Moon,
 } from "lucide-react";
 
 // ── nav items ──────────────────────────────────────────────────────────────
-const navItems = [
+const baseNavItems = [
   { to: "/dashboard",    label: "Dashboard",     icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
   { to: "/candidatures", label: "Candidatures",  icon: <Users           size={18} strokeWidth={1.8} /> },
   { to: "/settings",     label: "Settings",      icon: <Settings        size={18} strokeWidth={1.8} /> },
+];
+
+const adminOnlyItems = [
+  { to: "/entreprise",   label: "Entreprise",    icon: <Building2      size={18} strokeWidth={1.8} /> },
 ];
 
 // ── page title map ─────────────────────────────────────────────────────────
@@ -21,6 +27,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard":    "Dashboard",
   "/candidatures": "Candidatures",
   "/settings":     "Settings",
+  "/entreprise":   "Entreprise",
 };
 
 interface User { fullName: string; email: string; firstName: string; }
@@ -37,6 +44,12 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
   if (location.pathname.startsWith("/candidatures/")) {
     pageTitle = "Détail de l'offre";
   }
+
+  // Build nav items based on user role — ADMIN sees Entreprise tab
+  const navItems = useMemo(() => {
+    const role = localStorage.getItem("userRole");
+    return role === "ADMIN" ? [...baseNavItems, ...adminOnlyItems] : baseNavItems;
+  }, []);
 
   const initials = user.fullName
     .split(" ")

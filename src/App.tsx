@@ -6,10 +6,12 @@ import DashboardPage from "./DashboardPage";
 import CandidaturesPage from "./CandidaturesPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import SettingsPage from "./SettingsPage";
+import EntreprisePage from "./pages/EntreprisePage";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import AcceptInvitePage from "./pages/AcceptInvitePage";
 import GuestRoute from "./components/GuestRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 import "./auth-layout.css";
 
@@ -58,10 +60,10 @@ export default function App() {
           }
         />
         <Route
-          path="/register"
+          path="/accept-invite"
           element={
             <GuestRoute>
-              <Register />
+              <AcceptInvitePage />
             </GuestRoute>
           }
         />
@@ -82,6 +84,14 @@ export default function App() {
           <Route path="/candidatures"     element={<CandidaturesPage />} />
           <Route path="/candidatures/:id" element={<JobDetailPage />} />
           <Route path="/settings"         element={<SettingsPage />} />
+          <Route
+            path="/entreprise"
+            element={
+              <AdminRoute>
+                <EntreprisePage />
+              </AdminRoute>
+            }
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
