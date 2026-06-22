@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const API_BASE = 'http://localhost:3001/api/v1'
 
@@ -28,6 +29,7 @@ function validate(form: FormState): FieldErrors {
 
 export default function Login() {
   const navigate = useNavigate()
+  const { setUser, setAccessToken } = useAuth()
   const [form, setForm] = useState<FormState>({ email: '', password: '' })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -64,9 +66,14 @@ export default function Login() {
       const data = await res.json()
 
       if (res.status === 200 && data.success) {
+        // Store tokens and user in localStorage
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
         localStorage.setItem('userRole', data.data.user.role)
+
+        // Also update the AuthContext immediately so the ProtectedRoute doesn't get stuck in a loop
+        setAccessToken(data.data.accessToken)
+        setUser(data.data.user)
         navigate('/dashboard')
         return
       }
