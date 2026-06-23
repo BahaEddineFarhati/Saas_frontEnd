@@ -10,10 +10,11 @@ import EntreprisePage from "./pages/EntreprisePage";
 import Login from "./pages/Login";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import GuestRoute from "./components/GuestRoute";
-import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 import "./auth-layout.css";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const DARK_KEY = "linkup_dark";
 
@@ -186,10 +187,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppContent
-        darkMode={darkMode}
-        onToggleDark={() => setDarkMode((d) => !d)}
-      />
+      <AuthProvider>
+        <AppContent
+          darkMode={darkMode}
+          onToggleDark={() => setDarkMode((d) => !d)}
+        />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
