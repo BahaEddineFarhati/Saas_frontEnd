@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Users,
   Building2,
@@ -268,6 +269,8 @@ function ConfirmModal({
    MAIN PAGE
    ══════════════════════════════════════════════════════════════════════════ */
 export default function EntreprisePage() {
+  const navigate = useNavigate()
+
   /* ── state ── */
   const [members, setMembers] = useState<Member[]>([])
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
@@ -303,6 +306,11 @@ export default function EntreprisePage() {
     setLoadingMembers(true)
     try {
       const res = await fetch(`${API_BASE}/organisation/members`, { headers: authHeaders() })
+      if (res.status === 403) {
+        localStorage.setItem('userRole', 'RECRUITER')
+        navigate('/dashboard')
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setMembers(data.data.members ?? data.data)
@@ -313,12 +321,17 @@ export default function EntreprisePage() {
     } finally {
       setLoadingMembers(false)
     }
-  }, [])
+  }, [navigate])
 
   const fetchOrg = useCallback(async () => {
     setLoadingOrg(true)
     try {
       const res = await fetch(`${API_BASE}/organisation`, { headers: authHeaders() })
+      if (res.status === 403) {
+        localStorage.setItem('userRole', 'RECRUITER')
+        navigate('/dashboard')
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setOrg(data.data)
@@ -330,7 +343,7 @@ export default function EntreprisePage() {
     } finally {
       setLoadingOrg(false)
     }
-  }, [])
+  }, [navigate])
 
   useEffect(() => {
     fetchMembers()
@@ -357,7 +370,30 @@ export default function EntreprisePage() {
         const data = await res.json()
         if (res.ok && data.success) {
           setToast({ message: `${member.firstName}'s role updated to ${newRole}`, type: 'success' })
-          fetchMembers()
+
+          // Detect self-demotion
+          let isSelfDemotion = false
+          try {
+            const token = localStorage.getItem('accessToken')
+            if (token) {
+              const payload = JSON.parse(atob(token.split('.')[1]))
+              if (payload.userId === member.id && newRole === 'RECRUITER') {
+                isSelfDemotion = true
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse token payload:', e)
+          }
+
+          if (isSelfDemotion) {
+            localStorage.setItem('userRole', 'RECRUITER')
+            // Delay slightly so user sees the success toast before redirecting
+            setTimeout(() => {
+              navigate('/dashboard')
+            }, 1000)
+          } else {
+            fetchMembers()
+          }
         } else {
           setToast({ message: data.error?.message ?? 'Failed to update role', type: 'error' })
         }
