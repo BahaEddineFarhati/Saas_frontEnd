@@ -67,6 +67,10 @@ export default function Login() {
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
         localStorage.setItem('userRole', data.data.user.role)
+        localStorage.setItem('userFirstName', data.data.user.firstName)
+        localStorage.setItem('userLastName', data.data.user.lastName)
+        localStorage.setItem('userEmail', data.data.user.email)
+        localStorage.setItem('userFullName', `${data.data.user.firstName} ${data.data.user.lastName}`)
         navigate('/dashboard')
         return
       }

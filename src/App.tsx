@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import AuthLayout from "./AuthLayout";
 import DashboardPage from "./DashboardPage";
@@ -23,12 +23,158 @@ function loadDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-// Hardcoded prototype user — replace with real auth later (SCRUM-9)
-const PROTOTYPE_USER = {
-  fullName: "Farhati Baha",
-  email: "Baha@linkup.com",
-  firstName: "Baha",
-};
+interface AppUser {
+  fullName: string;
+  email: string;
+  firstName: string;
+  role?: string;
+}
+
+function getStoredUser(): AppUser {
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    return {
+      fullName: "",
+      email: "",
+      firstName: "",
+      role: "",
+    };
+  }
+  return {
+    fullName: localStorage.getItem("userFullName") || "Farhati Baha",
+    email: localStorage.getItem("userEmail") || "Baha@linkup.com",
+    firstName: localStorage.getItem("userFirstName") || "Baha",
+    role: localStorage.getItem("userRole") || "RECRUITER",
+  };
+}
+
+function AppContent({
+  darkMode,
+  onToggleDark,
+}: {
+  darkMode: boolean;
+  onToggleDark: () => void;
+}) {
+  const [user, setUser] = useState<AppUser>(getStoredUser);
+  const token = localStorage.getItem("accessToken");
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchProfile = () => {
+      fetch("http://localhost:3001/api/v1/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch user profile");
+          return res.json();
+        })
+        .then((resData) => {
+          if (resData.success && resData.data?.user) {
+            const u = resData.data.user;
+            setUser((prev) => {
+              // Only update state if something changed to prevent unnecessary re-renders
+              if (
+                prev.role !== u.role ||
+                prev.email !== u.email ||
+                prev.fullName !== u.fullName
+              ) {
+                localStorage.setItem("userRole", u.role);
+                localStorage.setItem("userFirstName", u.firstName);
+                localStorage.setItem("userLastName", u.lastName);
+                localStorage.setItem("userEmail", u.email);
+                localStorage.setItem("userFullName", u.fullName);
+                return {
+                  fullName: u.fullName,
+                  email: u.email,
+                  firstName: u.firstName,
+                  role: u.role,
+                };
+              }
+              return prev;
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Profile sync error:", err);
+        });
+    };
+
+    // Run immediately on page load or navigation
+    fetchProfile();
+
+    // Poll every 5 seconds in the background to catch instant promotions/demotions
+    const intervalId = setInterval(fetchProfile, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [token, location.pathname]);
+
+  function handleLogout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("linkup_access_token");
+    localStorage.removeItem("userFirstName");
+    localStorage.removeItem("userLastName");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userFullName");
+    window.location.href = "/login";
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/accept-invite"
+        element={
+          <GuestRoute>
+            <AcceptInvitePage />
+          </GuestRoute>
+        }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AuthLayout
+              user={user}
+              onLogout={handleLogout}
+              darkMode={darkMode}
+              onToggleDark={onToggleDark}
+            />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard"        element={<DashboardPage />} />
+        <Route path="/candidatures"     element={<CandidaturesPage />} />
+        <Route path="/candidatures/:id" element={<JobDetailPage />} />
+        <Route path="/settings"         element={<SettingsPage />} />
+        <Route
+          path="/entreprise"
+          element={
+            <AdminRoute>
+              <EntreprisePage />
+            </AdminRoute>
+          }
+        />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
 
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(loadDark);
@@ -38,64 +184,12 @@ export default function App() {
     localStorage.setItem(DARK_KEY, String(darkMode));
   }, [darkMode]);
 
-  function handleLogout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("linkup_access_token");
-    window.location.href = "/login";
-  }
-
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-        <Route
-          path="/login"
-          element={
-            <GuestRoute>
-              <Login />
-            </GuestRoute>
-          }
-        />
-        <Route
-          path="/accept-invite"
-          element={
-            <GuestRoute>
-              <AcceptInvitePage />
-            </GuestRoute>
-          }
-        />
-
-        <Route
-          element={
-            <ProtectedRoute>
-              <AuthLayout
-                user={PROTOTYPE_USER}
-                onLogout={handleLogout}
-                darkMode={darkMode}
-                onToggleDark={() => setDarkMode((d) => !d)}
-              />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard"        element={<DashboardPage />} />
-          <Route path="/candidatures"     element={<CandidaturesPage />} />
-          <Route path="/candidatures/:id" element={<JobDetailPage />} />
-          <Route path="/settings"         element={<SettingsPage />} />
-          <Route
-            path="/entreprise"
-            element={
-              <AdminRoute>
-                <EntreprisePage />
-              </AdminRoute>
-            }
-          />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+      <AppContent
+        darkMode={darkMode}
+        onToggleDark={() => setDarkMode((d) => !d)}
+      />
     </BrowserRouter>
   );
 }

@@ -30,7 +30,7 @@ const pageTitles: Record<string, string> = {
   "/entreprise":   "Entreprise",
 };
 
-interface User { fullName: string; email: string; firstName: string; }
+interface User { fullName: string; email: string; firstName: string; role?: string; }
 interface AuthLayoutProps {
   user: User;
   onLogout: () => void;
@@ -47,9 +47,9 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
 
   // Build nav items based on user role — ADMIN sees Entreprise tab
   const navItems = useMemo(() => {
-    const role = localStorage.getItem("userRole");
+    const role = user.role || localStorage.getItem("userRole");
     return role === "ADMIN" ? [...baseNavItems, ...adminOnlyItems] : baseNavItems;
-  }, []);
+  }, [user.role]);
 
   const initials = user.fullName
     .split(" ")
