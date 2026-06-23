@@ -52,6 +52,7 @@ interface Candidate {
   parsedName?: string;
   fileName: string;
   score?: number;
+  email?: string;
 }
 
 interface FileValidationError {
@@ -205,6 +206,12 @@ export default function JobDetailPage() {
   const [isPolling, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCandidates, setTotalCandidates] = useState(0);
+  const CANDIDATES_PER_PAGE = 10;
+
   // Current user (from JWT + localStorage fallback for role)
   const currentUser = useMemo<CurrentUser | null>(() => {
     const token =
@@ -254,6 +261,8 @@ export default function JobDetailPage() {
       const resData = await res.json();
       if (resData?.success && resData?.data) {
         setJob(resData.data);
+        // Load existing candidates
+        await fetchCandidates();
       } else {
         throw new Error(resData?.error?.message || "Erreur inconnue");
       }
@@ -261,6 +270,71 @@ export default function JobDetailPage() {
       setError(err.message || "Impossible de charger l'offre.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Fetch existing candidates ──────────────────────────
+  const fetchCandidates = async (page: number = 1) => {
+    if (!id) return;
+    try {
+      const token = await getAuthToken();
+      let res = await fetch(
+        `${API_BASE_URL}/jobs/${id}/candidates?page=${page}&limit=${CANDIDATES_PER_PAGE}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // 401 retry
+      if (res.status === 401) {
+        localStorage.removeItem("linkup_access_token");
+        localStorage.removeItem("accessToken");
+        const newToken = await getAuthToken();
+        res = await fetch(
+          `${API_BASE_URL}/jobs/${id}/candidates?page=${page}&limit=${CANDIDATES_PER_PAGE}`,
+          {
+            headers: { Authorization: `Bearer ${newToken}` },
+          }
+        );
+      }
+
+      if (!res.ok) throw new Error("Erreur lors du chargement des candidats");
+
+      const resData = await res.json();
+      if (resData?.success && resData?.data) {
+        // Handle both structures: data.candidates (with pagination) or data (array)
+        let candidatesArray = [];
+        let pagination = { page: 1, limit: 10, total: 0, pages: 1 };
+        
+        if (Array.isArray(resData.data)) {
+          // If data is already an array
+          candidatesArray = resData.data;
+        } else if (resData.data.candidates && Array.isArray(resData.data.candidates)) {
+          // If data has a candidates property (with pagination)
+          candidatesArray = resData.data.candidates;
+          pagination = resData.data.pagination || pagination;
+        }
+        
+        const loadedCandidates: Candidate[] = candidatesArray.map(
+          (candidate: any) => ({
+            id: candidate.id,
+            status: candidate.status || "PENDING",
+            fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
+            parsedName: candidate.lastName || candidate.firstName 
+              ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
+              : undefined,
+            score: candidate.score,
+            email: candidate.email,
+          })
+        );
+
+        setCandidates(loadedCandidates);
+        setCurrentPage(pagination.page);
+        setTotalPages(pagination.pages);
+        setTotalCandidates(pagination.total);
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des candidats:", err);
     }
   };
 
@@ -463,24 +537,44 @@ export default function JobDetailPage() {
       if (!job) return;
 
       try {
-        const token = await getAuthToken();
-        const res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
+        let token = await getAuthToken();
+        let res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        // 401 retry
+        if (res.status === 401) {
+          localStorage.removeItem("linkup_access_token");
+          localStorage.removeItem("accessToken");
+          token = await getAuthToken();
+          res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
 
         if (!res.ok) throw new Error("Erreur lors du polling");
 
         const resData = await res.json();
         if (resData?.success && resData?.data) {
-          // Ensure data is an array
-          const dataArray = Array.isArray(resData.data) ? resData.data : [];
+          // Handle both structures: data.candidates (with pagination) or data (array)
+          let candidatesArray = [];
           
-          const updatedCandidates: Candidate[] = dataArray.map(
+          if (Array.isArray(resData.data)) {
+            // If data is already an array
+            candidatesArray = resData.data;
+          } else if (resData.data.candidates && Array.isArray(resData.data.candidates)) {
+            // If data has a candidates property (with pagination)
+            candidatesArray = resData.data.candidates;
+          }
+          
+          const updatedCandidates: Candidate[] = candidatesArray.map(
             (candidate: any) => ({
               id: candidate.id,
-              status: candidate.status,
-              fileName: candidate.fileName || "",
-              parsedName: candidate.parsedName,
+              status: candidate.status || "PENDING",
+              fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
+              parsedName: candidate.lastName || candidate.firstName 
+                ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
+                : undefined,
               score: candidate.score,
             })
           );
@@ -836,165 +930,318 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Drag and drop zone or file list */}
-        {candidates.length === 0 ? (
-          <>
-            {/* Dropzone */}
-            <div
-              className={`jd-dropzone ${dragActive ? "jd-dropzone--active" : ""}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: "2px dashed var(--lu-border)",
-                borderRadius: "8px",
-                padding: "32px",
-                textAlign: "center",
-                cursor: "pointer",
-                backgroundColor: dragActive
-                  ? "rgba(var(--lu-accent-rgb, 59, 130, 246), 0.05)"
-                  : "transparent",
-                transition: "all 0.2s ease",
-                marginBottom: selectedFiles.length > 0 ? "16px" : "0",
-              }}
-            >
-              <Upload
-                size={32}
-                strokeWidth={1.4}
-                style={{ margin: "0 auto 12px", color: "var(--lu-accent)" }}
-              />
-              <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600 }}>
-                Glissez-déposez vos CVs ici
-              </h4>
-              <p style={{ margin: "0 0 12px 0", fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                ou cliquez pour sélectionner des fichiers
-              </p>
-              <p style={{ margin: "0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-                PDF, DOCX • Max 5MB par fichier
-              </p>
-            </div>
-
-            {/* Selected files list */}
-            {selectedFiles.length > 0 && (
-              <div style={{ marginBottom: "16px" }}>
-                <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
-                  Fichiers sélectionnés ({selectedFiles.length})
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {selectedFiles.map(({ file, id }) => (
-                    <div
-                      key={id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px",
-                        backgroundColor: "var(--lu-bg-secondary)",
-                        borderRadius: "6px",
-                        fontSize: "0.9em",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <FileText size={16} />
-                        <div>
-                          <div style={{ fontWeight: 500 }}>{file.name}</div>
-                          <div style={{ fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-                            {formatFileSize(file.size)}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeFile(id)}
-                        disabled={isUploading}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: isUploading ? "default" : "pointer",
-                          padding: "4px",
-                          display: "flex",
-                          alignItems: "center",
-                          color: "var(--lu-text-secondary)",
-                          opacity: isUploading ? 0.5 : 1,
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Upload button and progress */}
-            {selectedFiles.length > 0 && (
-              <div style={{ marginBottom: "16px" }}>
-                <button
-                  onClick={handleUpload}
-                  disabled={isUploading || job.status === "CLOSED"}
-                  className="cand-btn-primary"
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 size={14} className="cand-skeleton-pulse" />
-                      <span>Analyse en cours...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={14} strokeWidth={2.4} />
-                      <span>Analyser les CVs</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Progress bar */}
-                {isUploading && (
-                  <div
-                    style={{
-                      marginTop: "12px",
-                      height: "4px",
-                      backgroundColor: "var(--lu-bg-secondary)",
-                      borderRadius: "2px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        backgroundColor: "var(--lu-accent)",
-                        width: `${uploadProgress}%`,
-                        transition: "width 0.3s ease",
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Empty state with no files */}
-            {selectedFiles.length === 0 && candidates.length === 0 && (
-              <p
+        {/* Candidates table - shown when candidates exist */}
+        {candidates.length > 0 && (
+          <div style={{ marginBottom: "24px" }}>
+            <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
+              Candidats ({totalCandidates} total)
+            </h4>
+            <div style={{ overflowX: "auto" }}>
+              <table
                 style={{
-                  textAlign: "center",
+                  width: "100%",
+                  borderCollapse: "collapse",
                   fontSize: "0.9em",
-                  color: "var(--lu-text-secondary)",
-                  marginTop: "16px",
                 }}
               >
-                Aucun candidat pour l'instant. Uploadez des CVs pour démarrer
-                le processus de sélection.
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            {/* Candidates list */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {candidates.map((candidate) => (
+                <thead>
+                  <tr
+                    style={{
+                      borderBottom: "1px solid var(--lu-border)",
+                      backgroundColor: "var(--lu-bg-secondary)",
+                    }}
+                  >
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                      }}
+                    >
+                      Statut
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                      }}
+                    >
+                      Nom du candidat
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                      }}
+                    >
+                      Email
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                      }}
+                    >
+                      Score
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {candidates.map((candidate) => (
+                    <tr
+                      key={candidate.id}
+                      style={{
+                        borderBottom: "1px solid var(--lu-border)",
+                        backgroundColor:
+                          candidate.status === "FAILED"
+                            ? "rgba(239, 68, 68, 0.05)"
+                            : "transparent",
+                      }}
+                    >
+                      {/* Status column */}
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          {candidate.status === "PENDING" && (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="cand-skeleton-pulse"
+                                style={{ color: "var(--lu-accent)" }}
+                              />
+                              <span style={{ fontSize: "0.9em" }}>PENDING</span>
+                            </>
+                          )}
+                          {candidate.status === "SCORED" && (
+                            <>
+                              <CheckCircle2
+                                size={16}
+                                style={{ color: "#22c55e" }}
+                                strokeWidth={2.5}
+                              />
+                              <span style={{ fontSize: "0.9em", color: "#22c55e" }}>SCORED</span>
+                            </>
+                          )}
+                          {candidate.status === "FAILED" && (
+                            <>
+                              <XCircle
+                                size={16}
+                                style={{ color: "#ef4444" }}
+                                strokeWidth={2.5}
+                              />
+                              <span style={{ fontSize: "0.9em", color: "#ef4444" }}>FAILED</span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Candidate name column */}
+                      <td style={{ padding: "12px" }}>
+                        <div style={{ fontWeight: 500 }}>
+                          {candidate.parsedName || (
+                            <span style={{ color: "var(--lu-text-tertiary)" }}>
+                              {candidate.status === "PENDING"
+                                ? "Analyse en cours..."
+                                : "Non disponible"}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Email column */}
+                      <td style={{ padding: "12px" }}>
+                        <div
+                          style={{
+                            fontSize: "0.9em",
+                            color: candidate.email
+                              ? "var(--lu-text-secondary)"
+                              : "var(--lu-text-tertiary)",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {candidate.email || "-"}
+                        </div>
+                      </td>
+
+                      {/* Score column */}
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {candidate.score !== undefined && candidate.score > 0 ? (
+                          <div
+                            style={{
+                              fontWeight: 500,
+                              color: "var(--lu-accent)",
+                            }}
+                          >
+                            {candidate.score.toFixed(2)}
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              fontSize: "0.85em",
+                              color: "var(--lu-text-tertiary)",
+                            }}
+                          >
+                            -
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "16px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--lu-border)",
+                }}
+              >
+                <button
+                  onClick={() => fetchCandidates(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="cand-btn-secondary"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "0.9em",
+                    opacity: currentPage === 1 ? 0.5 : 1,
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  ← Précédent
+                </button>
+
                 <div
-                  key={candidate.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "0.9em",
+                    color: "var(--lu-text-secondary)",
+                  }}
+                >
+                  <span>Page</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={currentPage}
+                    onChange={(e) => {
+                      const page = parseInt(e.target.value) || 1;
+                      if (page >= 1 && page <= totalPages) {
+                        fetchCandidates(page);
+                      }
+                    }}
+                    style={{
+                      width: "50px",
+                      padding: "4px 8px",
+                      textAlign: "center",
+                      border: "1px solid var(--lu-border)",
+                      borderRadius: "4px",
+                      fontSize: "0.9em",
+                    }}
+                  />
+                  <span>/ {totalPages}</span>
+                </div>
+
+                <button
+                  onClick={() => fetchCandidates(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="cand-btn-secondary"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "0.9em",
+                    opacity: currentPage === totalPages ? 0.5 : 1,
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Suivant →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Dropzone - always shown to allow uploading more files */}
+        <div
+          className={`jd-dropzone ${dragActive ? "jd-dropzone--active" : ""}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            border: "2px dashed var(--lu-border)",
+            borderRadius: "8px",
+            padding: "32px",
+            textAlign: "center",
+            cursor: job.status === "CLOSED" ? "not-allowed" : "pointer",
+            backgroundColor: dragActive
+              ? "rgba(var(--lu-accent-rgb, 59, 130, 246), 0.05)"
+              : "transparent",
+            transition: "all 0.2s ease",
+            marginBottom: selectedFiles.length > 0 ? "16px" : "0",
+            opacity: job.status === "CLOSED" ? 0.6 : 1,
+          }}
+        >
+          <Upload
+            size={32}
+            strokeWidth={1.4}
+            style={{ margin: "0 auto 12px", color: "var(--lu-accent)" }}
+          />
+          <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600 }}>
+            {candidates.length > 0
+              ? "Uploader d'autres CVs"
+              : "Glissez-déposez vos CVs ici"}
+          </h4>
+          <p style={{ margin: "0 0 12px 0", fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+            ou cliquez pour sélectionner des fichiers
+          </p>
+          <p style={{ margin: "0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+            PDF, DOCX • Max 5MB par fichier
+          </p>
+        </div>
+
+        {/* Selected files list */}
+        {selectedFiles.length > 0 && (
+          <div style={{ marginBottom: "16px", marginTop: "16px" }}>
+            <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
+              Fichiers sélectionnés ({selectedFiles.length})
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {selectedFiles.map(({ file, id }) => (
+                <div
+                  key={id}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -1005,92 +1252,96 @@ export default function JobDetailPage() {
                     fontSize: "0.9em",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
-                    {/* Status indicator */}
-                    <div
-                      style={{
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {candidate.status === "PENDING" && (
-                        <Loader2
-                          size={20}
-                          className="cand-skeleton-pulse"
-                          style={{ color: "var(--lu-accent)" }}
-                        />
-                      )}
-                      {candidate.status === "SCORED" && (
-                        <CheckCircle2
-                          size={20}
-                          style={{ color: "#22c55e" }}
-                          strokeWidth={2}
-                        />
-                      )}
-                      {candidate.status === "FAILED" && (
-                        <XCircle
-                          size={20}
-                          style={{ color: "#ef4444" }}
-                          strokeWidth={2}
-                        />
-                      )}
-                    </div>
-
-                    {/* Candidate info */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FileText size={16} />
                     <div>
-                      <div style={{ fontWeight: 500 }}>
-                        {candidate.parsedName || candidate.fileName}
+                      <div style={{ fontWeight: 500 }}>{file.name}</div>
+                      <div style={{ fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                        {formatFileSize(file.size)}
                       </div>
-                      {candidate.score !== undefined && (
-                        <div
-                          style={{
-                            fontSize: "0.85em",
-                            color: "var(--lu-text-tertiary)",
-                          }}
-                        >
-                          Score: {candidate.score.toFixed(2)}
-                        </div>
-                      )}
-                      {candidate.status === "PENDING" && (
-                        <div
-                          style={{
-                            fontSize: "0.85em",
-                            color: "var(--lu-text-tertiary)",
-                          }}
-                        >
-                          Analyse en cours...
-                        </div>
-                      )}
-                      {candidate.status === "FAILED" && (
-                        <div
-                          style={{
-                            fontSize: "0.85em",
-                            color: "#ef4444",
-                          }}
-                        >
-                          Analyse échouée
-                        </div>
-                      )}
                     </div>
                   </div>
+                  <button
+                    onClick={() => removeFile(id)}
+                    disabled={isUploading}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: isUploading ? "default" : "pointer",
+                      padding: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      color: "var(--lu-text-secondary)",
+                      opacity: isUploading ? 0.5 : 1,
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               ))}
             </div>
+          </div>
+        )}
 
-            {/* Continue uploading button */}
-            {job.status === "OPEN" && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="cand-btn-secondary"
-                style={{ width: "100%", marginTop: "16px", justifyContent: "center" }}
+        {/* Upload button and progress */}
+        {selectedFiles.length > 0 && (
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              onClick={handleUpload}
+              disabled={isUploading || job.status === "CLOSED"}
+              className="cand-btn-primary"
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 size={14} className="cand-skeleton-pulse" />
+                  <span>Analyse en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={14} strokeWidth={2.4} />
+                  <span>Analyser les CVs</span>
+                </>
+              )}
+            </button>
+
+            {/* Progress bar */}
+            {isUploading && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  height: "4px",
+                  backgroundColor: "var(--lu-bg-secondary)",
+                  borderRadius: "2px",
+                  overflow: "hidden",
+                }}
               >
-                <Upload size={14} strokeWidth={2.4} />
-                <span>Uploader d'autres CVs</span>
-              </button>
+                <div
+                  style={{
+                    height: "100%",
+                    backgroundColor: "var(--lu-accent)",
+                    width: `${uploadProgress}%`,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
             )}
-          </>
+          </div>
+        )}
+
+        {/* Empty state with no candidates and no files */}
+        {selectedFiles.length === 0 && candidates.length === 0 && (
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: "0.9em",
+              color: "var(--lu-text-secondary)",
+              marginTop: "16px",
+            }}
+          >
+            Aucun candidat pour l'instant. Uploadez des CVs pour démarrer
+            le processus de sélection.
+          </p>
         )}
 
         {/* Status message for closed jobs */}
