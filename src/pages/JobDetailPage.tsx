@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,10 +12,14 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 // ── Config ──────────────────────────────────────────────
 const API_BASE_URL = "http://localhost:3001/api/v1";
+const ALLOWED_FILE_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // ── Types ───────────────────────────────────────────────
 interface JobDetail {
@@ -35,6 +39,24 @@ interface CurrentUser {
   userId: string;
   role: string;
   organisationId: string;
+}
+
+interface SelectedFile {
+  file: File;
+  id: string;
+}
+
+interface Candidate {
+  id: string;
+  status: "PENDING" | "SCORED" | "FAILED";
+  parsedName?: string;
+  fileName: string;
+  score?: number;
+}
+
+interface FileValidationError {
+  fileName: string;
+  reason: string;
 }
 
 // ── Helpers ─────────────────────────────────────────────
@@ -117,10 +139,50 @@ function formatDateRelative(dateString: string): string {
   }
 }
 
+// ── File validation helpers ─────────────────────────────
+
+function validateFiles(files: File[]): {
+  valid: File[];
+  errors: FileValidationError[];
+} {
+  const valid: File[] = [];
+  const errors: FileValidationError[] = [];
+
+  files.forEach((file) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      errors.push({
+        fileName: file.name,
+        reason: `Type de fichier non supporté. Acceptés: PDF, DOCX`,
+      });
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      errors.push({
+        fileName: file.name,
+        reason: `Fichier trop volumineux (${(file.size / (1024 * 1024)).toFixed(2)}MB > 5MB)`,
+      });
+      return;
+    }
+
+    valid.push(file);
+  });
+
+  return { valid, errors };
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 // ── Component ───────────────────────────────────────────
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Data state
   const [job, setJob] = useState<JobDetail | null>(null);
@@ -132,6 +194,16 @@ export default function JobDetailPage() {
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+  // Upload state
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
+  const [isPolling, setIsPolling] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   // Current user (from JWT + localStorage fallback for role)
   const currentUser = useMemo<CurrentUser | null>(() => {
@@ -230,6 +302,226 @@ export default function JobDetailPage() {
       setIsClosing(false);
     }
   };
+
+  // ── Upload handlers ────────────────────────────────────
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    addFiles(files);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    addFiles(files);
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const addFiles = (files: File[]) => {
+    setFileValidationErrors([]);
+    const { valid, errors } = validateFiles(files);
+
+    if (errors.length > 0) {
+      setFileValidationErrors(errors);
+      return;
+    }
+
+    const newFiles: SelectedFile[] = valid.map((file) => ({
+      file,
+      id: Math.random().toString(36).substring(2),
+    }));
+
+    setSelectedFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (fileId: string) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0 || !job || !currentUser) return;
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+      setUploadProgress(0);
+
+      const formData = new FormData();
+      selectedFiles.forEach(({ file }) => {
+        formData.append("files", file);
+      });
+
+      let token = await getAuthToken();
+      let retryCount = 0;
+      const maxRetries = 1;
+
+      const performUpload = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              const percentComplete = (e.loaded / e.total) * 100;
+              setUploadProgress(percentComplete);
+            }
+          });
+
+          xhr.addEventListener("load", async () => {
+            // Handle 401 with retry
+            if (xhr.status === 401 && retryCount < maxRetries) {
+              retryCount++;
+              console.log("Token expired, retrying with new token...");
+              localStorage.removeItem("linkup_access_token");
+              localStorage.removeItem("accessToken");
+              token = await getAuthToken();
+              
+              // Create new FormData for retry
+              const retryFormData = new FormData();
+              selectedFiles.forEach(({ file }) => {
+                retryFormData.append("files", file);
+              });
+              
+              // Reset progress for retry
+              setUploadProgress(0);
+              
+              // Retry the upload
+              performUpload()
+                .then(resolve)
+                .catch(reject);
+              return;
+            }
+
+            if (xhr.status === 202) {
+              resolve(xhr.responseText);
+            } else {
+              reject(
+                new Error(
+                  `Upload échoué (${xhr.status}): ` +
+                    (xhr.responseText || "Erreur serveur")
+                )
+              );
+            }
+          });
+
+          xhr.addEventListener("error", () => {
+            reject(new Error("Erreur réseau lors de l'upload"));
+          });
+
+          xhr.open("POST", `${API_BASE_URL}/jobs/${job.id}/candidates/upload`);
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          xhr.send(formData);
+        });
+      };
+
+      const responseText = await performUpload();
+      const response = JSON.parse(responseText);
+
+      if (response?.success && response?.data) {
+        // Create candidate objects with initial PENDING status
+        const newCandidates: Candidate[] = response.data.map(
+          (candidate: any) => ({
+            id: candidate.id,
+            status: "PENDING" as const,
+            fileName: candidate.fileName || "",
+            parsedName: undefined,
+          })
+        );
+
+        setCandidates((prev) => [...prev, ...newCandidates]);
+        setSelectedFiles([]);
+        setUploadProgress(100);
+
+        // Start polling for status updates
+        startPolling(newCandidates);
+      }
+    } catch (err: any) {
+      setUploadError(err.message || "Erreur lors de l'upload");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // ── Polling handlers ───────────────────────────────────
+  const startPolling = (initialCandidates: Candidate[]) => {
+    setIsPolling(true);
+
+    const poll = async () => {
+      if (!job) return;
+
+      try {
+        const token = await getAuthToken();
+        const res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) throw new Error("Erreur lors du polling");
+
+        const resData = await res.json();
+        if (resData?.success && resData?.data) {
+          // Ensure data is an array
+          const dataArray = Array.isArray(resData.data) ? resData.data : [];
+          
+          const updatedCandidates: Candidate[] = dataArray.map(
+            (candidate: any) => ({
+              id: candidate.id,
+              status: candidate.status,
+              fileName: candidate.fileName || "",
+              parsedName: candidate.parsedName,
+              score: candidate.score,
+            })
+          );
+
+          setCandidates(updatedCandidates);
+
+          // Check if all candidates have terminal status
+          const allTerminal = updatedCandidates.every(
+            (c) => c.status === "SCORED" || c.status === "FAILED"
+          );
+
+          if (allTerminal) {
+            stopPolling();
+          }
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    };
+
+    // Poll immediately, then every 3 seconds
+    poll();
+    pollingIntervalRef.current = setInterval(poll, 3000);
+  };
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsPolling(false);
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   // ── Permission check ──────────────────────────────────
   const canClose =
@@ -501,7 +793,7 @@ export default function JobDetailPage() {
         </div>
       </div>
 
-      {/* ── Candidates section (empty state) ── */}
+      {/* ── Candidates section ── */}
       <div className="db-card" id="candidates-section">
         <div className="jd-section-header">
           <Users
@@ -511,38 +803,319 @@ export default function JobDetailPage() {
           />
           <h3 className="jd-section-title">
             Candidats{" "}
-            <span className="jd-section-count">({job.candidateCount})</span>
+            <span className="jd-section-count">({candidates.length})</span>
           </h3>
         </div>
 
-        {/* Empty state */}
-        <div className="jd-candidates-empty">
-          <div className="jd-candidates-empty-icon">
-            <Upload size={32} strokeWidth={1.4} />
+        {/* File validation errors */}
+        {fileValidationErrors.length > 0 && (
+          <div className="cand-error-alert" style={{ marginBottom: "16px" }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong>Fichiers non valides:</strong>
+                <ul style={{ marginTop: "8px", marginLeft: "20px", fontSize: "0.9em" }}>
+                  {fileValidationErrors.map((err, i) => (
+                    <li key={i}>
+                      <strong>{err.fileName}:</strong> {err.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
-          <h4 className="jd-candidates-empty-title">
-            Aucun candidat pour l'instant
-          </h4>
-          <p className="jd-candidates-empty-body">
-            Uploadez des CVs pour démarrer le processus de sélection. Notre IA
-            analysera automatiquement les profils et les classera selon leur
-            adéquation avec le poste.
-          </p>
-          <button
-            className="cand-btn-primary"
-            style={{ marginTop: "12px" }}
-            disabled={job.status === "CLOSED"}
-            id="btn-upload-cv"
+        )}
+
+        {/* Upload error */}
+        {uploadError && (
+          <div className="cand-error-alert" style={{ marginBottom: "16px" }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <AlertCircle size={16} />
+              <span>{uploadError}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Drag and drop zone or file list */}
+        {candidates.length === 0 ? (
+          <>
+            {/* Dropzone */}
+            <div
+              className={`jd-dropzone ${dragActive ? "jd-dropzone--active" : ""}`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: "2px dashed var(--lu-border)",
+                borderRadius: "8px",
+                padding: "32px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: dragActive
+                  ? "rgba(var(--lu-accent-rgb, 59, 130, 246), 0.05)"
+                  : "transparent",
+                transition: "all 0.2s ease",
+                marginBottom: selectedFiles.length > 0 ? "16px" : "0",
+              }}
+            >
+              <Upload
+                size={32}
+                strokeWidth={1.4}
+                style={{ margin: "0 auto 12px", color: "var(--lu-accent)" }}
+              />
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600 }}>
+                Glissez-déposez vos CVs ici
+              </h4>
+              <p style={{ margin: "0 0 12px 0", fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                ou cliquez pour sélectionner des fichiers
+              </p>
+              <p style={{ margin: "0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                PDF, DOCX • Max 5MB par fichier
+              </p>
+            </div>
+
+            {/* Selected files list */}
+            {selectedFiles.length > 0 && (
+              <div style={{ marginBottom: "16px" }}>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
+                  Fichiers sélectionnés ({selectedFiles.length})
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {selectedFiles.map(({ file, id }) => (
+                    <div
+                      key={id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px",
+                        backgroundColor: "var(--lu-bg-secondary)",
+                        borderRadius: "6px",
+                        fontSize: "0.9em",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <FileText size={16} />
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{file.name}</div>
+                          <div style={{ fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                            {formatFileSize(file.size)}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFile(id)}
+                        disabled={isUploading}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: isUploading ? "default" : "pointer",
+                          padding: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                          color: "var(--lu-text-secondary)",
+                          opacity: isUploading ? 0.5 : 1,
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload button and progress */}
+            {selectedFiles.length > 0 && (
+              <div style={{ marginBottom: "16px" }}>
+                <button
+                  onClick={handleUpload}
+                  disabled={isUploading || job.status === "CLOSED"}
+                  className="cand-btn-primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 size={14} className="cand-skeleton-pulse" />
+                      <span>Analyse en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} strokeWidth={2.4} />
+                      <span>Analyser les CVs</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Progress bar */}
+                {isUploading && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      height: "4px",
+                      backgroundColor: "var(--lu-bg-secondary)",
+                      borderRadius: "2px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        backgroundColor: "var(--lu-accent)",
+                        width: `${uploadProgress}%`,
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty state with no files */}
+            {selectedFiles.length === 0 && candidates.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.9em",
+                  color: "var(--lu-text-secondary)",
+                  marginTop: "16px",
+                }}
+              >
+                Aucun candidat pour l'instant. Uploadez des CVs pour démarrer
+                le processus de sélection.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Candidates list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {candidates.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px",
+                    backgroundColor: "var(--lu-bg-secondary)",
+                    borderRadius: "6px",
+                    fontSize: "0.9em",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+                    {/* Status indicator */}
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {candidate.status === "PENDING" && (
+                        <Loader2
+                          size={20}
+                          className="cand-skeleton-pulse"
+                          style={{ color: "var(--lu-accent)" }}
+                        />
+                      )}
+                      {candidate.status === "SCORED" && (
+                        <CheckCircle2
+                          size={20}
+                          style={{ color: "#22c55e" }}
+                          strokeWidth={2}
+                        />
+                      )}
+                      {candidate.status === "FAILED" && (
+                        <XCircle
+                          size={20}
+                          style={{ color: "#ef4444" }}
+                          strokeWidth={2}
+                        />
+                      )}
+                    </div>
+
+                    {/* Candidate info */}
+                    <div>
+                      <div style={{ fontWeight: 500 }}>
+                        {candidate.parsedName || candidate.fileName}
+                      </div>
+                      {candidate.score !== undefined && (
+                        <div
+                          style={{
+                            fontSize: "0.85em",
+                            color: "var(--lu-text-tertiary)",
+                          }}
+                        >
+                          Score: {candidate.score.toFixed(2)}
+                        </div>
+                      )}
+                      {candidate.status === "PENDING" && (
+                        <div
+                          style={{
+                            fontSize: "0.85em",
+                            color: "var(--lu-text-tertiary)",
+                          }}
+                        >
+                          Analyse en cours...
+                        </div>
+                      )}
+                      {candidate.status === "FAILED" && (
+                        <div
+                          style={{
+                            fontSize: "0.85em",
+                            color: "#ef4444",
+                          }}
+                        >
+                          Analyse échouée
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Continue uploading button */}
+            {job.status === "OPEN" && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="cand-btn-secondary"
+                style={{ width: "100%", marginTop: "16px", justifyContent: "center" }}
+              >
+                <Upload size={14} strokeWidth={2.4} />
+                <span>Uploader d'autres CVs</span>
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Status message for closed jobs */}
+        {job.status === "CLOSED" && selectedFiles.length === 0 && (
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: "0.9em",
+              color: "var(--lu-text-secondary)",
+              marginTop: "16px",
+            }}
           >
-            <Upload size={14} strokeWidth={2.4} />
-            <span>Uploader des CVs</span>
-          </button>
-          {job.status === "CLOSED" && (
-            <p className="jd-upload-disabled-note">
-              L'upload de CVs est désactivé pour les offres clôturées.
-            </p>
-          )}
-        </div>
+            L'upload de CVs est désactivé pour les offres clôturées.
+          </p>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.docx"
+          onChange={handleFileInputChange}
+          style={{ display: "none" }}
+        />
       </div>
 
       {/* ── Last updated ── */}
