@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const API_BASE = 'http://localhost:3001/api/v1'
 
@@ -28,6 +29,7 @@ function validate(form: FormState): FieldErrors {
 
 export default function Login() {
   const navigate = useNavigate()
+  const { setUser, setAccessToken } = useAuth()
   const [form, setForm] = useState<FormState>({ email: '', password: '' })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -64,6 +66,7 @@ export default function Login() {
       const data = await res.json()
 
       if (res.status === 200 && data.success) {
+        // Store in localStorage for persistence
         localStorage.setItem('accessToken', data.data.accessToken)
         localStorage.setItem('refreshToken', data.data.refreshToken)
         localStorage.setItem('userRole', data.data.user.role)
@@ -71,6 +74,16 @@ export default function Login() {
         localStorage.setItem('userLastName', data.data.user.lastName)
         localStorage.setItem('userEmail', data.data.user.email)
         localStorage.setItem('userFullName', `${data.data.user.firstName} ${data.data.user.lastName}`)
+
+        // Update AuthContext so ProtectedRoute sees isAuthenticated=true
+        setAccessToken(data.data.accessToken)
+        setUser({
+          id: data.data.user.id || '',
+          fullName: `${data.data.user.firstName} ${data.data.user.lastName}`,
+          email: data.data.user.email,
+          firstName: data.data.user.firstName,
+        })
+
         navigate('/dashboard')
         return
       }

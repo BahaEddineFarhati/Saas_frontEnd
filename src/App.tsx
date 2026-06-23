@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import AuthLayout from "./AuthLayout";
@@ -12,6 +12,7 @@ import AcceptInvitePage from "./pages/AcceptInvitePage";
 import GuestRoute from "./components/GuestRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
 
 import "./auth-layout.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -57,23 +58,38 @@ function AppContent({
   onToggleDark: () => void;
 }) {
   const [user, setUser] = useState<AppUser>(getStoredUser);
-  const token = localStorage.getItem("accessToken");
+  const { accessToken, logout, isAuthenticated } = useAuth();
   const location = useLocation();
 
+  // Stable logout ref to avoid re-triggering effects
+  const handleLogout = useCallback(async () => {
+    await logout();
+  }, [logout]);
+
   useEffect(() => {
-    if (!token) return;
+    // Only fetch profile when authenticated (AuthContext has a valid token)
+    if (!isAuthenticated || !accessToken) return;
+
+    let cancelled = false;
 
     const fetchProfile = () => {
       fetch("http://localhost:3001/api/v1/auth/me", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
         .then((res) => {
+          if (cancelled) return;
+          if (res.status === 401) {
+            // Token expired — log out via AuthContext (no window.location!)
+            handleLogout();
+            return;
+          }
           if (!res.ok) throw new Error("Failed to fetch user profile");
           return res.json();
         })
         .then((resData) => {
+          if (cancelled || !resData) return;
           if (resData.success && resData.data?.user) {
             const u = resData.data.user;
             setUser((prev) => {
@@ -100,7 +116,7 @@ function AppContent({
           }
         })
         .catch((err) => {
-          console.error("Profile sync error:", err);
+          if (!cancelled) console.error("Profile sync error:", err);
         });
     };
 
@@ -110,20 +126,11 @@ function AppContent({
     // Poll every 5 seconds in the background to catch instant promotions/demotions
     const intervalId = setInterval(fetchProfile, 5000);
 
-    return () => clearInterval(intervalId);
-  }, [token, location.pathname]);
-
-  function handleLogout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("linkup_access_token");
-    localStorage.removeItem("userFirstName");
-    localStorage.removeItem("userLastName");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userFullName");
-    window.location.href = "/login";
-  }
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [accessToken, isAuthenticated, location.pathname, handleLogout]);
 
   return (
     <Routes>
