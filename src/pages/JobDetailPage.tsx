@@ -512,6 +512,7 @@ export default function JobDetailPage() {
             status: "PENDING" as const,
             fileName: candidate.fileName || "",
             parsedName: undefined,
+            email: candidate.email,
           })
         );
 
@@ -576,6 +577,7 @@ export default function JobDetailPage() {
                 ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
                 : undefined,
               score: candidate.score,
+              email: candidate.email,
             })
           );
 
