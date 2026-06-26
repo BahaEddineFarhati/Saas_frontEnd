@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const API_BASE = 'http://localhost:3001/api/v1'
 
@@ -41,6 +42,8 @@ export default function AcceptInvitePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
+  const { isAuthenticated, isLoading: authLoading, logout } = useAuth()
+  const logoutTriggered = useRef(false)
 
   const [form, setForm] = useState<FormState>({
     firstName: '',
@@ -50,6 +53,19 @@ export default function AcceptInvitePage() {
   })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // If the user is already authenticated, auto-logout first so they can
+  // use the invite link to create a fresh account in the new org.
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !logoutTriggered.current) {
+      logoutTriggered.current = true
+      setIsLoggingOut(true)
+      logout().finally(() => {
+        setIsLoggingOut(false)
+      })
+    }
+  }, [authLoading, isAuthenticated, logout])
 
   useEffect(() => {
     if (!token) {
@@ -116,6 +132,20 @@ export default function AcceptInvitePage() {
     `w-full px-4 py-3 bg-slate-800/60 border ${
       errors[field] ? 'border-red-500' : 'border-purple-500/30'
     } rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`
+
+  // Show loading while auto-logout is in progress or auth state is loading
+  if (authLoading || isLoggingOut) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="h-12 w-12 border-4 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400">Preparing your invitation...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4 py-12">

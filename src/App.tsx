@@ -161,11 +161,7 @@ function AppContent({
         />
         <Route
           path="/accept-invite"
-          element={
-            <GuestRoute>
-              <AcceptInvitePage />
-            </GuestRoute>
-          }
+          element={<AcceptInvitePage />}
         />
 
         {/* ── Client-facing routes (blocked for SUPER_ADMIN) ── */}
