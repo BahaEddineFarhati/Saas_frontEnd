@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
  * Shows loading state during initial session restoration
  */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     // Show loading state during initial session check
@@ -31,6 +31,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!isAuthenticated) {
     // Redirect to login if not authenticated
     return <Navigate to="/login" replace />;
+  }
+
+  // Block SUPER_ADMIN from client-facing routes
+  const role = user?.role || localStorage.getItem('userRole');
+  if (role === 'SUPER_ADMIN') {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return <>{children}</>;

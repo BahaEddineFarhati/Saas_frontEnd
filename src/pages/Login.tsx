@@ -82,9 +82,15 @@ export default function Login() {
           fullName: `${data.data.user.firstName} ${data.data.user.lastName}`,
           email: data.data.user.email,
           firstName: data.data.user.firstName,
+          role: data.data.user.role,
         })
 
-        navigate('/dashboard')
+        // Route super admin to the admin dashboard
+        if (data.data.user.role === 'SUPER_ADMIN') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/dashboard')
+        }
         return
       }
 

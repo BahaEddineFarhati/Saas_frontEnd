@@ -3,6 +3,7 @@ export interface User {
   fullName: string;
   email: string;
   firstName: string;
+  role?: string | undefined;
 }
 
 export interface AuthContextType {
@@ -10,6 +11,8 @@ export interface AuthContextType {
   accessToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isOrgSuspended: boolean;
+  setIsOrgSuspended: (v: boolean) => void;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
   restoreSession: () => Promise<void>;
