@@ -90,6 +90,14 @@ function AppContent({
             handleLogout();
             return;
           }
+          if (res.status === 403) {
+            res.json().then((data) => {
+              if (data?.error?.code === "ORG_SUSPENDED" || data?.code === "ORG_SUSPENDED") {
+                window.dispatchEvent(new CustomEvent("orgSuspended"));
+              }
+            }).catch(() => {});
+            return;
+          }
           if (!res.ok) throw new Error("Failed to fetch user profile");
           return res.json();
         })

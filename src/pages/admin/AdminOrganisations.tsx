@@ -36,19 +36,13 @@ interface Pagination {
 interface CreateForm {
   organisationName: string;
   slug: string;
-  adminFirstName: string;
-  adminLastName: string;
   adminEmail: string;
-  adminPassword: string;
 }
 
 const emptyForm: CreateForm = {
   organisationName: '',
   slug: '',
-  adminFirstName: '',
-  adminLastName: '',
   adminEmail: '',
-  adminPassword: '',
 };
 
 const planColors: Record<string, string> = {
@@ -366,8 +360,12 @@ export default function AdminOrganisations() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-400">
+                Une invitation sera envoyée à l'admin pour qu'il complète son compte (même mécanisme que l'invitation d'un membre).
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nom de l'organisation *
                   </label>
@@ -386,7 +384,7 @@ export default function AdminOrganisations() {
                   />
                 </div>
 
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Slug *
                   </label>
@@ -403,42 +401,6 @@ export default function AdminOrganisations() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Prénom de l'admin *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={createForm.adminFirstName}
-                    onChange={(e) =>
-                      setCreateForm((f) => ({
-                        ...f,
-                        adminFirstName: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nom de l'admin *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={createForm.adminLastName}
-                    onChange={(e) =>
-                      setCreateForm((f) => ({
-                        ...f,
-                        adminLastName: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email de l'admin *
                   </label>
                   <input
@@ -449,24 +411,6 @@ export default function AdminOrganisations() {
                       setCreateForm((f) => ({
                         ...f,
                         adminEmail: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mot de passe *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={createForm.adminPassword}
-                    onChange={(e) =>
-                      setCreateForm((f) => ({
-                        ...f,
-                        adminPassword: e.target.value,
                       }))
                     }
                     className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -494,7 +438,7 @@ export default function AdminOrganisations() {
                   {creating && (
                     <RefreshCw size={14} className="animate-spin" />
                   )}
-                  Créer
+                  Créer & Inviter
                 </button>
               </div>
             </form>
