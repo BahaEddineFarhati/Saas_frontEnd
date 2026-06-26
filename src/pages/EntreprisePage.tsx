@@ -26,6 +26,7 @@ interface Member {
   email: string
   role: 'ADMIN' | 'RECRUITER'
   isActive: boolean
+  departureStatus?: string
   createdAt: string
 }
 
@@ -613,7 +614,9 @@ export default function EntreprisePage() {
                     </td>
                     <td className="ent-td-date">{formatDate(m.createdAt)}</td>
                     <td>
-                      <span className="ent-badge ent-badge--red">Deactivated</span>
+                      <span className={`ent-badge ${m.departureStatus === 'QUIT' ? 'ent-badge--amber' : 'ent-badge--red'}`}>
+                        {m.departureStatus === 'QUIT' ? 'Quit' : 'Deactivated'}
+                      </span>
                     </td>
                     <td className="ent-td-actions">—</td>
                   </tr>
