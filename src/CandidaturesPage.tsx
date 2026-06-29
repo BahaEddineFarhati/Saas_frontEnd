@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, X, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { Search, Plus, X, Loader2, AlertCircle, ExternalLink, Trash2 } from "lucide-react";
 
 // Configured backend API Base URL
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -70,6 +70,10 @@ export default function CandidaturesPage() {
   // Validation error states
   const [titleValidationError, setTitleValidationError] = useState<string | null>(null);
   const [descValidationError, setDescValidationError] = useState<string | null>(null);
+  // Delete confirmation state
+  const [jobToDelete, setJobToDelete] = useState<JobOpening | null>(null);
+  const [isDeletingJob, setIsDeletingJob] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch job openings
   const fetchJobs = async () => {
@@ -206,6 +210,45 @@ export default function CandidaturesPage() {
       setFormError(err.message || "Failed to create the job opening.");
     } finally {
       setFormSubmitting(false);
+    }
+  };
+
+  // Delete job handlers
+  const performDeleteJob = async () => {
+    if (!jobToDelete) return;
+    try {
+      setIsDeletingJob(true);
+      setDeleteError(null);
+      let token = await getAuthToken();
+
+      let res = await fetch(`${API_BASE_URL}/jobs/${jobToDelete.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Retry once on 401
+      if (res.status === 401) {
+        localStorage.removeItem('linkup_access_token');
+        localStorage.removeItem('accessToken');
+        token = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs/${jobToDelete.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+      }
+
+      // Remove from list
+      setJobs((prev) => prev.filter((j) => j.id !== jobToDelete.id));
+      setJobToDelete(null);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Impossible de supprimer l\'offre');
+    } finally {
+      setIsDeletingJob(false);
     }
   };
 
@@ -386,15 +429,28 @@ export default function CandidaturesPage() {
                       </span>
                     </td>
                     <td className="db-td-num">{job.candidateCount}</td>
-                    <td className="db-td-link">
-                      <a 
-                        href={`/candidatures/${job.id}`} 
-                        className="db-open-link" 
+                    <td className="db-td-link" style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <a
+                        href={`/candidatures/${job.id}`}
+                        className="db-open-link"
                         aria-label={`Ouvrir ${job.title}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                       >
                         <ExternalLink size={13} strokeWidth={2} />
                         <span>Ouvrir</span>
                       </a>
+
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setJobToDelete(job);
+                        }}
+                        className="cand-btn-danger"
+                        title={`Supprimer ${job.title}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12 }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -403,6 +459,29 @@ export default function CandidaturesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation centered modal */}
+      {jobToDelete && (
+        <>
+          <div
+            className="cand-drawer-overlay cand-drawer-overlay--open"
+            onClick={() => { if (!isDeletingJob) setJobToDelete(null); }}
+          />
+          <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
+            <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+              <h3 style={{ marginTop: 0 }}>Supprimer l'offre ?</h3>
+              <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer l'offre « <strong>{jobToDelete.title}</strong> » et tous ses candidats ? Cette action est irréversible.</p>
+              {deleteError && <div className="cand-error-alert" style={{ marginTop: 12 }}>{deleteError}</div>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                <button className="cand-btn-secondary" onClick={() => setJobToDelete(null)} disabled={isDeletingJob}>Annuler</button>
+                <button className="cand-btn-danger" onClick={performDeleteJob} disabled={isDeletingJob}>
+                  {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Side Panel / Create Drawer Overlay */}
       <div 

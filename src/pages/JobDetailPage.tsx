@@ -203,8 +203,17 @@ export default function JobDetailPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
-  const [isPolling, setIsPolling] = useState(false);
+  const [, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
+  const [candidateDetails, setCandidateDetails] = useState<any | null>(null);
+  const [candidateLoading, setCandidateLoading] = useState(false);
+  const [candidateError, setCandidateError] = useState<string | null>(null);
+  const [isDeletingJob, setIsDeletingJob] = useState(false);
+  const [showDeleteJobConfirm, setShowDeleteJobConfirm] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
+  const [isDeletingCandidate, setIsDeletingCandidate] = useState(false);
+  const [deleteCandidateError, setDeleteCandidateError] = useState<string | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -531,7 +540,7 @@ export default function JobDetailPage() {
   };
 
   // ── Polling handlers ───────────────────────────────────
-  const startPolling = (initialCandidates: Candidate[]) => {
+  const startPolling = (_initialCandidates: Candidate[]) => {
     setIsPolling(true);
 
     const poll = async () => {
@@ -625,6 +634,123 @@ export default function JobDetailPage() {
     job.status === "OPEN" &&
     currentUser &&
     (currentUser.role === "ADMIN" || currentUser.userId === job.createdById);
+
+  // Allow deletion for the creator or an ADMIN regardless of job status
+  const canDelete =
+    job &&
+    currentUser &&
+    (currentUser.role === "ADMIN" || currentUser.userId === job.createdById);
+
+  const fetchCandidateDetails = async (candidateId: string) => {
+    if (!id) return;
+    try {
+      // Open modal immediately and show loader
+      setCandidateDetails(null);
+      setCandidateModalOpen(true);
+      setCandidateLoading(true);
+      setCandidateError(null);
+      const token = await getAuthToken();
+      const res = await fetch(`${API_BASE_URL}/jobs/${id}/candidates/${candidateId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Erreur lors du chargement du candidat');
+      const data = await res.json();
+      if (data?.success && data?.data) setCandidateDetails(data.data);
+      else throw new Error(data?.error?.message || 'Erreur inconnue');
+    } catch (err: any) {
+      setCandidateError(err.message || 'Impossible de charger le candidat');
+    } finally {
+      setCandidateLoading(false);
+    }
+  };
+
+  const handleOpenCandidate = (candidateId: string) => {
+    fetchCandidateDetails(candidateId);
+  };
+
+  // Open centered confirmation for candidate deletion
+  const handleDeleteCandidate = (candidateId: string) => {
+    const candidate = candidates.find((c) => c.id === candidateId) || null;
+    if (!candidate) return;
+    setCandidateToDelete(candidate);
+    setDeleteCandidateError(null);
+  };
+
+  const performDeleteCandidate = async () => {
+    if (!id || !candidateToDelete) return;
+    if (!confirm) {
+      // placeholder to satisfy linter
+    }
+    try {
+      setIsDeletingCandidate(true);
+      setDeleteCandidateError(null);
+      let token = await getAuthToken();
+      let res = await fetch(`${API_BASE_URL}/jobs/${id}/candidates/${candidateToDelete.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('linkup_access_token');
+        localStorage.removeItem('accessToken');
+        token = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs/${id}/candidates/${candidateToDelete.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+      }
+
+      // Re-fetch current page to ensure consistent list & pagination
+      await fetchCandidates(currentPage);
+      setCandidateToDelete(null);
+    } catch (err: any) {
+      setDeleteCandidateError(err.message || 'Impossible de supprimer le candidat');
+    } finally {
+      setIsDeletingCandidate(false);
+    }
+  };
+
+  // Open centered confirmation for job deletion
+  const handleDeleteJob = () => {
+    if (!job) return;
+    setShowDeleteJobConfirm(true);
+  };
+
+  const performDeleteJob = async () => {
+    if (!job) return;
+    try {
+      setIsDeletingJob(true);
+      let token = await getAuthToken();
+      let res = await fetch(`${API_BASE_URL}/jobs/${job.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('linkup_access_token');
+        localStorage.removeItem('accessToken');
+        token = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs/${job.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+      navigate('/candidatures');
+    } catch (err: any) {
+      alert(err.message || 'Impossible de supprimer l\'offre');
+    } finally {
+      setIsDeletingJob(false);
+      setShowDeleteJobConfirm(false);
+    }
+  };
 
   // ══════════════════════════════════════════════════════
   //  RENDER: Loading skeleton
@@ -805,6 +931,17 @@ export default function JobDetailPage() {
               >
                 <Lock size={14} strokeWidth={2.2} />
                 <span>Fermer cette offre</span>
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => handleDeleteJob()}
+                className="jd-btn-delete"
+                id="btn-delete-job"
+                style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                <Trash2 size={14} />
+                <span>Supprimer</span>
               </button>
             )}
           </div>
@@ -993,18 +1130,31 @@ export default function JobDetailPage() {
                     >
                       Score
                     </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                        width: "80px",
+                      }}
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {candidates.map((candidate) => (
                     <tr
                       key={candidate.id}
+                      onClick={() => handleOpenCandidate(candidate.id)}
                       style={{
                         borderBottom: "1px solid var(--lu-border)",
                         backgroundColor:
                           candidate.status === "FAILED"
                             ? "rgba(239, 68, 68, 0.05)"
                             : "transparent",
+                        cursor: "pointer",
                       }}
                     >
                       {/* Status column */}
@@ -1026,7 +1176,7 @@ export default function JobDetailPage() {
                             <>
                               <Loader2
                                 size={16}
-                                className="cand-skeleton-pulse"
+                                className="cand-spinner"
                                 style={{ color: "var(--lu-accent)" }}
                               />
                               <span style={{ fontSize: "0.9em" }}>PENDING</span>
@@ -1109,6 +1259,19 @@ export default function JobDetailPage() {
                             -
                           </div>
                         )}
+                      </td>
+                      <td style={{ padding: "12px", textAlign: "center" }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCandidate(candidate.id);
+                          }}
+                          className="cand-btn-danger"
+                          title="Supprimer le candidat"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1369,6 +1532,98 @@ export default function JobDetailPage() {
           onChange={handleFileInputChange}
           style={{ display: "none" }}
         />
+        {/* Candidate details drawer (uses existing drawer styles) */}
+        {candidateModalOpen && (
+          <>
+            <div
+              className="cand-drawer-overlay cand-drawer-overlay--open"
+              onClick={() => setCandidateModalOpen(false)}
+            />
+
+            <div className={`cand-drawer cand-drawer--open`} id="candidate-panel">
+              <div className="cand-drawer-header">
+                <h3 className="cand-drawer-title">Détails du candidat</h3>
+                <button
+                  onClick={() => setCandidateModalOpen(false)}
+                  className="cand-drawer-close"
+                  aria-label="Fermer"
+                >
+                  Fermer
+                </button>
+              </div>
+
+              <div className="cand-drawer-body" style={{ padding: 16 }}>
+                {candidateLoading && (
+                  <div>
+                    <Loader2 /> Chargement...
+                  </div>
+                )}
+
+                {candidateError && (
+                  <div className="cand-error-alert" style={{ marginTop: 8 }}>{candidateError}</div>
+                )}
+
+                {candidateDetails && (
+                  <div style={{ marginTop: 12 }}>
+                    <p><strong>Nom:</strong> {candidateDetails.firstName || ''} {candidateDetails.lastName || ''}</p>
+                    <p><strong>Email:</strong> {candidateDetails.email || '-'}</p>
+                    <p><strong>Statut:</strong> {candidateDetails.status}</p>
+                    <p><strong>Score:</strong> {candidateDetails.score ?? '-'}</p>
+                    <div style={{ marginTop: 8 }}>
+                      <strong>Parsed JSON:</strong>
+                      <pre style={{ maxHeight: 300, overflow: 'auto', background: 'var(--lu-bg-secondary)', padding: 12, color: 'var(--lu-text-primary)' }}>{JSON.stringify(candidateDetails.parsedJson || candidateDetails.parsed || {}, null, 2)}</pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Centered delete confirmation for candidate */}
+        {candidateToDelete && (
+          <>
+            <div
+              className="cand-drawer-overlay cand-drawer-overlay--open"
+              onClick={() => { if (!isDeletingCandidate) setCandidateToDelete(null); }}
+            />
+            <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
+              <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                <h3 style={{ marginTop: 0 }}>Supprimer le candidat ?</h3>
+                <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer ce candidat ? Cette action est irréversible.</p>
+                {deleteCandidateError && <div className="cand-error-alert" style={{ marginTop: 12 }}>{deleteCandidateError}</div>}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                  <button className="cand-btn-secondary" onClick={() => setCandidateToDelete(null)} disabled={isDeletingCandidate}>Annuler</button>
+                  <button className="cand-btn-danger" onClick={performDeleteCandidate} disabled={isDeletingCandidate}>
+                    {isDeletingCandidate ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Centered delete confirmation for job */}
+        {showDeleteJobConfirm && (
+          <>
+            <div
+              className="cand-drawer-overlay cand-drawer-overlay--open"
+              onClick={() => { if (!isDeletingJob) setShowDeleteJobConfirm(false); }}
+            />
+            <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
+              <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                <h3 style={{ marginTop: 0 }}>Supprimer l'offre ?</h3>
+                <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer l'offre « <strong>{job?.title}</strong> » et tous ses candidats ? Cette action est irréversible.</p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                  <button className="cand-btn-secondary" onClick={() => setShowDeleteJobConfirm(false)} disabled={isDeletingJob}>Annuler</button>
+                  <button className="cand-btn-danger" onClick={performDeleteJob} disabled={isDeletingJob}>
+                    {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Last updated ── */}

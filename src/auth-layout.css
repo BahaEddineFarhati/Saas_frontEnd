@@ -754,6 +754,16 @@ html.dark .cand-filter-btn--active {
   animation: cand-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Spinner rotation for loader icons (used for PENDING candidate status) */
+@keyframes cand-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cand-spinner {
+  animation: cand-spin 1s linear infinite;
+}
+
 .cand-skeleton-bar {
   height: 14px;
   background: var(--lu-border-md);
