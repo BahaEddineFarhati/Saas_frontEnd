@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
 
 import AuthLayout from "./AuthLayout";
-import DashboardPage from "./DashboardPage";
+import DashboardPage from "./pages/DashboardPage";
 import CandidaturesPage from "./CandidaturesPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import SettingsPage from "./SettingsPage";
@@ -48,10 +51,10 @@ function getStoredUser(): AppUser {
     };
   }
   return {
-    fullName: localStorage.getItem("userFullName") || "Farhati Baha",
-    email: localStorage.getItem("userEmail") || "Baha@linkup.com",
-    firstName: localStorage.getItem("userFirstName") || "Baha",
-    role: localStorage.getItem("userRole") || "RECRUITER",
+    fullName: localStorage.getItem("userFullName") || "UNKNOWN USER",
+    email: localStorage.getItem("userEmail") || "UNKNOWN EMAIL USER",
+    firstName: localStorage.getItem("userFirstName") || "UNKNOWN",
+    role: localStorage.getItem("userRole") || "UNKNOWN",
   };
 }
 
@@ -225,12 +228,14 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppContent
-          darkMode={darkMode}
-          onToggleDark={() => setDarkMode((d) => !d)}
-        />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppContent
+            darkMode={darkMode}
+            onToggleDark={() => setDarkMode((d) => !d)}
+          />
+        </AuthProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }
