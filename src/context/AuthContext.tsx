@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/apiClient';
+import { setGlobalAccessToken } from '../api/apiClient';
 import { AuthContextType, User } from '../types';
 
 
@@ -13,6 +14,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOrgSuspended, setIsOrgSuspended] = useState(false);
 
   /**
    * Restore session on app load.
@@ -49,12 +51,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const firstName = localStorage.getItem('userFirstName');
             const email = localStorage.getItem('userEmail');
             const fullName = localStorage.getItem('userFullName');
+            const role = localStorage.getItem('userRole') || undefined;
             if (firstName && email) {
               setUser({
                 id: '',
                 fullName: fullName || firstName,
                 email,
                 firstName,
+                role,
               });
             }
           }
@@ -69,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const firstName = localStorage.getItem('userFirstName');
         const email = localStorage.getItem('userEmail');
         const fullName = localStorage.getItem('userFullName');
+        const role = localStorage.getItem('userRole') || undefined;
 
         if (firstName && email) {
           setAccessToken(storedAccessToken);
@@ -77,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             fullName: fullName || firstName,
             email,
             firstName,
+            role,
           });
           return; // Session restored from localStorage
         }
@@ -114,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       setAccessToken(null);
+      setIsOrgSuspended(false);
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
@@ -133,11 +140,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     restoreSession();
   }, []);
 
+  // Sync accessToken to global variable for apiClient
+  useEffect(() => {
+    setGlobalAccessToken(accessToken);
+  }, [accessToken]);
+
+  // Listen for orgSuspended event from apiClient
+  useEffect(() => {
+    const handler = () => setIsOrgSuspended(true);
+    window.addEventListener('orgSuspended', handler);
+    return () => window.removeEventListener('orgSuspended', handler);
+  }, []);
+
+  // Listen for tokenRefreshed event from apiClient
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const token = (e as CustomEvent).detail?.token;
+      if (token) setAccessToken(token);
+    };
+    window.addEventListener('tokenRefreshed', handler);
+    return () => window.removeEventListener('tokenRefreshed', handler);
+  }, []);
+
+  // Listen for sessionExpired event from apiClient
+  useEffect(() => {
+    const handler = () => logout();
+    window.addEventListener('sessionExpired', handler);
+    return () => window.removeEventListener('sessionExpired', handler);
+  }, [logout]);
+
   const value: AuthContextType = {
     user,
     accessToken,
     isLoading,
     isAuthenticated: user !== null && accessToken !== null,
+    isOrgSuspended,
+    setIsOrgSuspended,
     setUser,
     setAccessToken,
     restoreSession,

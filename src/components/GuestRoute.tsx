@@ -18,6 +18,10 @@ export default function GuestRoute({ children }: { children: React.ReactNode }) 
   }
 
   if (isAuthenticated) {
+    const role = localStorage.getItem('userRole');
+    if (role === 'SUPER_ADMIN') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

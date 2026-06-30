@@ -22,12 +22,19 @@ const adminOnlyItems = [
   { to: "/entreprise",   label: "Entreprise",    icon: <Building2      size={18} strokeWidth={1.8} /> },
 ];
 
+const superAdminNavItems = [
+  { to: '/admin/dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
+  { to: '/admin/organisations',  label: 'Organisations',  icon: <Building2       size={18} strokeWidth={1.8} /> },
+];
+
 // ── page title map ─────────────────────────────────────────────────────────
 const pageTitles: Record<string, string> = {
-  "/dashboard":    "Dashboard",
-  "/candidatures": "Candidatures",
-  "/settings":     "Settings",
-  "/entreprise":   "Entreprise",
+  "/dashboard":           "Dashboard",
+  "/candidatures":        "Candidatures",
+  "/settings":            "Settings",
+  "/entreprise":          "Entreprise",
+  "/admin/dashboard":     "Dashboard",
+  "/admin/organisations": "Organisations",
 };
 
 interface User { fullName: string; email: string; firstName: string; role?: string; }
@@ -44,11 +51,16 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
   if (location.pathname.startsWith("/candidatures/")) {
     pageTitle = "Détail de l'offre";
   }
+  if (location.pathname.startsWith("/admin/organisations/")) {
+    pageTitle = "Détail de l'organisation";
+  }
 
-  // Build nav items based on user role — ADMIN sees Entreprise tab
+  // Build nav items based on user role
   const navItems = useMemo(() => {
     const role = user.role || localStorage.getItem("userRole");
-    return role === "ADMIN" ? [...baseNavItems, ...adminOnlyItems] : baseNavItems;
+    if (role === "SUPER_ADMIN") return superAdminNavItems;
+    if (role === "ADMIN") return [...baseNavItems, ...adminOnlyItems];
+    return baseNavItems;
   }, [user.role]);
 
   const initials = user.fullName

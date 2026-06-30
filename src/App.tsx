@@ -11,6 +11,11 @@ import Login from "./pages/Login";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import GuestRoute from "./components/GuestRoute";
 import AdminRoute from "./components/AdminRoute";
+import SuperAdminRoute from "./components/SuperAdminRoute";
+import SuspensionModal from "./components/SuspensionModal";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOrganisations from "./pages/admin/AdminOrganisations";
+import AdminOrgDetail from "./pages/admin/AdminOrgDetail";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 
@@ -58,7 +63,7 @@ function AppContent({
   onToggleDark: () => void;
 }) {
   const [user, setUser] = useState<AppUser>(getStoredUser);
-  const { accessToken, logout, isAuthenticated } = useAuth();
+  const { accessToken, logout, isAuthenticated, isOrgSuspended } = useAuth();
   const location = useLocation();
 
   // Stable logout ref to avoid re-triggering effects
@@ -83,6 +88,14 @@ function AppContent({
           if (res.status === 401) {
             // Token expired — log out via AuthContext (no window.location!)
             handleLogout();
+            return;
+          }
+          if (res.status === 403) {
+            res.json().then((data) => {
+              if (data?.error?.code === "ORG_SUSPENDED" || data?.code === "ORG_SUSPENDED") {
+                window.dispatchEvent(new CustomEvent("orgSuspended"));
+              }
+            }).catch(() => {});
             return;
           }
           if (!res.ok) throw new Error("Failed to fetch user profile");
@@ -133,54 +146,72 @@ function AppContent({
   }, [accessToken, isAuthenticated, location.pathname, handleLogout]);
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <>
+      {isOrgSuspended && <SuspensionModal />}
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      <Route
-        path="/login"
-        element={
-          <GuestRoute>
-            <Login />
-          </GuestRoute>
-        }
-      />
-      <Route
-        path="/accept-invite"
-        element={
-          <GuestRoute>
-            <AcceptInvitePage />
-          </GuestRoute>
-        }
-      />
-
-      <Route
-        element={
-          <ProtectedRoute>
-            <AuthLayout
-              user={user}
-              onLogout={handleLogout}
-              darkMode={darkMode}
-              onToggleDark={onToggleDark}
-            />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard"        element={<DashboardPage />} />
-        <Route path="/candidatures"     element={<CandidaturesPage />} />
-        <Route path="/candidatures/:id" element={<JobDetailPage />} />
-        <Route path="/settings"         element={<SettingsPage />} />
         <Route
-          path="/entreprise"
+          path="/login"
           element={
-            <AdminRoute>
-              <EntreprisePage />
-            </AdminRoute>
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
           }
         />
-      </Route>
+        <Route
+          path="/accept-invite"
+          element={<AcceptInvitePage />}
+        />
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        {/* ── Client-facing routes (blocked for SUPER_ADMIN) ── */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AuthLayout
+                user={user}
+                onLogout={handleLogout}
+                darkMode={darkMode}
+                onToggleDark={onToggleDark}
+              />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard"        element={<DashboardPage />} />
+          <Route path="/candidatures"     element={<CandidaturesPage />} />
+          <Route path="/candidatures/:id" element={<JobDetailPage />} />
+          <Route path="/settings"         element={<SettingsPage />} />
+          <Route
+            path="/entreprise"
+            element={
+              <AdminRoute>
+                <EntreprisePage />
+              </AdminRoute>
+            }
+          />
+        </Route>
+
+        {/* ── Super admin routes ── */}
+        <Route
+          element={
+            <SuperAdminRoute>
+              <AuthLayout
+                user={user}
+                onLogout={handleLogout}
+                darkMode={darkMode}
+                onToggleDark={onToggleDark}
+              />
+            </SuperAdminRoute>
+          }
+        >
+          <Route path="/admin/dashboard"          element={<AdminDashboard />} />
+          <Route path="/admin/organisations"      element={<AdminOrganisations />} />
+          <Route path="/admin/organisations/:orgId" element={<AdminOrgDetail />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </>
   );
 }
 
