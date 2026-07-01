@@ -48,11 +48,24 @@ interface SelectedFile {
 
 interface Candidate {
   id: string;
-  status: "PENDING" | "SCORED" | "FAILED";
+  status: "PENDING" | "SCORED" | "FAILED" | "NEW" | "SHORTLISTED" | "REJECTED" | "OFFERED";
   parsedName?: string;
+  firstName?: string;
+  lastName?: string;
   fileName: string;
   score?: number;
   email?: string;
+  verdict?: "STRONG_FIT" | "GOOD_FIT" | "PARTIAL_FIT" | "WEAK_FIT";
+  scoreExplanation?: Record<string, unknown>;
+  createdAt?: string;
+}
+
+interface ScoringStatusSummary {
+  totalCandidates: number;
+  parsedCount: number;
+  scoredCount: number;
+  failedCount: number;
+  scoringStatus: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 }
 
 interface FileValidationError {
@@ -61,6 +74,46 @@ interface FileValidationError {
 }
 
 // ── Helpers ─────────────────────────────────────────────
+
+/** Get score badge color based on score range */
+function getScoreBadgeColor(score: number): { bg: string; text: string } {
+  if (score >= 80) return { bg: "#dcfce7", text: "#166534" }; // green
+  if (score >= 60) return { bg: "#dbeafe", text: "#1e40af" }; // blue
+  if (score >= 40) return { bg: "#fef3c7", text: "#92400e" }; // amber
+  return { bg: "#fee2e2", text: "#7f1d1d" }; // red
+}
+
+/** Get verdict badge color */
+function getVerdictBadgeColor(verdict: string): { bg: string; text: string } {
+  switch (verdict) {
+    case "STRONG_FIT":
+      return { bg: "#dcfce7", text: "#166534" }; // green
+    case "GOOD_FIT":
+      return { bg: "#dbeafe", text: "#1e40af" }; // blue
+    case "PARTIAL_FIT":
+      return { bg: "#fef3c7", text: "#92400e" }; // amber
+    case "WEAK_FIT":
+      return { bg: "#fee2e2", text: "#7f1d1d" }; // red
+    default:
+      return { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" };
+  }
+}
+
+/** Get verdict label in French */
+function getVerdictLabel(verdict: string): string {
+  switch (verdict) {
+    case "STRONG_FIT":
+      return "Très bon fit";
+    case "GOOD_FIT":
+      return "Bon fit";
+    case "PARTIAL_FIT":
+      return "Partiellement adéquat";
+    case "WEAK_FIT":
+      return "Peu adéquat";
+    default:
+      return verdict;
+  }
+}
 
 /** Decode JWT payload (no validation — just extract claims) */
 function decodeJwtPayload(token: string): CurrentUser | null {
@@ -221,6 +274,13 @@ export default function JobDetailPage() {
   const [totalCandidates, setTotalCandidates] = useState(0);
   const CANDIDATES_PER_PAGE = 10;
 
+  // Scoring and filter state
+  const [scoringStatus, setScoringStatus] = useState<ScoringStatusSummary | null>(null);
+  const [verdictFilter, setVerdictFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState<"score" | "name" | "uploadDate">("score");
+  const [scoringPollingIntervalRef, setScoringPollingIntervalRef] = useState<ReturnType<typeof setInterval> | null>(null);
+
   // Current user (from JWT + localStorage fallback for role)
   const currentUser = useMemo<CurrentUser | null>(() => {
     const token =
@@ -287,8 +347,21 @@ export default function JobDetailPage() {
     if (!id) return;
     try {
       const token = await getAuthToken();
+      
+      // Build query params for sorting and filtering
+      const params = new URLSearchParams();
+      params.append("page", page.toString());
+      params.append("limit", CANDIDATES_PER_PAGE.toString());
+      
+      if (verdictFilter !== "All") {
+        params.append("verdict", verdictFilter);
+      }
+      if (statusFilter !== "All") {
+        params.append("status", statusFilter);
+      }
+      
       let res = await fetch(
-        `${API_BASE_URL}/jobs/${id}/candidates?page=${page}&limit=${CANDIDATES_PER_PAGE}`,
+        `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -300,7 +373,7 @@ export default function JobDetailPage() {
         localStorage.removeItem("accessToken");
         const newToken = await getAuthToken();
         res = await fetch(
-          `${API_BASE_URL}/jobs/${id}/candidates?page=${page}&limit=${CANDIDATES_PER_PAGE}`,
+          `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${newToken}` },
           }
@@ -325,19 +398,48 @@ export default function JobDetailPage() {
         }
         
         const loadedCandidates: Candidate[] = candidatesArray.map(
-          (candidate: any) => ({
-            id: candidate.id,
-            status: candidate.status || "PENDING",
-            fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
-            parsedName: candidate.lastName || candidate.firstName 
-              ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
-              : undefined,
-            score: candidate.score,
-            email: candidate.email,
-          })
+          (candidate: any) => {
+            const explanation = candidate.scoreExplanation as Record<string, unknown> | null;
+            const verdict = (candidate.verdict ?? explanation?.verdict) as
+              | Candidate["verdict"]
+              | undefined;
+            return {
+              id: candidate.id,
+              status: candidate.status || "PENDING",
+              fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
+              parsedName: candidate.lastName || candidate.firstName 
+                ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
+                : undefined,
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              score: candidate.score,
+              email: candidate.email,
+              verdict,
+              scoreExplanation: explanation,
+              createdAt: candidate.createdAt,
+            };
+          }
         );
 
-        setCandidates(loadedCandidates);
+        // Sort candidates based on sortBy preference
+        let sortedCandidates = [...loadedCandidates];
+        if (sortBy === "score") {
+          sortedCandidates.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+        } else if (sortBy === "name") {
+          sortedCandidates.sort((a, b) => {
+            const nameA = a.parsedName || "";
+            const nameB = b.parsedName || "";
+            return nameA.localeCompare(nameB);
+          });
+        } else if (sortBy === "uploadDate") {
+          sortedCandidates.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+          });
+        }
+
+        setCandidates(sortedCandidates);
         setCurrentPage(pagination.page);
         setTotalPages(pagination.pages);
         setTotalCandidates(pagination.total);
@@ -347,6 +449,72 @@ export default function JobDetailPage() {
     }
   };
 
+  useEffect(() => {
+    if (id) fetchJob();
+  }, [id]);
+
+  // ── Fetch scoring status ───────────────────────────────
+  const fetchScoringStatus = async () => {
+    if (!id) return;
+    try {
+      const token = await getAuthToken();
+      let res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 401 retry
+      if (res.status === 401) {
+        localStorage.removeItem("linkup_access_token");
+        localStorage.removeItem("accessToken");
+        const newToken = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status`, {
+          headers: { Authorization: `Bearer ${newToken}` },
+        });
+      }
+
+      if (!res.ok) throw new Error("Erreur lors du chargement du statut de scoring");
+
+      const resData = await res.json();
+      if (resData?.success && resData?.data) {
+        setScoringStatus(resData.data);
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement du statut de scoring:", err);
+    }
+  };
+
+  // ── Start polling for scoring status ───────────────────
+  const startScoringStatusPolling = () => {
+    // Fetch immediately
+    fetchScoringStatus();
+
+    // Then poll every 3 seconds
+    const interval = setInterval(() => {
+      fetchScoringStatus();
+    }, 3000);
+
+    setScoringPollingIntervalRef(interval);
+  };
+
+  const stopScoringStatusPolling = () => {
+    if (scoringPollingIntervalRef) {
+      clearInterval(scoringPollingIntervalRef);
+      setScoringPollingIntervalRef(null);
+    }
+  };
+
+  // Stop polling when scoring is completed
+  useEffect(() => {
+    if (scoringStatus?.scoringStatus === "COMPLETED") {
+      stopScoringStatusPolling();
+    } else if (scoringStatus?.scoringStatus === "IN_PROGRESS") {
+      if (!scoringPollingIntervalRef) {
+        startScoringStatusPolling();
+      }
+    }
+  }, [scoringStatus?.scoringStatus]);
+
+  // Load job data when component mounts
   useEffect(() => {
     if (id) fetchJob();
   }, [id]);
@@ -542,65 +710,16 @@ export default function JobDetailPage() {
   // ── Polling handlers ───────────────────────────────────
   const startPolling = (_initialCandidates: Candidate[]) => {
     setIsPolling(true);
+    
+    // Start polling for scoring status too
+    startScoringStatusPolling();
 
     const poll = async () => {
       if (!job) return;
 
       try {
-        let token = await getAuthToken();
-        let res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        // 401 retry
-        if (res.status === 401) {
-          localStorage.removeItem("linkup_access_token");
-          localStorage.removeItem("accessToken");
-          token = await getAuthToken();
-          res = await fetch(`${API_BASE_URL}/jobs/${job.id}/candidates`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
-
-        if (!res.ok) throw new Error("Erreur lors du polling");
-
-        const resData = await res.json();
-        if (resData?.success && resData?.data) {
-          // Handle both structures: data.candidates (with pagination) or data (array)
-          let candidatesArray = [];
-          
-          if (Array.isArray(resData.data)) {
-            // If data is already an array
-            candidatesArray = resData.data;
-          } else if (resData.data.candidates && Array.isArray(resData.data.candidates)) {
-            // If data has a candidates property (with pagination)
-            candidatesArray = resData.data.candidates;
-          }
-          
-          const updatedCandidates: Candidate[] = candidatesArray.map(
-            (candidate: any) => ({
-              id: candidate.id,
-              status: candidate.status || "PENDING",
-              fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
-              parsedName: candidate.lastName || candidate.firstName 
-                ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
-                : undefined,
-              score: candidate.score,
-              email: candidate.email,
-            })
-          );
-
-          setCandidates(updatedCandidates);
-
-          // Check if all candidates have terminal status
-          const allTerminal = updatedCandidates.every(
-            (c) => c.status === "SCORED" || c.status === "FAILED"
-          );
-
-          if (allTerminal) {
-            stopPolling();
-          }
-        }
+        // Refetch candidates with current filters
+        await fetchCandidates(currentPage);
       } catch (err) {
         console.error("Polling error:", err);
       }
@@ -611,22 +730,17 @@ export default function JobDetailPage() {
     pollingIntervalRef.current = setInterval(poll, 3000);
   };
 
-  const stopPolling = () => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-    setIsPolling(false);
-  };
-
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
+      if (scoringPollingIntervalRef) {
+        clearInterval(scoringPollingIntervalRef);
+      }
     };
-  }, []);
+  }, [scoringPollingIntervalRef]);
 
   // ── Permission check ──────────────────────────────────
   const canClose =
@@ -640,6 +754,33 @@ export default function JobDetailPage() {
     job &&
     currentUser &&
     (currentUser.role === "ADMIN" || currentUser.userId === job.createdById);
+
+  // ── Handle filter and sort changes ─────────────────────
+  const handleVerdictFilterChange = (value: string) => {
+    setVerdictFilter(value);
+    setCurrentPage(1);
+    // Trigger fetch with new filter
+    setTimeout(() => {
+      if (value !== verdictFilter) {
+        // Filter state will be used in the next fetchCandidates call
+      }
+    }, 0);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: "score" | "name" | "uploadDate") => {
+    setSortBy(value);
+    setCurrentPage(1);
+  };
+
+  // Re-fetch when filters or sort change
+  useEffect(() => {
+    fetchCandidates(1);
+  }, [verdictFilter, statusFilter, sortBy]);
 
   const fetchCandidateDetails = async (candidateId: string) => {
     if (!id) return;
@@ -1072,6 +1213,118 @@ export default function JobDetailPage() {
         {/* Candidates table - shown when candidates exist */}
         {candidates.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
+            {/* Progress indicator - shown when scoring is in progress */}
+            {scoringStatus?.scoringStatus === "IN_PROGRESS" && (
+              <div
+                style={{
+                  backgroundColor: "rgba(59, 130, 246, 0.05)",
+                  border: "1px solid rgba(59, 130, 246, 0.2)",
+                  borderRadius: "6px",
+                  padding: "12px 16px",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <Loader2
+                  size={16}
+                  className="cand-spinner"
+                  style={{ color: "var(--lu-accent)", flexShrink: 0 }}
+                />
+                <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                  Analyse en cours... {scoringStatus.scoredCount} / {scoringStatus.totalCandidates} candidats scorés
+                </span>
+              </div>
+            )}
+
+            {/* Filter and sort controls */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginBottom: "16px",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Verdict :
+                </label>
+                <select
+                  value={verdictFilter}
+                  onChange={(e) => handleVerdictFilterChange(e.target.value)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="All">Tous</option>
+                  <option value="STRONG_FIT">Très bon fit</option>
+                  <option value="GOOD_FIT">Bon fit</option>
+                  <option value="PARTIAL_FIT">Partiellement adéquat</option>
+                  <option value="WEAK_FIT">Peu adéquat</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Statut :
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => handleStatusFilterChange(e.target.value)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="All">Tous</option>
+                  <option value="PENDING">En attente</option>
+                  <option value="NEW">Nouveau</option>
+                  <option value="SHORTLISTED">Sélectionné</option>
+                  <option value="REJECTED">Rejeté</option>
+                  <option value="OFFERED">Offre</option>
+                  <option value="SCORED">Scoré</option>
+                  <option value="FAILED">Échoué</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Trier par :
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as "score" | "name" | "uploadDate")}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="score">Score (décroissant)</option>
+                  <option value="name">Nom (A-Z)</option>
+                  <option value="uploadDate">Date d'upload (récent)</option>
+                </select>
+              </div>
+            </div>
+
             <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
               Candidats ({totalCandidates} total)
             </h4>
@@ -1129,6 +1382,16 @@ export default function JobDetailPage() {
                       }}
                     >
                       Score
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        fontWeight: 600,
+                        color: "var(--lu-text-secondary)",
+                      }}
+                    >
+                      Verdict
                     </th>
                     <th
                       style={{
@@ -1202,6 +1465,18 @@ export default function JobDetailPage() {
                               <span style={{ fontSize: "0.9em", color: "#ef4444" }}>FAILED</span>
                             </>
                           )}
+                          {candidate.status === "NEW" && (
+                            <span style={{ fontSize: "0.9em" }}>NOUVEAU</span>
+                          )}
+                          {candidate.status === "SHORTLISTED" && (
+                            <span style={{ fontSize: "0.9em", color: "#3b82f6" }}>SÉLECTIONNÉ</span>
+                          )}
+                          {candidate.status === "REJECTED" && (
+                            <span style={{ fontSize: "0.9em", color: "#ef4444" }}>REJETÉ</span>
+                          )}
+                          {candidate.status === "OFFERED" && (
+                            <span style={{ fontSize: "0.9em", color: "#22c55e" }}>OFFRE</span>
+                          )}
                         </div>
                       </td>
 
@@ -1233,7 +1508,7 @@ export default function JobDetailPage() {
                         </div>
                       </td>
 
-                      {/* Score column */}
+                      {/* Score column with badge */}
                       <td
                         style={{
                           padding: "12px",
@@ -1243,11 +1518,15 @@ export default function JobDetailPage() {
                         {candidate.score !== undefined && candidate.score > 0 ? (
                           <div
                             style={{
-                              fontWeight: 500,
-                              color: "var(--lu-accent)",
+                              display: "inline-block",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontWeight: 600,
+                              fontSize: "0.85em",
+                              ...getScoreBadgeColor(candidate.score),
                             }}
                           >
-                            {candidate.score.toFixed(2)}
+                            {candidate.score.toFixed(0)}
                           </div>
                         ) : (
                           <div
@@ -1260,6 +1539,39 @@ export default function JobDetailPage() {
                           </div>
                         )}
                       </td>
+
+                      {/* Verdict column with badge */}
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {candidate.verdict ? (
+                          <div
+                            style={{
+                              display: "inline-block",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontWeight: 500,
+                              fontSize: "0.85em",
+                              ...getVerdictBadgeColor(candidate.verdict),
+                            }}
+                          >
+                            {getVerdictLabel(candidate.verdict)}
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              fontSize: "0.85em",
+                              color: "var(--lu-text-tertiary)",
+                            }}
+                          >
+                            -
+                          </div>
+                        )}
+                      </td>
+
                       <td style={{ padding: "12px", textAlign: "center" }}>
                         <button
                           onClick={(e) => {
@@ -1354,6 +1666,117 @@ export default function JobDetailPage() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Empty state message when filters return no results */}
+        {candidates.length === 0 && (verdictFilter !== "All" || statusFilter !== "All") && (
+          <div style={{ marginBottom: "24px" }}>
+            {/* Filter and sort controls (shown even with no results) */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginBottom: "16px",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Verdict :
+                </label>
+                <select
+                  value={verdictFilter}
+                  onChange={(e) => handleVerdictFilterChange(e.target.value)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="All">Tous</option>
+                  <option value="STRONG_FIT">Très bon fit</option>
+                  <option value="GOOD_FIT">Bon fit</option>
+                  <option value="PARTIAL_FIT">Partiellement adéquat</option>
+                  <option value="WEAK_FIT">Peu adéquat</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Statut :
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => handleStatusFilterChange(e.target.value)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="All">Tous</option>
+                  <option value="PENDING">En attente</option>
+                  <option value="NEW">Nouveau</option>
+                  <option value="SHORTLISTED">Sélectionné</option>
+                  <option value="REJECTED">Rejeté</option>
+                  <option value="OFFERED">Offre</option>
+                  <option value="SCORED">Scoré</option>
+                  <option value="FAILED">Échoué</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
+                <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
+                  Trier par :
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as "score" | "name" | "uploadDate")}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-page)",
+                    color: "var(--lu-text-primary)",
+                    fontSize: "0.9em",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="score">Score (décroissant)</option>
+                  <option value="name">Nom (A-Z)</option>
+                  <option value="uploadDate">Date d'upload (récent)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Empty state message */}
+            <div
+              style={{
+                textAlign: "center",
+                padding: "40px 20px",
+                backgroundColor: "rgba(59, 130, 246, 0.05)",
+                border: "1px dashed rgba(59, 130, 246, 0.3)",
+                borderRadius: "8px",
+              }}
+            >
+              <Users size={32} strokeWidth={1.4} style={{ margin: "0 auto 12px", color: "var(--lu-text-tertiary)" }} />
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600, color: "var(--lu-text-secondary)" }}>
+                Aucun candidat trouvé
+              </h4>
+              <p style={{ margin: "0", fontSize: "0.9em", color: "var(--lu-text-tertiary)" }}>
+                Aucun candidat ne correspond aux filtres sélectionnés. Essayez de modifier vos critères.
+              </p>
+            </div>
           </div>
         )}
 
