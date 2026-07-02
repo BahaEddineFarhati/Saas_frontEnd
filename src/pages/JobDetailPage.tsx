@@ -258,10 +258,6 @@ export default function JobDetailPage() {
   const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
   const [, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
-  const [candidateDetails, setCandidateDetails] = useState<any | null>(null);
-  const [candidateLoading, setCandidateLoading] = useState(false);
-  const [candidateError, setCandidateError] = useState<string | null>(null);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [showDeleteJobConfirm, setShowDeleteJobConfirm] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
@@ -817,31 +813,11 @@ export default function JobDetailPage() {
     fetchCandidates(1);
   }, [verdictFilter, statusFilter, sortBy]);
 
-  const fetchCandidateDetails = async (candidateId: string) => {
-    if (!id) return;
-    try {
-      // Open modal immediately and show loader
-      setCandidateDetails(null);
-      setCandidateModalOpen(true);
-      setCandidateLoading(true);
-      setCandidateError(null);
-      const token = await getAuthToken();
-      const res = await fetch(`${API_BASE_URL}/jobs/${id}/candidates/${candidateId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Erreur lors du chargement du candidat');
-      const data = await res.json();
-      if (data?.success && data?.data) setCandidateDetails(data.data);
-      else throw new Error(data?.error?.message || 'Erreur inconnue');
-    } catch (err: any) {
-      setCandidateError(err.message || 'Impossible de charger le candidat');
-    } finally {
-      setCandidateLoading(false);
-    }
-  };
-
   const handleOpenCandidate = (candidateId: string) => {
-    fetchCandidateDetails(candidateId);
+    if (!id) return;
+    navigate(`/candidatures/${id}/candidats/${candidateId}`, {
+      state: { fromJobDetail: true },
+    });
   };
 
   // Open centered confirmation for candidate deletion
@@ -1990,53 +1966,6 @@ export default function JobDetailPage() {
           onChange={handleFileInputChange}
           style={{ display: "none" }}
         />
-        {/* Candidate details drawer (uses existing drawer styles) */}
-        {candidateModalOpen && (
-          <>
-            <div
-              className="cand-drawer-overlay cand-drawer-overlay--open"
-              onClick={() => setCandidateModalOpen(false)}
-            />
-
-            <div className={`cand-drawer cand-drawer--open`} id="candidate-panel">
-              <div className="cand-drawer-header">
-                <h3 className="cand-drawer-title">Détails du candidat</h3>
-                <button
-                  onClick={() => setCandidateModalOpen(false)}
-                  className="cand-drawer-close"
-                  aria-label="Fermer"
-                >
-                  Fermer
-                </button>
-              </div>
-
-              <div className="cand-drawer-body" style={{ padding: 16 }}>
-                {candidateLoading && (
-                  <div>
-                    <Loader2 /> Chargement...
-                  </div>
-                )}
-
-                {candidateError && (
-                  <div className="cand-error-alert" style={{ marginTop: 8 }}>{candidateError}</div>
-                )}
-
-                {candidateDetails && (
-                  <div style={{ marginTop: 12 }}>
-                    <p><strong>Nom:</strong> {candidateDetails.firstName || ''} {candidateDetails.lastName || ''}</p>
-                    <p><strong>Email:</strong> {candidateDetails.email || '-'}</p>
-                    <p><strong>Statut:</strong> {candidateDetails.status}</p>
-                    <p><strong>Score:</strong> {candidateDetails.score ?? '-'}</p>
-                    <div style={{ marginTop: 8 }}>
-                      <strong>Parsed JSON:</strong>
-                      <pre style={{ maxHeight: 300, overflow: 'auto', background: 'var(--lu-bg-secondary)', padding: 12, color: 'var(--lu-text-primary)' }}>{JSON.stringify(candidateDetails.parsedJson || candidateDetails.parsed || {}, null, 2)}</pre>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
 
         {/* Centered delete confirmation for candidate */}
         {candidateToDelete && (
