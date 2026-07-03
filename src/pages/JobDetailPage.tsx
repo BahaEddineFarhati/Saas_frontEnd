@@ -258,10 +258,6 @@ export default function JobDetailPage() {
   const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
   const [, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
-  const [candidateDetails, setCandidateDetails] = useState<any | null>(null);
-  const [candidateLoading, setCandidateLoading] = useState(false);
-  const [candidateError, setCandidateError] = useState<string | null>(null);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [showDeleteJobConfirm, setShowDeleteJobConfirm] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
@@ -343,7 +339,7 @@ export default function JobDetailPage() {
   };
 
   // ── Fetch existing candidates ──────────────────────────
-  const fetchCandidates = async (page: number = 1) => {
+  const fetchCandidates = async (page: number = 1, limit: number = CANDIDATES_PER_PAGE) => {
     if (!id) return;
     try {
       const token = await getAuthToken();
@@ -351,7 +347,7 @@ export default function JobDetailPage() {
       // Build query params for sorting and filtering
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", CANDIDATES_PER_PAGE.toString());
+      params.append("limit", limit.toString());
       
       if (verdictFilter !== "All") {
         params.append("verdict", verdictFilter);
@@ -361,8 +357,10 @@ export default function JobDetailPage() {
       }
       
       let res = await fetch(
-        `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}`,
+        `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}&_t=${Date.now()}`,
         {
+          method: "GET",
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -373,8 +371,10 @@ export default function JobDetailPage() {
         localStorage.removeItem("accessToken");
         const newToken = await getAuthToken();
         res = await fetch(
-          `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}`,
+          `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}&_t=${Date.now()}`,
           {
+            method: "GET",
+            cache: "no-store",
             headers: { Authorization: `Bearer ${newToken}` },
           }
         );
@@ -396,6 +396,8 @@ export default function JobDetailPage() {
           candidatesArray = resData.data.candidates;
           pagination = resData.data.pagination || pagination;
         }
+
+        console.log("[JobDetailPage] poll candidates response:", candidatesArray.map((c: any) => ({ id: c.id, status: c.status, score: c.score, verdict: c.verdict })));
         
         const loadedCandidates: Candidate[] = candidatesArray.map(
           (candidate: any) => {
@@ -403,16 +405,30 @@ export default function JobDetailPage() {
             const verdict = (candidate.verdict ?? explanation?.verdict) as
               | Candidate["verdict"]
               | undefined;
+            const score =
+              typeof candidate.score === "number"
+                ? candidate.score
+                : candidate.score && !Number.isNaN(Number(candidate.score))
+                ? Number(candidate.score)
+                : undefined;
+            const status =
+              candidate.status && candidate.status !== ""
+                ? candidate.status
+                : score !== undefined
+                ? "SCORED"
+                : "PENDING";
+
             return {
               id: candidate.id,
-              status: candidate.status || "PENDING",
+              status,
               fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
-              parsedName: candidate.lastName || candidate.firstName 
-                ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
-                : undefined,
+              parsedName:
+                candidate.lastName || candidate.firstName
+                  ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
+                  : undefined,
               firstName: candidate.firstName,
               lastName: candidate.lastName,
-              score: candidate.score,
+              score,
               email: candidate.email,
               verdict,
               scoreExplanation: explanation,
@@ -443,6 +459,14 @@ export default function JobDetailPage() {
         setCurrentPage(pagination.page);
         setTotalPages(pagination.pages);
         setTotalCandidates(pagination.total);
+
+        if (
+          sortedCandidates.some((candidate) => candidate.status === "PENDING") &&
+          !pollingIntervalRef.current
+        ) {
+          console.log("[JobDetailPage] pending candidates detected, starting polling");
+          startPolling(sortedCandidates);
+        }
       }
     } catch (err) {
       console.error("Erreur lors du chargement des candidats:", err);
@@ -458,7 +482,9 @@ export default function JobDetailPage() {
     if (!id) return;
     try {
       const token = await getAuthToken();
-      let res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status`, {
+      let res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status?_t=${Date.now()}`, {
+        method: "GET",
+        cache: "no-store",
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -467,7 +493,9 @@ export default function JobDetailPage() {
         localStorage.removeItem("linkup_access_token");
         localStorage.removeItem("accessToken");
         const newToken = await getAuthToken();
-        res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status`, {
+        res = await fetch(`${API_BASE_URL}/jobs/${id}/scoring-status?_t=${Date.now()}`, {
+          method: "GET",
+          cache: "no-store",
           headers: { Authorization: `Bearer ${newToken}` },
         });
       }
@@ -488,7 +516,7 @@ export default function JobDetailPage() {
     // Fetch immediately
     fetchScoringStatus();
 
-    // Then poll every 3 seconds
+    // Then poll every 3 seconds to match frontend refresh expectations
     const interval = setInterval(() => {
       fetchScoringStatus();
     }, 3000);
@@ -507,10 +535,15 @@ export default function JobDetailPage() {
   useEffect(() => {
     if (scoringStatus?.scoringStatus === "COMPLETED") {
       stopScoringStatusPolling();
-    } else if (scoringStatus?.scoringStatus === "IN_PROGRESS") {
-      if (!scoringPollingIntervalRef) {
-        startScoringStatusPolling();
+      // Stop candidate polling when scoring completes
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setIsPolling(false);
       }
+      // Refresh candidate list immediately once scoring completes
+      setCurrentPage(1);
+      fetchCandidates(1);
     }
   }, [scoringStatus?.scoringStatus]);
 
@@ -709,25 +742,23 @@ export default function JobDetailPage() {
 
   // ── Polling handlers ───────────────────────────────────
   const startPolling = (_initialCandidates: Candidate[]) => {
+    if (pollingIntervalRef.current) {
+      return;
+    }
+
     setIsPolling(true);
-    
+
     // Start polling for scoring status too
     startScoringStatusPolling();
 
     const poll = async () => {
-      if (!job) return;
-
-      try {
-        // Refetch candidates with current filters
-        await fetchCandidates(currentPage);
-      } catch (err) {
-        console.error("Polling error:", err);
-      }
+      if (!id) return;
+      await fetchCandidates(1, 1000);
     };
 
-    // Poll immediately, then every 3 seconds
-    poll();
+    // Create the interval before the initial fetch so fetchCandidates can detect active polling
     pollingIntervalRef.current = setInterval(poll, 3000);
+    poll();
   };
 
   // Cleanup polling on unmount
@@ -782,31 +813,11 @@ export default function JobDetailPage() {
     fetchCandidates(1);
   }, [verdictFilter, statusFilter, sortBy]);
 
-  const fetchCandidateDetails = async (candidateId: string) => {
-    if (!id) return;
-    try {
-      // Open modal immediately and show loader
-      setCandidateDetails(null);
-      setCandidateModalOpen(true);
-      setCandidateLoading(true);
-      setCandidateError(null);
-      const token = await getAuthToken();
-      const res = await fetch(`${API_BASE_URL}/jobs/${id}/candidates/${candidateId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Erreur lors du chargement du candidat');
-      const data = await res.json();
-      if (data?.success && data?.data) setCandidateDetails(data.data);
-      else throw new Error(data?.error?.message || 'Erreur inconnue');
-    } catch (err: any) {
-      setCandidateError(err.message || 'Impossible de charger le candidat');
-    } finally {
-      setCandidateLoading(false);
-    }
-  };
-
   const handleOpenCandidate = (candidateId: string) => {
-    fetchCandidateDetails(candidateId);
+    if (!id) return;
+    navigate(`/candidatures/${id}/candidats/${candidateId}`, {
+      state: { fromJobDetail: true },
+    });
   };
 
   // Open centered confirmation for candidate deletion
@@ -1955,53 +1966,6 @@ export default function JobDetailPage() {
           onChange={handleFileInputChange}
           style={{ display: "none" }}
         />
-        {/* Candidate details drawer (uses existing drawer styles) */}
-        {candidateModalOpen && (
-          <>
-            <div
-              className="cand-drawer-overlay cand-drawer-overlay--open"
-              onClick={() => setCandidateModalOpen(false)}
-            />
-
-            <div className={`cand-drawer cand-drawer--open`} id="candidate-panel">
-              <div className="cand-drawer-header">
-                <h3 className="cand-drawer-title">Détails du candidat</h3>
-                <button
-                  onClick={() => setCandidateModalOpen(false)}
-                  className="cand-drawer-close"
-                  aria-label="Fermer"
-                >
-                  Fermer
-                </button>
-              </div>
-
-              <div className="cand-drawer-body" style={{ padding: 16 }}>
-                {candidateLoading && (
-                  <div>
-                    <Loader2 /> Chargement...
-                  </div>
-                )}
-
-                {candidateError && (
-                  <div className="cand-error-alert" style={{ marginTop: 8 }}>{candidateError}</div>
-                )}
-
-                {candidateDetails && (
-                  <div style={{ marginTop: 12 }}>
-                    <p><strong>Nom:</strong> {candidateDetails.firstName || ''} {candidateDetails.lastName || ''}</p>
-                    <p><strong>Email:</strong> {candidateDetails.email || '-'}</p>
-                    <p><strong>Statut:</strong> {candidateDetails.status}</p>
-                    <p><strong>Score:</strong> {candidateDetails.score ?? '-'}</p>
-                    <div style={{ marginTop: 8 }}>
-                      <strong>Parsed JSON:</strong>
-                      <pre style={{ maxHeight: 300, overflow: 'auto', background: 'var(--lu-bg-secondary)', padding: 12, color: 'var(--lu-text-primary)' }}>{JSON.stringify(candidateDetails.parsedJson || candidateDetails.parsed || {}, null, 2)}</pre>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
 
         {/* Centered delete confirmation for candidate */}
         {candidateToDelete && (

@@ -8,6 +8,7 @@ import AuthLayout from "./AuthLayout";
 import DashboardPage from "./pages/DashboardPage";
 import CandidaturesPage from "./CandidaturesPage";
 import JobDetailPage from "./pages/JobDetailPage";
+import CandidateDetailPage from "./pages/CandidateDetailPage";
 import SettingsPage from "./SettingsPage";
 import EntreprisePage from "./pages/EntreprisePage";
 import Login from "./pages/Login";
@@ -182,6 +183,7 @@ function AppContent({
         >
           <Route path="/dashboard"        element={<DashboardPage />} />
           <Route path="/candidatures"     element={<CandidaturesPage />} />
+          <Route path="/candidatures/:jobId/candidats/:candidateId" element={<CandidateDetailPage />} />
           <Route path="/candidatures/:id" element={<JobDetailPage />} />
           <Route path="/settings"         element={<SettingsPage />} />
           <Route
