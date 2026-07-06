@@ -14,6 +14,7 @@ import {
   XCircle,
   Trash2,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 
 // ── Config ──────────────────────────────────────────────
@@ -263,6 +264,9 @@ export default function JobDetailPage() {
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
   const [isDeletingCandidate, setIsDeletingCandidate] = useState(false);
   const [deleteCandidateError, setDeleteCandidateError] = useState<string | null>(null);
+
+  // PDF export state
+  const [isExporting, setIsExporting] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -547,9 +551,12 @@ export default function JobDetailPage() {
     }
   }, [scoringStatus?.scoringStatus]);
 
-  // Load job data when component mounts
+  // Load job data and scoring status when component mounts
   useEffect(() => {
-    if (id) fetchJob();
+    if (id) {
+      fetchJob();
+      fetchScoringStatus();
+    }
   }, [id]);
 
   // ── Close job handler ─────────────────────────────────
@@ -904,6 +911,60 @@ export default function JobDetailPage() {
     }
   };
 
+  // ── PDF export handler ────────────────────────────────────
+  const handleExportPdf = async () => {
+    if (!id || isExporting) return;
+    try {
+      setIsExporting(true);
+      const token = await getAuthToken();
+
+      const res = await fetch(`${API_BASE_URL}/jobs/${id}/export/pdf`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        // Try to read error message from JSON body
+        let errorMsg = `Erreur serveur (${res.status})`;
+        try {
+          const errData = await res.json();
+          if (errData?.error?.message) {
+            errorMsg = errData.error.message;
+          }
+        } catch {
+          // Response wasn't JSON, keep default error message
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Get the response as a blob — NOT json or text
+      const blob = await res.blob();
+
+      // Verify we got a PDF (sanity check)
+      if (blob.size < 100) {
+        throw new Error("Le fichier PDF généré semble vide ou corrompu.");
+      }
+
+      // Create a proper PDF blob and trigger download
+      const pdfBlob = new Blob([blob], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `export-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Revoke the object URL after a short delay to ensure download starts
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err: any) {
+      console.error("[PDF Export] Error:", err);
+      alert(err.message || "Impossible d'exporter le PDF.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // ══════════════════════════════════════════════════════
   //  RENDER: Loading skeleton
   // ══════════════════════════════════════════════════════
@@ -1179,16 +1240,61 @@ export default function JobDetailPage() {
 
       {/* ── Candidates section ── */}
       <div className="db-card" id="candidates-section">
-        <div className="jd-section-header">
-          <Users
-            size={16}
-            strokeWidth={2}
-            style={{ color: "var(--lu-accent)" }}
-          />
-          <h3 className="jd-section-title">
-            Candidats{" "}
-            <span className="jd-section-count">({candidates.length})</span>
-          </h3>
+        <div className="jd-section-header" style={{ justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Users
+              size={16}
+              strokeWidth={2}
+              style={{ color: "var(--lu-accent)" }}
+            />
+            <h3 className="jd-section-title">
+              Candidats{" "}
+              <span className="jd-section-count">({candidates.length})</span>
+            </h3>
+          </div>
+          <button
+            onClick={handleExportPdf}
+            disabled={!scoringStatus || scoringStatus.scoredCount === 0 || isExporting}
+            title={
+              !scoringStatus || scoringStatus.scoredCount === 0
+                ? "Aucun résultat à exporter"
+                : "Exporter les résultats en PDF"
+            }
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "7px 14px",
+              fontSize: "13px",
+              fontWeight: 500,
+              borderRadius: "8px",
+              border: "1px solid var(--lu-border)",
+              backgroundColor:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? "var(--lu-bg-secondary)"
+                  : "var(--lu-accent)",
+              color:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? "var(--lu-text-muted)"
+                  : "#ffffff",
+              cursor:
+                !scoringStatus || scoringStatus.scoredCount === 0 || isExporting
+                  ? "not-allowed"
+                  : "pointer",
+              opacity:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? 0.6
+                  : 1,
+              transition: "all 0.2s ease",
+            }}
+          >
+            {isExporting ? (
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+            ) : (
+              <Download size={14} />
+            )}
+            {isExporting ? "Export en cours…" : "Exporter en PDF"}
+          </button>
         </div>
 
         {/* File validation errors */}
