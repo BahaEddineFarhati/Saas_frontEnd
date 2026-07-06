@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { NavLink, Outlet } from "react-router-dom";
 import {
@@ -9,7 +10,9 @@ import {
   LogOut,
   Sun,
   Moon,
+  Bell,
 } from "lucide-react";
+import { useNotifications } from "./lib/NotificationContext";
 
 // ── nav items ──────────────────────────────────────────────────────────────
 const baseNavItems = [
@@ -26,6 +29,16 @@ const superAdminNavItems = [
   { to: '/admin/dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
   { to: '/admin/organisations',  label: 'Organisations',  icon: <Building2       size={18} strokeWidth={1.8} /> },
 ];
+
+function formatRelativeTime(value: string) {
+  const diffMs = Date.now() - new Date(value).getTime();
+  const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `Il y a ${diffHours} h`;
+  const diffDays = Math.round(diffHours / 24);
+  return `Il y a ${diffDays} j`;
+}
 
 // ── page title map ─────────────────────────────────────────────────────────
 const pageTitles: Record<string, string> = {
@@ -47,6 +60,11 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: AuthLayoutProps) {
   const location = useLocation();
+  const { notifications, unreadCount, markAllAsRead, markOneAsRead, openNotification } = useNotifications();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState<{ top: number; right: number } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
   let pageTitle = pageTitles[location.pathname] ?? "LinkUp";
   if (location.pathname.startsWith("/candidatures/")) {
     pageTitle = "Détail de l'offre";
@@ -69,6 +87,29 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    // Calculate button position
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setButtonPosition({
+        top: rect.bottom + 8, // 8px gap
+        right: window.innerWidth - rect.right,
+      });
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDropdownOpen]);
 
   return (
     <div className="lu-shell">
@@ -128,8 +169,70 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
       {/* ── main ── */}
       <div className="lu-main">
 
-        <header className="lu-topbar">
+        <header className="lu-topbar flex items-center justify-between">
           <h1 className="lu-page-title">{pageTitle}</h1>
+          <button
+            ref={buttonRef}
+            type="button"
+            className="relative rounded-full p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            onClick={() => setIsDropdownOpen((open) => !open)}
+            aria-label="Notifications"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isDropdownOpen && buttonPosition && createPortal(
+            <div
+              ref={dropdownRef}
+              className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] rounded-xl border border-slate-200 bg-white p-3 shadow-2xl"
+              style={{
+                top: `${buttonPosition.top}px`,
+                right: `${buttonPosition.right}px`,
+              }}
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-blue-600"
+                  onClick={async () => {
+                    await markAllAsRead();
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  Tout marquer comme lu
+                </button>
+              </div>
+              <div className="max-h-[min(24rem,70vh)] space-y-2 overflow-auto pr-1">
+                {notifications.length === 0 ? (
+                  <p className="px-2 py-3 text-sm text-slate-500">Aucune notification non lue.</p>
+                ) : (
+                  notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      className="w-full rounded-lg border border-slate-100 p-3 text-left transition hover:bg-slate-50"
+                      onClick={async () => {
+                        await markOneAsRead(notification.id);
+                        setIsDropdownOpen(false);
+                        await openNotification(notification);
+                      }}
+                    >
+                      <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
+                      <p className="mt-1 text-sm text-slate-600">{notification.message}</p>
+                      <p className="mt-2 text-xs text-slate-400">{formatRelativeTime(notification.createdAt)}</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>,
+            document.body
+          )}
         </header>
 
         <main className="lu-content">

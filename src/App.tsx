@@ -22,6 +22,8 @@ import AdminOrganisations from "./pages/admin/AdminOrganisations";
 import AdminOrgDetail from "./pages/admin/AdminOrgDetail";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
+import { NotificationProvider } from "./lib/NotificationContext";
+import { ToastViewport } from "./components/ui/Toast";
 
 import "./auth-layout.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -232,10 +234,13 @@ export default function App() {
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <AppContent
-            darkMode={darkMode}
-            onToggleDark={() => setDarkMode((d) => !d)}
-          />
+          <NotificationProvider>
+            <AppContent
+              darkMode={darkMode}
+              onToggleDark={() => setDarkMode((d) => !d)}
+            />
+            <ToastViewport />
+          </NotificationProvider>
         </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>
