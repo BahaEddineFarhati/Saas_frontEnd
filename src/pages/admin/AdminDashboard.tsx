@@ -11,6 +11,12 @@ import {
   RefreshCw,
   TrendingUp,
   ShieldAlert,
+  Clock,
+  XCircle,
+  Target,
+  Activity,
+  Award,
+  ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 
@@ -23,6 +29,13 @@ interface Stats {
   totalCVsThisMonth: number;
   totalJobOpenings: number;
   activeJobOpenings: number;
+  // Queue health fields
+  queuePendingJobs?: number;
+  queueFailedJobs?: number;
+  // Scoring KPI fields
+  totalCandidatesScored?: number;
+  averagePlatformScore?: number;
+  strongFitCandidates?: number;
 }
 
 interface Organisation {
@@ -220,6 +233,135 @@ export default function AdminDashboard() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Queue Health Section */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Activity size={18} className="text-gray-500 dark:text-gray-400" />
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            Santé de la file d'attente
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Pending Jobs Card */}
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 transition-all hover:shadow-md hover:-translate-y-0.5">
+            <div className="inline-flex p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 mb-3">
+              <Clock size={22} />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {(stats?.queuePendingJobs ?? 0).toLocaleString('fr-FR')}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
+              Jobs en attente
+            </p>
+          </div>
+
+          {/* Failed Jobs Card */}
+          <div
+            className={`rounded-xl border bg-white dark:bg-slate-800 p-5 transition-all hover:shadow-md hover:-translate-y-0.5 ${
+              (stats?.queueFailedJobs ?? 0) > 0
+                ? 'border-red-300 dark:border-red-700 ring-2 ring-red-300 dark:ring-red-700'
+                : 'border-gray-200 dark:border-slate-700'
+            }`}
+          >
+            <div
+              className={`inline-flex p-2.5 rounded-lg mb-3 ${
+                (stats?.queueFailedJobs ?? 0) > 0
+                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              <XCircle size={22} />
+            </div>
+            <p
+              className={`text-2xl font-bold ${
+                (stats?.queueFailedJobs ?? 0) > 0
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-gray-900 dark:text-white'
+              }`}
+            >
+              {(stats?.queueFailedJobs ?? 0).toLocaleString('fr-FR')}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
+              Jobs en échec
+            </p>
+          </div>
+        </div>
+
+        {/* Queue Failed Warning Banner */}
+        {(stats?.queueFailedJobs ?? 0) > 0 && (
+          <div className="mt-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
+            <div className="text-sm text-red-700 dark:text-red-400">
+              <p>
+                Des erreurs ont été détectées dans la file de traitement. Vérifiez le tableau de bord{' '}
+                <a
+                  href="http://localhost:3001/admin/queues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                >
+                  BullMQ <ExternalLink size={12} />
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Scoring KPIs Section */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Target size={18} className="text-gray-500 dark:text-gray-400" />
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            KPIs de scoring
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Total Candidates Scored */}
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 transition-all hover:shadow-md hover:-translate-y-0.5">
+            <div className="inline-flex p-2.5 rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 mb-3">
+              <Target size={22} />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {(stats?.totalCandidatesScored ?? 0).toLocaleString('fr-FR')}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
+              Candidats scorés
+            </p>
+          </div>
+
+          {/* Average Platform Score */}
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 transition-all hover:shadow-md hover:-translate-y-0.5">
+            <div className="inline-flex p-2.5 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 mb-3">
+              <Activity size={22} />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {(stats?.averagePlatformScore ?? 0).toFixed(1)}
+              <span className="text-sm font-normal text-gray-400 dark:text-gray-500 ml-1">
+                / 100
+              </span>
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
+              Score moyen plateforme
+            </p>
+          </div>
+
+          {/* Strong Fit Candidates */}
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 transition-all hover:shadow-md hover:-translate-y-0.5">
+            <div className="inline-flex p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 mb-3">
+              <Award size={22} />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {(stats?.strongFitCandidates ?? 0).toLocaleString('fr-FR')}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
+              Candidats forte adéquation
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Suspended Orgs Alert */}

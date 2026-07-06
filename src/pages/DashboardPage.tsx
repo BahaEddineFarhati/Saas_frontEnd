@@ -39,6 +39,11 @@ import {
   fetchParsingStatus,
   fetchOpeningsFunnel,
   type TimeRange,
+  type TimeSeriesPoint,
+  type RecentJobOpening,
+  type ActivityEvent,
+  type ParsingStatusPoint,
+  type FunnelStage,
 } from "../api/dashboardApi";
 import "./dashboard.css";
 
@@ -309,7 +314,7 @@ const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
   });
 
   const timelineAllZero = useMemo(
-    () => timelineQ.data?.every((p) => p.count === 0) ?? false,
+    () => timelineQ.data?.every((p: TimeSeriesPoint) => p.count === 0) ?? false,
     [timelineQ.data]
   );
 
@@ -398,7 +403,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
   const donutQ = useQuery({ queryKey: ["dashboard", "parsing-status"], queryFn: fetchParsingStatus, staleTime: 60_000 });
 
   const donutTotal = useMemo(
-    () => donutQ.data?.reduce((s, d) => s + d.count, 0) ?? 0,
+    () => donutQ.data?.reduce((s: number, d: ParsingStatusPoint) => s + d.count, 0) ?? 0,
     [donutQ.data]
   );
 
@@ -434,7 +439,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
                 strokeWidth={0}
                 isAnimationActive={false}
               >
-                {donutQ.data!.map((entry) => (
+                {donutQ.data!.map((entry: ParsingStatusPoint) => (
                   <Cell key={entry.status} fill={DONUT_COLORS[entry.status] ?? "#ccc"} />
                 ))}
               </Pie>
@@ -443,7 +448,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
           </ResponsiveContainer>
 
           <ul className="db-donut-legend">
-            {donutQ.data!.map((entry) => (
+            {donutQ.data!.map((entry: ParsingStatusPoint) => (
               <li key={entry.status} className="db-donut-legend-item">
                 <span className="db-donut-dot" style={{ background: DONUT_COLORS[entry.status] }} />
                 <span className="db-donut-status">{DONUT_LABELS[entry.status] ?? entry.status}</span>
@@ -463,7 +468,7 @@ const RecruitmentFunnel = memo(function RecruitmentFunnel() {
   const funnelQ = useQuery({ queryKey: ["dashboard", "funnel"], queryFn: fetchOpeningsFunnel, staleTime: 60_000 });
 
   const funnelMax = useMemo(
-    () => funnelQ.data?.reduce((m, s) => Math.max(m, s.count), 0) ?? 0,
+    () => funnelQ.data?.reduce((m: number, s: FunnelStage) => Math.max(m, s.count), 0) ?? 0,
     [funnelQ.data]
   );
 
@@ -568,7 +573,7 @@ const RecentJobsTable = memo(function RecentJobsTable() {
               </tr>
             </thead>
             <tbody>
-              {jobsQ.data!.map((job) => (
+              {jobsQ.data!.map((job: RecentJobOpening) => (
                 <tr key={job.id}>
                   <td>
                     <p className="db-job-title">{job.title}</p>
@@ -632,7 +637,7 @@ const RecentActivityFeed = memo(function RecentActivityFeed() {
         />
       ) : (
         <ul className="db-activity">
-          {activityQ.data!.map((event, i) => (
+          {activityQ.data!.map((event: ActivityEvent, i: number) => (
             <li key={i} className="db-activity-item">
               <span
                 className={`db-act-icon ${ACTIVITY_COLORS[event.type] ?? "act-icon--blue"}`}
