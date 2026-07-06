@@ -343,19 +343,19 @@ export default function JobDetailPage() {
     if (!id) return;
     try {
       const token = await getAuthToken();
-      
+
       // Build query params for sorting and filtering
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("limit", limit.toString());
-      
+
       if (verdictFilter !== "All") {
         params.append("verdict", verdictFilter);
       }
       if (statusFilter !== "All") {
         params.append("status", statusFilter);
       }
-      
+
       let res = await fetch(
         `${API_BASE_URL}/jobs/${id}/candidates?${params.toString()}&_t=${Date.now()}`,
         {
@@ -387,7 +387,7 @@ export default function JobDetailPage() {
         // Handle both structures: data.candidates (with pagination) or data (array)
         let candidatesArray = [];
         let pagination = { page: 1, limit: 10, total: 0, pages: 1 };
-        
+
         if (Array.isArray(resData.data)) {
           // If data is already an array
           candidatesArray = resData.data;
@@ -398,7 +398,7 @@ export default function JobDetailPage() {
         }
 
         console.log("[JobDetailPage] poll candidates response:", candidatesArray.map((c: any) => ({ id: c.id, status: c.status, score: c.score, verdict: c.verdict })));
-        
+
         const loadedCandidates: Candidate[] = candidatesArray.map(
           (candidate: any) => {
             const explanation = candidate.scoreExplanation as Record<string, unknown> | null;
@@ -409,14 +409,14 @@ export default function JobDetailPage() {
               typeof candidate.score === "number"
                 ? candidate.score
                 : candidate.score && !Number.isNaN(Number(candidate.score))
-                ? Number(candidate.score)
-                : undefined;
+                  ? Number(candidate.score)
+                  : undefined;
             const status =
               candidate.status && candidate.status !== ""
                 ? candidate.status
                 : score !== undefined
-                ? "SCORED"
-                : "PENDING";
+                  ? "SCORED"
+                  : "PENDING";
 
             return {
               id: candidate.id,
@@ -672,16 +672,16 @@ export default function JobDetailPage() {
               localStorage.removeItem("linkup_access_token");
               localStorage.removeItem("accessToken");
               token = await getAuthToken();
-              
+
               // Create new FormData for retry
               const retryFormData = new FormData();
               selectedFiles.forEach(({ file }) => {
                 retryFormData.append("files", file);
               });
-              
+
               // Reset progress for retry
               setUploadProgress(0);
-              
+
               // Retry the upload
               performUpload()
                 .then(resolve)
@@ -695,7 +695,7 @@ export default function JobDetailPage() {
               reject(
                 new Error(
                   `Upload échoué (${xhr.status}): ` +
-                    (xhr.responseText || "Erreur serveur")
+                  (xhr.responseText || "Erreur serveur")
                 )
               );
             }
@@ -1068,9 +1068,8 @@ export default function JobDetailPage() {
 
           <div className="jd-header-actions">
             <span
-              className={`db-badge jd-status-badge ${
-                job.status === "OPEN" ? "badge--green" : "badge--gray"
-              }`}
+              className={`db-badge jd-status-badge ${job.status === "OPEN" ? "badge--green" : "badge--gray"
+                }`}
             >
               {job.status === "OPEN" ? "Ouverte" : "Clôturée"}
             </span>

@@ -9,6 +9,13 @@ import {
   ChevronUp,
   FileText,
   ShieldCheck,
+  Download,
+  Briefcase,
+  GraduationCap,
+  Cpu,
+  Globe2,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -165,6 +172,7 @@ export default function CandidateDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedQuestions, setExpandedQuestions] = useState<Record<number, boolean>>({});
   const [rawOpen, setRawOpen] = useState(false);
+  const [activeProfileTab, setActiveProfileTab] = useState<"experience" | "education" | "skills" | "languages">("experience");
 
   const fromJobDetail = useMemo(() => {
     return (location.state as CandidateLocationState | null)?.fromJobDetail === true;
@@ -260,6 +268,44 @@ export default function CandidateDetailPage() {
       setActionError(err?.message || "Erreur lors de la mise à jour du statut.");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDownloadCV = async () => {
+    if (!jobId || !candidateId) return;
+    try {
+      let token = await getAuthToken();
+      let res = await fetch(`${API_BASE_URL}/jobs/${jobId}/candidates/${candidateId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('linkup_access_token');
+        localStorage.removeItem('accessToken');
+        token = await getAuthToken();
+        res = await fetch(`${API_BASE_URL}/jobs/${jobId}/candidates/${candidateId}/download`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Erreur lors du téléchargement (${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Try to get filename from Content-Disposition header
+      const disposition = res.headers.get('Content-Disposition');
+      const match = disposition?.match(/filename[^;=\n]*=(['"]?)([^'"\n;]*)\1/);
+      a.download = match?.[2]?.trim() || `cv-${candidateId}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message || 'Impossible de télécharger le CV');
     }
   };
 
@@ -364,7 +410,7 @@ export default function CandidateDetailPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <button
                 onClick={() => handleStatusUpdate("SHORTLISTED")}
                 disabled={actionLoading || candidate.status === "SHORTLISTED"}
@@ -380,6 +426,16 @@ export default function CandidateDetailPage() {
                 style={{ opacity: candidate.status === "REJECTED" ? 0.55 : 1 }}
               >
                 Rejeter
+              </button>
+              <button
+                onClick={handleDownloadCV}
+                disabled={actionLoading}
+                className="cand-btn-secondary"
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, marginLeft: "auto" }}
+                title="Télécharger le CV"
+              >
+                <Download size={15} strokeWidth={2} />
+                <span>Télécharger le CV</span>
               </button>
             </div>
 
@@ -525,7 +581,8 @@ export default function CandidateDetailPage() {
             )}
           </div>
 
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+          <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
+            {/* Collapsible header */}
             <button
               type="button"
               onClick={() => setRawOpen(!rawOpen)}
@@ -534,114 +591,390 @@ export default function CandidateDetailPage() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 width: "100%",
-                padding: "16px 18px",
-                border: "1px solid var(--lu-border)",
-                borderRadius: 12,
+                padding: "20px 22px",
+                border: "none",
                 background: "var(--lu-bg-page)",
                 cursor: "pointer",
+                textAlign: "left",
               }}
             >
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                 <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-                <div>
-                  <strong>Données brutes du profil</strong>
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em" }}>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                  <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
                     Travail, formation, compétences et langues.
                   </p>
                 </div>
               </div>
-              {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 24 }}>
+                {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </span>
             </button>
+
             {rawOpen && (
-              <div style={{ marginTop: 20, display: "grid", gap: 20 }}>
-                {profileWorkExperience.length > 0 && (
-                  <div>
-                    <h4 style={{ marginBottom: 10 }}>Expérience professionnelle</h4>
-                    {profileWorkExperience.map((item, index) => (
-                      <div key={index} style={{ marginBottom: 16, padding: 16, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                          <strong>{String(item.title || item.position || "")}</strong>
-                          <span style={{ color: "var(--lu-text-secondary)" }}>
-                            {String(item.startDate ?? "")} – {String(item.endDate ?? "Aujourd'hui")}
-                          </span>
-                        </div>
-                        <p style={{ margin: "8px 0 0", color: "var(--lu-text-secondary)" }}>
-                          {String(item.company || item.employer || "Entreprise non spécifiée")}
-                        </p>
-                        {typeof item.description === "string" && (
-                          <p style={{ marginTop: 8, color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {profileEducation.length > 0 && (
-                  <div>
-                    <h4 style={{ marginBottom: 10 }}>Formation</h4>
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {profileEducation.map((item, index) => (
-                        <div key={index} style={{ padding: 16, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
-                          <strong>{String(item.degree || item.fieldOfStudy || "Diplôme inconnu")}</strong>
-                          <p style={{ margin: "6px 0 0", color: "var(--lu-text-secondary)" }}>
-                            {String(item.school || item.institution || "Établissement inconnu")}
-                          </p>
-                          <p style={{ marginTop: 6, color: "var(--lu-text-secondary)" }}>
-                            {String(item.startDate ?? "")} – {String(item.endDate ?? "")}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {profileSkills.length > 0 && (
-                  <div>
-                    <h4 style={{ marginBottom: 10 }}>Compétences</h4>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                      {profileSkills.map((skill, index) => (
-                        <span
-                          key={index}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: 999,
-                            backgroundColor: "var(--lu-bg-secondary)",
-                            color: "var(--lu-text-primary)",
-                            fontSize: "0.9em",
-                          }}
-                        >
-                          {skill}
+              <div style={{ borderTop: "1px solid var(--lu-border)" }}>
+                {/* Tab bar */}
+                <div style={{
+                  display: "flex",
+                  gap: 0,
+                  padding: "0 22px",
+                  borderBottom: "1px solid var(--lu-border)",
+                  backgroundColor: "var(--lu-bg-secondary)",
+                  overflowX: "auto",
+                }}>
+                  {([
+                    { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
+                    { key: "education",  label: "Formation",  icon: <GraduationCap size={14} />, count: profileEducation.length },
+                    { key: "skills",     label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
+                    { key: "languages",  label: "Langues",    icon: <Globe2 size={14} />, count: profileLanguages.length },
+                  ] as const).map(tab => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveProfileTab(tab.key)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 7,
+                        padding: "12px 18px",
+                        border: "none",
+                        borderBottom: activeProfileTab === tab.key
+                          ? "2px solid var(--lu-accent)"
+                          : "2px solid transparent",
+                        background: "none",
+                        color: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-text-secondary)",
+                        fontWeight: activeProfileTab === tab.key ? 600 : 400,
+                        fontSize: "0.9em",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        transition: "color 0.15s, border-color 0.15s",
+                      }}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                      {tab.count > 0 && (
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: 18,
+                          height: 18,
+                          padding: "0 5px",
+                          borderRadius: 999,
+                          fontSize: "0.78em",
+                          fontWeight: 600,
+                          backgroundColor: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-border)",
+                          color: activeProfileTab === tab.key ? "#fff" : "var(--lu-text-secondary)",
+                        }}>
+                          {tab.count}
                         </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-                {profileLanguages.length > 0 && (
-                  <div>
-                    <h4 style={{ marginBottom: 10 }}>Langues</h4>
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {profileLanguages.map((item, index) => (
-                        <div key={index} style={{ padding: 16, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
-                          <strong>{String(item.language || "Langue inconnue")}</strong>
-                          {typeof item.level === "string" && (
-                            <p style={{ margin: "8px 0 0", color: "var(--lu-text-secondary)" }}>
-                              Niveau : {item.level}
-                            </p>
-                          )}
+                {/* Tab content */}
+                <div style={{ padding: "24px 22px" }}>
+
+                  {/* ── EXPERIENCE TAB ── */}
+                  {activeProfileTab === "experience" && (
+                    profileWorkExperience.length > 0 ? (
+                      <div style={{ display: "grid", gap: 16 }}>
+                        {profileWorkExperience.map((item, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              display: "flex",
+                              gap: 16,
+                              padding: 20,
+                              borderRadius: 12,
+                              border: "1px solid var(--lu-border)",
+                              backgroundColor: "var(--lu-bg-page)",
+                            }}
+                          >
+                            {/* Timeline dot */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
+                              <div style={{
+                                width: 36, height: 36, borderRadius: 10,
+                                backgroundColor: "rgba(var(--lu-accent-rgb, 99,102,241), 0.1)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: "var(--lu-accent)",
+                              }}>
+                                <Briefcase size={16} />
+                              </div>
+                              {index < profileWorkExperience.length - 1 && (
+                                <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
+                              )}
+                            </div>
+
+                            {/* Content */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                                <div>
+                                  <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                    {String(item.title || item.position || "Poste non spécifié")}
+                                  </p>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                                    <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                    <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                      {String(item.company || item.employer || "Entreprise non spécifiée")}
+                                      {item.location ? ` · ${String(item.location)}` : ""}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                                  <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
+                                  <span style={{
+                                    fontSize: "0.82em",
+                                    color: "var(--lu-text-secondary)",
+                                    padding: "3px 10px",
+                                    borderRadius: 999,
+                                    backgroundColor: "var(--lu-bg-secondary)",
+                                    whiteSpace: "nowrap",
+                                  }}>
+                                    {String(item.startDate ?? "?")}{" "}–{" "}
+                                    {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Description / responsibilities */}
+                              {typeof item.description === "string" && item.description && (
+                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                  {item.description}
+                                </p>
+                              )}
+                              {Array.isArray(item.responsibilities) && (item.responsibilities as string[]).length > 0 && (
+                                <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                  {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
+                                </ul>
+                              )}
+
+                              {/* Technologies / skills used */}
+                              {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+                                  {(item.technologies as string[]).map((tech, i) => (
+                                    <span key={i} style={{
+                                      padding: "3px 10px",
+                                      borderRadius: 999,
+                                      fontSize: "0.8em",
+                                      fontWeight: 500,
+                                      backgroundColor: "var(--lu-bg-secondary)",
+                                      color: "var(--lu-accent)",
+                                      border: "1px solid var(--lu-border)",
+                                    }}>{tech}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                        <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                        <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
+                      </div>
+                    )
+                  )}
+
+                  {/* ── EDUCATION TAB ── */}
+                  {activeProfileTab === "education" && (
+                    profileEducation.length > 0 ? (
+                      <div style={{ display: "grid", gap: 16 }}>
+                        {profileEducation.map((item, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              display: "flex",
+                              gap: 16,
+                              padding: 20,
+                              borderRadius: 12,
+                              border: "1px solid var(--lu-border)",
+                              backgroundColor: "var(--lu-bg-page)",
+                            }}
+                          >
+                            {/* Icon */}
+                            <div style={{ flexShrink: 0, paddingTop: 4 }}>
+                              <div style={{
+                                width: 36, height: 36, borderRadius: 10,
+                                backgroundColor: "rgba(34,197,94,0.1)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: "#16a34a",
+                              }}>
+                                <GraduationCap size={16} />
+                              </div>
+                            </div>
+
+                            {/* Content */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
+                              </p>
+                              {Boolean(item.fieldOfStudy && item.degree) && (
+                                <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
+                                  {String(item.fieldOfStudy)}
+                                </p>
+                              )}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
+                                <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                  {String(item.school || item.institution || item.university || "Établissement non spécifié")}
+                                  {item.location ? ` · ${String(item.location)}` : ""}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+                                <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
+                                <span style={{
+                                  fontSize: "0.82em",
+                                  color: "var(--lu-text-secondary)",
+                                  padding: "3px 10px",
+                                  borderRadius: 999,
+                                  backgroundColor: "var(--lu-bg-secondary)",
+                                }}>
+                                  {item.startDate || item.endDate
+                                    ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
+                                    : "Dates non renseignées"}
+                                </span>
+                              </div>
+                              {typeof item.description === "string" && item.description && (
+                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                  {item.description}
+                                </p>
+                              )}
+                              {typeof item.grade === "string" && item.grade && (
+                                <span style={{
+                                  display: "inline-block", marginTop: 10,
+                                  padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
+                                  fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
+                                }}>
+                                  Mention : {item.grade}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                        <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                        <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
+                      </div>
+                    )
+                  )}
+
+                  {/* ── SKILLS TAB ── */}
+                  {activeProfileTab === "skills" && (
+                    profileSkills.length > 0 ? (
+                      <div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                          {profileSkills.map((skill, index) => (
+                            <span
+                              key={index}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "7px 14px",
+                                borderRadius: 999,
+                                fontSize: "0.9em",
+                                fontWeight: 500,
+                                backgroundColor: "var(--lu-bg-secondary)",
+                                color: "var(--lu-text-primary)",
+                                border: "1px solid var(--lu-border)",
+                                transition: "background 0.15s",
+                              }}
+                            >
+                              <Cpu size={12} style={{ color: "var(--lu-accent)", flexShrink: 0 }} />
+                              {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
+                            </span>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                          {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                        <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                        <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
+                      </div>
+                    )
+                  )}
 
-                {profileWorkExperience.length === 0 && profileEducation.length === 0 && profileSkills.length === 0 && profileLanguages.length === 0 && (
-                  <div style={{ padding: 16, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)", color: "var(--lu-text-secondary)" }}>
-                    Aucune donnée de profil structurée disponible.
-                  </div>
-                )}
+                  {/* ── LANGUAGES TAB ── */}
+                  {activeProfileTab === "languages" && (
+                    profileLanguages.length > 0 ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                        {profileLanguages.map((item, index) => {
+                          const langName = String(item.language || item.name || "Langue inconnue");
+                          const level = typeof item.level === "string" ? item.level : null;
+                          const levelColors: Record<string, { bg: string; text: string }> = {
+                            "native": { bg: "#dcfce7", text: "#166534" },
+                            "natif": { bg: "#dcfce7", text: "#166534" },
+                            "fluent": { bg: "#dbeafe", text: "#1e40af" },
+                            "courant": { bg: "#dbeafe", text: "#1e40af" },
+                            "professional": { bg: "#dbeafe", text: "#1e40af" },
+                            "intermediate": { bg: "#fef3c7", text: "#92400e" },
+                            "intermédiaire": { bg: "#fef3c7", text: "#92400e" },
+                            "basic": { bg: "#fee2e2", text: "#991b1b" },
+                            "débutant": { bg: "#fee2e2", text: "#991b1b" },
+                          };
+                          const levelStyle = level
+                            ? (levelColors[level.toLowerCase()] || { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" })
+                            : null;
+                          return (
+                            <div
+                              key={index}
+                              style={{
+                                padding: 18,
+                                borderRadius: 12,
+                                border: "1px solid var(--lu-border)",
+                                backgroundColor: "var(--lu-bg-page)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 10,
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{
+                                  width: 34, height: 34, borderRadius: 10,
+                                  backgroundColor: "rgba(99,102,241,0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: "var(--lu-accent)", flexShrink: 0,
+                                }}>
+                                  <Globe2 size={16} />
+                                </div>
+                                <strong style={{ fontSize: "1rem", color: "var(--lu-text-primary)" }}>{langName}</strong>
+                              </div>
+                              {levelStyle && level && (
+                                <span style={{
+                                  alignSelf: "flex-start",
+                                  padding: "4px 12px",
+                                  borderRadius: 999,
+                                  fontSize: "0.82em",
+                                  fontWeight: 600,
+                                  backgroundColor: levelStyle.bg,
+                                  color: levelStyle.text,
+                                  textTransform: "capitalize",
+                                }}>
+                                  {level}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                        <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                        <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
+                      </div>
+                    )
+                  )}
+
+                </div>
               </div>
             )}
           </div>

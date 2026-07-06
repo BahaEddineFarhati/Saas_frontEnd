@@ -429,28 +429,30 @@ export default function CandidaturesPage() {
                       </span>
                     </td>
                     <td className="db-td-num">{job.candidateCount}</td>
-                    <td className="db-td-link" style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <a
-                        href={`/candidatures/${job.id}`}
-                        className="db-open-link"
-                        aria-label={`Ouvrir ${job.title}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                      >
-                        <ExternalLink size={13} strokeWidth={2} />
-                        <span>Ouvrir</span>
-                      </a>
+                    <td className="db-td-link">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, minHeight: 24 }}>
+                        <a
+                          href={`/candidatures/${job.id}`}
+                          className="db-open-link"
+                          aria-label={`Ouvrir ${job.title}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 28 }}
+                        >
+                          <ExternalLink size={13} strokeWidth={2} />
+                          <span>Ouvrir</span>
+                        </a>
 
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setJobToDelete(job);
-                        }}
-                        className="cand-btn-danger"
-                        title={`Supprimer ${job.title}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12 }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setJobToDelete(job);
+                          }}
+                          className="cand-btn-danger"
+                          title={`Supprimer ${job.title}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 28, width: 28, padding: 0 }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
