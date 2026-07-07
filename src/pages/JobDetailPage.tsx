@@ -14,6 +14,7 @@ import {
   XCircle,
   Trash2,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 
 // ── Config ──────────────────────────────────────────────
@@ -256,13 +257,16 @@ export default function JobDetailPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
-  const [, setIsPolling] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [showDeleteJobConfirm, setShowDeleteJobConfirm] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
   const [isDeletingCandidate, setIsDeletingCandidate] = useState(false);
   const [deleteCandidateError, setDeleteCandidateError] = useState<string | null>(null);
+
+  // PDF export state
+  const [isExporting, setIsExporting] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -547,9 +551,12 @@ export default function JobDetailPage() {
     }
   }, [scoringStatus?.scoringStatus]);
 
-  // Load job data when component mounts
+  // Load job data and scoring status when component mounts
   useEffect(() => {
-    if (id) fetchJob();
+    if (id) {
+      fetchJob();
+      fetchScoringStatus();
+    }
   }, [id]);
 
   // ── Close job handler ─────────────────────────────────
@@ -750,16 +757,32 @@ export default function JobDetailPage() {
 
     // Start polling for scoring status too
     startScoringStatusPolling();
-
-    const poll = async () => {
-      if (!id) return;
-      await fetchCandidates(1, 1000);
-    };
-
-    // Create the interval before the initial fetch so fetchCandidates can detect active polling
-    pollingIntervalRef.current = setInterval(poll, 3000);
-    poll();
   };
+
+  // Run candidate polling on interval when polling is active
+  useEffect(() => {
+    if (!id) return;
+
+    if (!pollingIntervalRef.current && (candidates.some((candidate) => candidate.status === "PENDING") || isPolling)) {
+      setIsPolling(true);
+      startScoringStatusPolling();
+
+      const poll = () => {
+        fetchCandidates(currentPage, CANDIDATES_PER_PAGE);
+      };
+
+      pollingIntervalRef.current = setInterval(poll, 3000);
+      poll();
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, currentPage, verdictFilter, statusFilter, sortBy, candidates.some((candidate) => candidate.status === "PENDING"), isPolling]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -901,6 +924,99 @@ export default function JobDetailPage() {
     } finally {
       setIsDeletingJob(false);
       setShowDeleteJobConfirm(false);
+    }
+  };
+
+  // ── PDF export handler ────────────────────────────────────
+  const handleExportPdf = async () => {
+    if (!id || isExporting) return;
+    try {
+      setIsExporting(true);
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("Impossible de récupérer le token d'authentification.");
+      }
+
+      const res = await fetch(`${API_BASE_URL}/jobs/${id}/export/pdf`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/pdf",
+        },
+      });
+
+      // Log response details for debugging
+      console.log("[PDF Export] Response status:", res.status, res.statusText);
+      console.log("[PDF Export] Content-Type:", res.headers.get("content-type"));
+
+      if (!res.ok) {
+        // Try to read error message from JSON body
+        let errorMsg = `Erreur serveur (${res.status})`;
+        try {
+          const text = await res.text();
+          const errData = JSON.parse(text);
+          if (errData?.error?.message) {
+            errorMsg = errData.error.message;
+          }
+        } catch {
+          // Response wasn't JSON, keep default error message
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Verify Content-Type is actually PDF
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/pdf")) {
+        console.error("[PDF Export] Wrong content-type:", contentType);
+        throw new Error(
+          `Le serveur n'a pas renvoyé un PDF (content-type: ${contentType}). Réessayez.`
+        );
+      }
+
+      // Read the response as an ArrayBuffer for maximum reliability
+      const arrayBuffer = await res.arrayBuffer();
+
+      console.log("[PDF Export] ArrayBuffer size:", arrayBuffer.byteLength);
+
+      // Verify we got actual content
+      if (arrayBuffer.byteLength < 100) {
+        throw new Error("Le fichier PDF généré semble vide ou corrompu.");
+      }
+
+      // Verify PDF magic bytes (%PDF-)
+      const header = new Uint8Array(arrayBuffer.slice(0, 5));
+      const pdfMagic = String.fromCharCode(...header);
+      if (pdfMagic !== "%PDF-") {
+        console.error("[PDF Export] Invalid PDF header:", pdfMagic);
+        throw new Error("Le fichier téléchargé n'est pas un PDF valide.");
+      }
+
+      // Create a proper PDF blob and trigger download
+      const pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+
+      const fileName = `export-resultats-${id}.pdf`;
+
+      const link = document.createElement("a");
+      link.style.display = "none";
+      link.href = blobUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup after a generous delay so the download can start
+      window.setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 5000);
+
+      console.log("[PDF Export] Download triggered:", fileName, pdfBlob.size, "bytes");
+    } catch (err: any) {
+      console.error("[PDF Export] Error:", err);
+      alert(err.message || "Impossible d'exporter le PDF.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -1179,16 +1295,61 @@ export default function JobDetailPage() {
 
       {/* ── Candidates section ── */}
       <div className="db-card" id="candidates-section">
-        <div className="jd-section-header">
-          <Users
-            size={16}
-            strokeWidth={2}
-            style={{ color: "var(--lu-accent)" }}
-          />
-          <h3 className="jd-section-title">
-            Candidats{" "}
-            <span className="jd-section-count">({candidates.length})</span>
-          </h3>
+        <div className="jd-section-header" style={{ justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Users
+              size={16}
+              strokeWidth={2}
+              style={{ color: "var(--lu-accent)" }}
+            />
+            <h3 className="jd-section-title">
+              Candidats{" "}
+              <span className="jd-section-count">({candidates.length})</span>
+            </h3>
+          </div>
+          <button
+            onClick={handleExportPdf}
+            disabled={!scoringStatus || scoringStatus.scoredCount === 0 || isExporting}
+            title={
+              !scoringStatus || scoringStatus.scoredCount === 0
+                ? "Aucun résultat à exporter"
+                : "Exporter les résultats en PDF"
+            }
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "7px 14px",
+              fontSize: "13px",
+              fontWeight: 500,
+              borderRadius: "8px",
+              border: "1px solid var(--lu-border)",
+              backgroundColor:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? "var(--lu-bg-secondary)"
+                  : "var(--lu-accent)",
+              color:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? "var(--lu-text-muted)"
+                  : "#ffffff",
+              cursor:
+                !scoringStatus || scoringStatus.scoredCount === 0 || isExporting
+                  ? "not-allowed"
+                  : "pointer",
+              opacity:
+                !scoringStatus || scoringStatus.scoredCount === 0
+                  ? 0.6
+                  : 1,
+              transition: "all 0.2s ease",
+            }}
+          >
+            {isExporting ? (
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+            ) : (
+              <Download size={14} />
+            )}
+            {isExporting ? "Export en cours…" : "Exporter en PDF"}
+          </button>
         </div>
 
         {/* File validation errors */}
