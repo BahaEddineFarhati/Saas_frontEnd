@@ -257,7 +257,7 @@ export default function JobDetailPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileValidationErrors, setFileValidationErrors] = useState<FileValidationError[]>([]);
-  const [, setIsPolling] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [showDeleteJobConfirm, setShowDeleteJobConfirm] = useState(false);
@@ -757,16 +757,32 @@ export default function JobDetailPage() {
 
     // Start polling for scoring status too
     startScoringStatusPolling();
-
-    const poll = async () => {
-      if (!id) return;
-      await fetchCandidates(1, 1000);
-    };
-
-    // Create the interval before the initial fetch so fetchCandidates can detect active polling
-    pollingIntervalRef.current = setInterval(poll, 3000);
-    poll();
   };
+
+  // Run candidate polling on interval when polling is active
+  useEffect(() => {
+    if (!id) return;
+
+    if (!pollingIntervalRef.current && (candidates.some((candidate) => candidate.status === "PENDING") || isPolling)) {
+      setIsPolling(true);
+      startScoringStatusPolling();
+
+      const poll = () => {
+        fetchCandidates(currentPage, CANDIDATES_PER_PAGE);
+      };
+
+      pollingIntervalRef.current = setInterval(poll, 3000);
+      poll();
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, currentPage, verdictFilter, statusFilter, sortBy, candidates.some((candidate) => candidate.status === "PENDING"), isPolling]);
 
   // Cleanup polling on unmount
   useEffect(() => {
