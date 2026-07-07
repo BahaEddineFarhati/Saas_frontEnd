@@ -918,16 +918,28 @@ export default function JobDetailPage() {
       setIsExporting(true);
       const token = await getAuthToken();
 
+      if (!token) {
+        throw new Error("Impossible de récupérer le token d'authentification.");
+      }
+
       const res = await fetch(`${API_BASE_URL}/jobs/${id}/export/pdf`, {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/pdf",
+        },
       });
+
+      // Log response details for debugging
+      console.log("[PDF Export] Response status:", res.status, res.statusText);
+      console.log("[PDF Export] Content-Type:", res.headers.get("content-type"));
 
       if (!res.ok) {
         // Try to read error message from JSON body
         let errorMsg = `Erreur serveur (${res.status})`;
         try {
-          const errData = await res.json();
+          const text = await res.text();
+          const errData = JSON.parse(text);
           if (errData?.error?.message) {
             errorMsg = errData.error.message;
           }
@@ -937,26 +949,53 @@ export default function JobDetailPage() {
         throw new Error(errorMsg);
       }
 
-      // Get the response as a blob — NOT json or text
-      const blob = await res.blob();
+      // Verify Content-Type is actually PDF
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/pdf")) {
+        console.error("[PDF Export] Wrong content-type:", contentType);
+        throw new Error(
+          `Le serveur n'a pas renvoyé un PDF (content-type: ${contentType}). Réessayez.`
+        );
+      }
 
-      // Verify we got a PDF (sanity check)
-      if (blob.size < 100) {
+      // Read the response as an ArrayBuffer for maximum reliability
+      const arrayBuffer = await res.arrayBuffer();
+
+      console.log("[PDF Export] ArrayBuffer size:", arrayBuffer.byteLength);
+
+      // Verify we got actual content
+      if (arrayBuffer.byteLength < 100) {
         throw new Error("Le fichier PDF généré semble vide ou corrompu.");
       }
 
-      // Create a proper PDF blob and trigger download
-      const pdfBlob = new Blob([blob], { type: "application/pdf" });
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `export-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Verify PDF magic bytes (%PDF-)
+      const header = new Uint8Array(arrayBuffer.slice(0, 5));
+      const pdfMagic = String.fromCharCode(...header);
+      if (pdfMagic !== "%PDF-") {
+        console.error("[PDF Export] Invalid PDF header:", pdfMagic);
+        throw new Error("Le fichier téléchargé n'est pas un PDF valide.");
+      }
 
-      // Revoke the object URL after a short delay to ensure download starts
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // Create a proper PDF blob and trigger download
+      const pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+
+      const fileName = `export-resultats-${id}.pdf`;
+
+      const link = document.createElement("a");
+      link.style.display = "none";
+      link.href = blobUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup after a generous delay so the download can start
+      window.setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 5000);
+
+      console.log("[PDF Export] Download triggered:", fileName, pdfBlob.size, "bytes");
     } catch (err: any) {
       console.error("[PDF Export] Error:", err);
       alert(err.message || "Impossible d'exporter le PDF.");
