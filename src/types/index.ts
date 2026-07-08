@@ -17,6 +17,8 @@ export interface AuthContextType {
   setIsOrgSuspended: (v: boolean) => void;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
+  updateUserProfile: (userData: Partial<User>, newAccessToken?: string, newRefreshToken?: string) => void;
+  updateTokens: (newAccessToken: string, newRefreshToken: string) => void;
   restoreSession: () => Promise<void>;
   logout: () => Promise<void>;
 }

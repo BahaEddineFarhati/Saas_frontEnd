@@ -41,6 +41,12 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      const errorCode = (error.response.data as any)?.error?.code;
+
+      if (errorCode === 'PROFILE_WRONG_PASSWORD') {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
@@ -60,7 +66,7 @@ apiClient.interceptors.response.use(
               {},
               { withCredentials: true }
             );
-            const newAccessToken = response.data.accessToken;
+            const newAccessToken = response.data.data.accessToken;
             setGlobalAccessToken(newAccessToken);
             window.dispatchEvent(
               new CustomEvent('tokenRefreshed', { detail: { token: newAccessToken } })
