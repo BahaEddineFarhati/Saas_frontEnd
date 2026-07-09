@@ -13,6 +13,8 @@ import SettingsPage from "./SettingsPage";
 import EntreprisePage from "./pages/EntreprisePage";
 import Login from "./pages/Login";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import GuestRoute from "./components/GuestRoute";
 import AdminRoute from "./components/AdminRoute";
 import SuperAdminRoute from "./components/SuperAdminRoute";
@@ -162,6 +164,22 @@ function AppContent({
           element={
             <GuestRoute>
               <Login />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestRoute>
+              <ForgotPassword />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <GuestRoute>
+              <ResetPassword />
             </GuestRoute>
           }
         />

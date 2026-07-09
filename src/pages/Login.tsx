@@ -159,6 +159,9 @@ export default function Login() {
                 } rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`}
               />
               {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
+              <div className="flex justify-end mt-2">
+                <Link to="/forgot-password" className="text-sm text-gray-400 underline">Mot de passe oublié ?</Link>
+              </div>
             </div>
 
             <button
