@@ -104,6 +104,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Update user profile information and optionally tokens.
+   * Used after successful profile updates.
+   * Updates both state and localStorage.
+   */
+  const updateUserProfile = useCallback((
+    userData: Partial<User>,
+    newAccessToken?: string,
+    newRefreshToken?: string
+  ) => {
+    setUser((prevUser) => {
+      if (!prevUser) return prevUser;
+      const updatedUser = { ...prevUser, ...userData };
+      
+      // Update localStorage
+      localStorage.setItem('userFirstName', updatedUser.firstName);
+      if (updatedUser.lastName) {
+        localStorage.setItem('userLastName', updatedUser.lastName);
+      }
+      localStorage.setItem('userEmail', updatedUser.email);
+      const fullName = `${updatedUser.firstName} ${updatedUser.lastName || ''}`.trim();
+      localStorage.setItem('userFullName', fullName);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    });
+
+    if (newAccessToken) {
+      localStorage.setItem('accessToken', newAccessToken);
+      setAccessToken(newAccessToken);
+    }
+
+    if (newRefreshToken) {
+      localStorage.setItem('refreshToken', newRefreshToken);
+    }
+  }, []);
+
+  /**
+   * Update tokens without changing user profile.
+   * Used after password changes or email changes.
+   * Updates both state and localStorage.
+   */
+  const updateTokens = useCallback((
+    newAccessToken: string,
+    newRefreshToken: string
+  ) => {
+    localStorage.setItem('accessToken', newAccessToken);
+    localStorage.setItem('refreshToken', newRefreshToken);
+    setAccessToken(newAccessToken);
+  }, []);
+
+  /**
    * Clear user and token on logout
    */
   const logout = useCallback(async () => {
@@ -178,6 +229,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsOrgSuspended,
     setUser,
     setAccessToken,
+    updateUserProfile,
+    updateTokens,
     restoreSession,
     logout,
   };

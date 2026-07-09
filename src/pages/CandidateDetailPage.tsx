@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowUpRight,
   Loader2,
   XCircle,
   Star,
@@ -16,6 +17,8 @@ import {
   Globe2,
   MapPin,
   Calendar,
+  GitCompare,
+  X,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -42,6 +45,15 @@ interface CandidateDetail {
   };
   summary: string | null;
   interviewQuestions: Array<{ question: string; rationale: string }>;
+}
+
+interface PickerCandidate {
+  id: string;
+  firstName: string;
+  lastName: string;
+  score: number | null;
+  scoreExplanation: Record<string, unknown> | null;
+  verdict?: string;
 }
 
 function getScoreBadgeColor(score: number | null) {
@@ -174,6 +186,15 @@ export default function CandidateDetailPage() {
   const [rawOpen, setRawOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState<"experience" | "education" | "skills" | "languages">("experience");
 
+  // ── Comparison state ──
+  const [compareMode, setCompareMode] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [compareCandidate, setCompareCandidate] = useState<CandidateDetail | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [pickerCandidates, setPickerCandidates] = useState<PickerCandidate[]>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerLoading, setPickerLoading] = useState(false);
+
   const fromJobDetail = useMemo(() => {
     return (location.state as CandidateLocationState | null)?.fromJobDetail === true;
   }, [location.state]);
@@ -259,9 +280,9 @@ export default function CandidateDetailPage() {
       setCandidate((prev) =>
         prev
           ? {
-              ...prev,
-              status: body.data.status,
-            }
+            ...prev,
+            status: body.data.status,
+          }
           : prev
       );
     } catch (err: any) {
@@ -315,6 +336,66 @@ export default function CandidateDetailPage() {
       [index]: !prev[index],
     }));
   };
+
+  // ── Comparison handlers ──
+  const handleOpenPicker = useCallback(async () => {
+    if (!jobId || !candidateId) return;
+    setPickerOpen(true);
+    setPickerSearch("");
+    setPickerLoading(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(
+        `${API_BASE_URL}/jobs/${jobId}/candidates?excludeId=${candidateId}&limit=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Impossible de charger les candidats.");
+      const body = await res.json();
+      setPickerCandidates(body?.data?.candidates ?? []);
+    } catch {
+      setPickerCandidates([]);
+    } finally {
+      setPickerLoading(false);
+    }
+  }, [jobId, candidateId]);
+
+  const handleSelectCompare = useCallback(async (selectedId: string) => {
+    if (!jobId || !candidateId) return;
+    setPickerOpen(false);
+    setCompareLoading(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(
+        `${API_BASE_URL}/jobs/${jobId}/candidates/compare?ids=${candidateId},${selectedId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Impossible de comparer les candidats.");
+      const body = await res.json();
+      if (body?.data?.length === 2) {
+        // Update current candidate data with fresh data
+        setCandidate(body.data[0]);
+        setCompareCandidate(body.data[1]);
+        setCompareMode(true);
+      }
+    } catch (err: any) {
+      setActionError(err?.message || "Erreur lors de la comparaison.");
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [jobId, candidateId]);
+
+  const handleExitCompare = useCallback(() => {
+    setCompareMode(false);
+    setCompareCandidate(null);
+  }, []);
+
+  const filteredPickerCandidates = useMemo(() => {
+    if (!pickerSearch.trim()) return pickerCandidates;
+    const q = pickerSearch.toLowerCase();
+    return pickerCandidates.filter((c) =>
+      `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)
+    );
+  }, [pickerCandidates, pickerSearch]);
 
   const profileWorkExperience = Array.isArray(candidate?.profile?.workExperience)
     ? (candidate?.profile?.workExperience as Array<Record<string, unknown>>)
@@ -428,6 +509,15 @@ export default function CandidateDetailPage() {
                 Rejeter
               </button>
               <button
+                onClick={handleOpenPicker}
+                disabled={actionLoading || compareLoading || compareMode}
+                className="cand-btn-compare"
+                id="compare-trigger-btn"
+              >
+                <GitCompare size={15} strokeWidth={2} />
+                <span>Comparer avec un autre candidat</span>
+              </button>
+              <button
                 onClick={handleDownloadCV}
                 disabled={actionLoading}
                 className="cand-btn-secondary"
@@ -446,284 +536,383 @@ export default function CandidateDetailPage() {
             )}
           </div>
 
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Résumé AI</h3>
-            </div>
-            <div style={{ minHeight: 120, padding: 18, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
-              {candidate.summary ? (
-                <p style={{ margin: 0, lineHeight: 1.7 }}>{candidate.summary}</p>
-              ) : (
-                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                  Résumé non disponible pour le moment.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Analyse du score</h3>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div>
-                <h4 style={{ marginBottom: 12 }}>Critères satisfaits</h4>
-                {candidate.scoring.matchedCriteria.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
-                    {candidate.scoring.matchedCriteria.map((item, index) => (
-                      <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                        <span style={{ color: "#16a34a", marginTop: 2 }}>✓</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère satisfait</p>
-                )}
+          {!compareMode && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <FileText size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Résumé AI</h3>
               </div>
-
-              <div>
-                <h4 style={{ marginBottom: 12 }}>Critères manquants</h4>
-                {candidate.scoring.missingCriteria.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
-                    {candidate.scoring.missingCriteria.map((item, index) => (
-                      <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                        <span style={{ color: "#dc2626", marginTop: 2 }}>✕</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div style={{ minHeight: 120, padding: 18, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
+                {candidate.summary ? (
+                  <p style={{ margin: 0, lineHeight: 1.7 }}>{candidate.summary}</p>
                 ) : (
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère manquant</p>
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
+                    Résumé non disponible pour le moment.
+                  </p>
                 )}
               </div>
             </div>
-            <div style={{ marginTop: 20 }}>
-              <h4 style={{ marginBottom: 12 }}>Points forts</h4>
-              {candidate.scoring.strengths.length > 0 ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  {candidate.scoring.strengths.map((item, index) => (
+          )}
+
+          {!compareMode && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Analyse du score</h3>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Critères satisfaits</h4>
+                  {candidate.scoring.matchedCriteria.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
+                      {candidate.scoring.matchedCriteria.map((item, index) => (
+                        <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                          <span style={{ color: "#16a34a", marginTop: 2 }}>✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère satisfait</p>
+                  )}
+                </div>
+
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Critères manquants</h4>
+                  {candidate.scoring.missingCriteria.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
+                      {candidate.scoring.missingCriteria.map((item, index) => (
+                        <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                          <span style={{ color: "#dc2626", marginTop: 2 }}>✕</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère manquant</p>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ marginBottom: 12 }}>Points forts</h4>
+                {candidate.scoring.strengths.length > 0 ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {candidate.scoring.strengths.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          backgroundColor: "var(--lu-bg-secondary)",
+                        }}
+                      >
+                        <Star size={16} style={{ color: "#f59e0b" }} />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun point fort identifié</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!compareMode && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Questions d'entretien</h3>
+              </div>
+              {candidate.interviewQuestions.length > 0 ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {candidate.interviewQuestions.map((questionItem, index) => (
                     <div
                       key={index}
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        backgroundColor: "var(--lu-bg-secondary)",
+                        border: "1px solid var(--lu-border)",
+                        borderRadius: 12,
+                        padding: 16,
+                        backgroundColor: "var(--lu-bg-page)",
                       }}
                     >
-                      <Star size={16} style={{ color: "#f59e0b" }} />
-                      <span>{item}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleQuestion(index)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          color: "inherit",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <strong>{index + 1}. </strong>
+                          {questionItem.question}
+                        </div>
+                        {expandedQuestions[index] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                      {expandedQuestions[index] && (
+                        <p style={{ marginTop: 12, color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                          {questionItem.rationale}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun point fort identifié</p>
+                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
+                  Les questions d'entretien ne sont pas encore disponibles.
+                </p>
               )}
             </div>
-          </div>
+          )}
 
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Questions d'entretien</h3>
-            </div>
-            {candidate.interviewQuestions.length > 0 ? (
-              <div style={{ display: "grid", gap: 12 }}>
-                {candidate.interviewQuestions.map((questionItem, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      border: "1px solid var(--lu-border)",
-                      borderRadius: 12,
-                      padding: 16,
-                      backgroundColor: "var(--lu-bg-page)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleQuestion(index)}
-                      style={{
-                        width: "100%",
-                        textAlign: "left",
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        color: "inherit",
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <strong>{index + 1}. </strong>
-                        {questionItem.question}
-                      </div>
-                      {expandedQuestions[index] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                    {expandedQuestions[index] && (
-                      <p style={{ marginTop: 12, color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                        {questionItem.rationale}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                Les questions d'entretien ne sont pas encore disponibles.
-              </p>
-            )}
-          </div>
-
-          <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
-            {/* Collapsible header */}
-            <button
-              type="button"
-              onClick={() => setRawOpen(!rawOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                padding: "20px 22px",
-                border: "none",
-                background: "var(--lu-bg-page)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                  <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
-                    Travail, formation, compétences et langues.
-                  </p>
-                </div>
-              </div>
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 24 }}>
-                {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-              </span>
-            </button>
-
-            {rawOpen && (
-              <div style={{ borderTop: "1px solid var(--lu-border)" }}>
-                {/* Tab bar */}
-                <div style={{
+          {/* ── Raw profile data (hidden in compare mode) ── */}
+          {!compareMode && (
+            <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
+              {/* Collapsible header */}
+              <button
+                type="button"
+                onClick={() => setRawOpen(!rawOpen)}
+                style={{
                   display: "flex",
-                  gap: 0,
-                  padding: "0 22px",
-                  borderBottom: "1px solid var(--lu-border)",
-                  backgroundColor: "var(--lu-bg-secondary)",
-                  overflowX: "auto",
-                }}>
-                  {([
-                    { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
-                    { key: "education",  label: "Formation",  icon: <GraduationCap size={14} />, count: profileEducation.length },
-                    { key: "skills",     label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
-                    { key: "languages",  label: "Langues",    icon: <Globe2 size={14} />, count: profileLanguages.length },
-                  ] as const).map(tab => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setActiveProfileTab(tab.key)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 7,
-                        padding: "12px 18px",
-                        border: "none",
-                        borderBottom: activeProfileTab === tab.key
-                          ? "2px solid var(--lu-accent)"
-                          : "2px solid transparent",
-                        background: "none",
-                        color: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-text-secondary)",
-                        fontWeight: activeProfileTab === tab.key ? 600 : 400,
-                        fontSize: "0.9em",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        transition: "color 0.15s, border-color 0.15s",
-                      }}
-                    >
-                      {tab.icon}
-                      {tab.label}
-                      {tab.count > 0 && (
-                        <span style={{
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  padding: "20px 22px",
+                  border: "none",
+                  background: "var(--lu-bg-page)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  <FileText size={18} style={{ color: "var(--lu-accent)" }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                    <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
+                      Travail, formation, compétences et langues.
+                    </p>
+                  </div>
+                </div>
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 24 }}>
+                  {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </span>
+              </button>
+
+              {rawOpen && (
+                <div style={{ borderTop: "1px solid var(--lu-border)" }}>
+                  {/* Tab bar */}
+                  <div style={{
+                    display: "flex",
+                    gap: 0,
+                    padding: "0 22px",
+                    borderBottom: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-secondary)",
+                    overflowX: "auto",
+                  }}>
+                    {([
+                      { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
+                      { key: "education", label: "Formation", icon: <GraduationCap size={14} />, count: profileEducation.length },
+                      { key: "skills", label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
+                      { key: "languages", label: "Langues", icon: <Globe2 size={14} />, count: profileLanguages.length },
+                    ] as const).map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveProfileTab(tab.key)}
+                        style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          minWidth: 18,
-                          height: 18,
-                          padding: "0 5px",
-                          borderRadius: 999,
-                          fontSize: "0.78em",
-                          fontWeight: 600,
-                          backgroundColor: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-border)",
-                          color: activeProfileTab === tab.key ? "#fff" : "var(--lu-text-secondary)",
-                        }}>
-                          {tab.count}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                          gap: 7,
+                          padding: "12px 18px",
+                          border: "none",
+                          borderBottom: activeProfileTab === tab.key
+                            ? "2px solid var(--lu-accent)"
+                            : "2px solid transparent",
+                          background: "none",
+                          color: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-text-secondary)",
+                          fontWeight: activeProfileTab === tab.key ? 600 : 400,
+                          fontSize: "0.9em",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          transition: "color 0.15s, border-color 0.15s",
+                        }}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 18,
+                            height: 18,
+                            padding: "0 5px",
+                            borderRadius: 999,
+                            fontSize: "0.78em",
+                            fontWeight: 600,
+                            backgroundColor: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-border)",
+                            color: activeProfileTab === tab.key ? "#fff" : "var(--lu-text-secondary)",
+                          }}>
+                            {tab.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
 
-                {/* Tab content */}
-                <div style={{ padding: "24px 22px" }}>
+                  {/* Tab content */}
+                  <div style={{ padding: "24px 22px" }}>
 
-                  {/* ── EXPERIENCE TAB ── */}
-                  {activeProfileTab === "experience" && (
-                    profileWorkExperience.length > 0 ? (
-                      <div style={{ display: "grid", gap: 16 }}>
-                        {profileWorkExperience.map((item, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              gap: 16,
-                              padding: 20,
-                              borderRadius: 12,
-                              border: "1px solid var(--lu-border)",
-                              backgroundColor: "var(--lu-bg-page)",
-                            }}
-                          >
-                            {/* Timeline dot */}
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
-                              <div style={{
-                                width: 36, height: 36, borderRadius: 10,
-                                backgroundColor: "rgba(var(--lu-accent-rgb, 99,102,241), 0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "var(--lu-accent)",
-                              }}>
-                                <Briefcase size={16} />
+                    {/* ── EXPERIENCE TAB ── */}
+                    {activeProfileTab === "experience" && (
+                      profileWorkExperience.length > 0 ? (
+                        <div style={{ display: "grid", gap: 16 }}>
+                          {profileWorkExperience.map((item, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                display: "flex",
+                                gap: 16,
+                                padding: 20,
+                                borderRadius: 12,
+                                border: "1px solid var(--lu-border)",
+                                backgroundColor: "var(--lu-bg-page)",
+                              }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: 10,
+                                  backgroundColor: "rgba(var(--lu-accent-rgb, 99,102,241), 0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: "var(--lu-accent)",
+                                }}>
+                                  <Briefcase size={16} />
+                                </div>
+                                {index < profileWorkExperience.length - 1 && (
+                                  <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
+                                )}
                               </div>
-                              {index < profileWorkExperience.length - 1 && (
-                                <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
-                              )}
-                            </div>
-
-                            {/* Content */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-                                <div>
-                                  <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                    {String(item.title || item.position || "Poste non spécifié")}
-                                  </p>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                                    <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
-                                    <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                      {String(item.company || item.employer || "Entreprise non spécifiée")}
-                                      {item.location ? ` · ${String(item.location)}` : ""}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                                  <div>
+                                    <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                      {String(item.title || item.position || "Poste non spécifié")}
+                                    </p>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                                      <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                      <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                        {String(item.company || item.employer || "Entreprise non spécifiée")}
+                                        {item.location ? ` · ${String(item.location)}` : ""}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                                    <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
+                                    <span style={{
+                                      fontSize: "0.82em",
+                                      color: "var(--lu-text-secondary)",
+                                      padding: "3px 10px",
+                                      borderRadius: 999,
+                                      backgroundColor: "var(--lu-bg-secondary)",
+                                      whiteSpace: "nowrap",
+                                    }}>
+                                      {String(item.startDate ?? "?")}{" "}–{" "}
+                                      {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
                                     </span>
                                   </div>
                                 </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                                {typeof item.description === "string" && item.description && (
+                                  <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {item.description}
+                                  </p>
+                                )}
+                                {Array.isArray(item.responsibilities) && (item.responsibilities as string[]).length > 0 && (
+                                  <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
+                                  </ul>
+                                )}
+                                {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+                                    {(item.technologies as string[]).map((tech, i) => (
+                                      <span key={i} style={{
+                                        padding: "3px 10px",
+                                        borderRadius: 999,
+                                        fontSize: "0.8em",
+                                        fontWeight: 500,
+                                        backgroundColor: "var(--lu-bg-secondary)",
+                                        color: "var(--lu-accent)",
+                                        border: "1px solid var(--lu-border)",
+                                      }}>{tech}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
+                        </div>
+                      )
+                    )}
+
+                    {/* ── EDUCATION TAB ── */}
+                    {activeProfileTab === "education" && (
+                      profileEducation.length > 0 ? (
+                        <div style={{ display: "grid", gap: 16 }}>
+                          {profileEducation.map((item, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                display: "flex",
+                                gap: 16,
+                                padding: 20,
+                                borderRadius: 12,
+                                border: "1px solid var(--lu-border)",
+                                backgroundColor: "var(--lu-bg-page)",
+                              }}
+                            >
+                              <div style={{ flexShrink: 0, paddingTop: 4 }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: 10,
+                                  backgroundColor: "rgba(34,197,94,0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: "#16a34a",
+                                }}>
+                                  <GraduationCap size={16} />
+                                </div>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
+                                </p>
+                                {Boolean(item.fieldOfStudy && item.degree) && (
+                                  <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
+                                    {String(item.fieldOfStudy)}
+                                  </p>
+                                )}
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
+                                  <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                  <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                    {String(item.school || item.institution || item.university || "Établissement non spécifié")}
+                                    {item.location ? ` · ${String(item.location)}` : ""}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
                                   <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
                                   <span style={{
                                     fontSize: "0.82em",
@@ -731,255 +920,447 @@ export default function CandidateDetailPage() {
                                     padding: "3px 10px",
                                     borderRadius: 999,
                                     backgroundColor: "var(--lu-bg-secondary)",
-                                    whiteSpace: "nowrap",
                                   }}>
-                                    {String(item.startDate ?? "?")}{" "}–{" "}
-                                    {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                    {item.startDate || item.endDate
+                                      ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
+                                      : "Dates non renseignées"}
                                   </span>
                                 </div>
-                              </div>
-
-                              {/* Description / responsibilities */}
-                              {typeof item.description === "string" && item.description && (
-                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {item.description}
-                                </p>
-                              )}
-                              {Array.isArray(item.responsibilities) && (item.responsibilities as string[]).length > 0 && (
-                                <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
-                                </ul>
-                              )}
-
-                              {/* Technologies / skills used */}
-                              {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-                                  {(item.technologies as string[]).map((tech, i) => (
-                                    <span key={i} style={{
-                                      padding: "3px 10px",
-                                      borderRadius: 999,
-                                      fontSize: "0.8em",
-                                      fontWeight: 500,
-                                      backgroundColor: "var(--lu-bg-secondary)",
-                                      color: "var(--lu-accent)",
-                                      border: "1px solid var(--lu-border)",
-                                    }}>{tech}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
-                      </div>
-                    )
-                  )}
-
-                  {/* ── EDUCATION TAB ── */}
-                  {activeProfileTab === "education" && (
-                    profileEducation.length > 0 ? (
-                      <div style={{ display: "grid", gap: 16 }}>
-                        {profileEducation.map((item, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              gap: 16,
-                              padding: 20,
-                              borderRadius: 12,
-                              border: "1px solid var(--lu-border)",
-                              backgroundColor: "var(--lu-bg-page)",
-                            }}
-                          >
-                            {/* Icon */}
-                            <div style={{ flexShrink: 0, paddingTop: 4 }}>
-                              <div style={{
-                                width: 36, height: 36, borderRadius: 10,
-                                backgroundColor: "rgba(34,197,94,0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "#16a34a",
-                              }}>
-                                <GraduationCap size={16} />
+                                {typeof item.description === "string" && item.description && (
+                                  <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {item.description}
+                                  </p>
+                                )}
+                                {typeof item.grade === "string" && item.grade && (
+                                  <span style={{
+                                    display: "inline-block", marginTop: 10,
+                                    padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
+                                    fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
+                                  }}>
+                                    Mention : {item.grade}
+                                  </span>
+                                )}
                               </div>
                             </div>
-
-                            {/* Content */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
-                              </p>
-                              {Boolean(item.fieldOfStudy && item.degree) && (
-                                <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
-                                  {String(item.fieldOfStudy)}
-                                </p>
-                              )}
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
-                                <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
-                                <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                  {String(item.school || item.institution || item.university || "Établissement non spécifié")}
-                                  {item.location ? ` · ${String(item.location)}` : ""}
-                                </span>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-                                <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
-                                <span style={{
-                                  fontSize: "0.82em",
-                                  color: "var(--lu-text-secondary)",
-                                  padding: "3px 10px",
-                                  borderRadius: 999,
-                                  backgroundColor: "var(--lu-bg-secondary)",
-                                }}>
-                                  {item.startDate || item.endDate
-                                    ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
-                                    : "Dates non renseignées"}
-                                </span>
-                              </div>
-                              {typeof item.description === "string" && item.description && (
-                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {item.description}
-                                </p>
-                              )}
-                              {typeof item.grade === "string" && item.grade && (
-                                <span style={{
-                                  display: "inline-block", marginTop: 10,
-                                  padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
-                                  fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
-                                }}>
-                                  Mention : {item.grade}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
-                      </div>
-                    )
-                  )}
-
-                  {/* ── SKILLS TAB ── */}
-                  {activeProfileTab === "skills" && (
-                    profileSkills.length > 0 ? (
-                      <div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                          {profileSkills.map((skill, index) => (
-                            <span
-                              key={index}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 6,
-                                padding: "7px 14px",
-                                borderRadius: 999,
-                                fontSize: "0.9em",
-                                fontWeight: 500,
-                                backgroundColor: "var(--lu-bg-secondary)",
-                                color: "var(--lu-text-primary)",
-                                border: "1px solid var(--lu-border)",
-                                transition: "background 0.15s",
-                              }}
-                            >
-                              <Cpu size={12} style={{ color: "var(--lu-accent)", flexShrink: 0 }} />
-                              {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
-                            </span>
                           ))}
                         </div>
-                        <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-                          {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
-                        </p>
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
-                      </div>
-                    )
-                  )}
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
+                        </div>
+                      )
+                    )}
 
-                  {/* ── LANGUAGES TAB ── */}
-                  {activeProfileTab === "languages" && (
-                    profileLanguages.length > 0 ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-                        {profileLanguages.map((item, index) => {
-                          const langName = String(item.language || item.name || "Langue inconnue");
-                          const level = typeof item.level === "string" ? item.level : null;
-                          const levelColors: Record<string, { bg: string; text: string }> = {
-                            "native": { bg: "#dcfce7", text: "#166534" },
-                            "natif": { bg: "#dcfce7", text: "#166534" },
-                            "fluent": { bg: "#dbeafe", text: "#1e40af" },
-                            "courant": { bg: "#dbeafe", text: "#1e40af" },
-                            "professional": { bg: "#dbeafe", text: "#1e40af" },
-                            "intermediate": { bg: "#fef3c7", text: "#92400e" },
-                            "intermédiaire": { bg: "#fef3c7", text: "#92400e" },
-                            "basic": { bg: "#fee2e2", text: "#991b1b" },
-                            "débutant": { bg: "#fee2e2", text: "#991b1b" },
-                          };
-                          const levelStyle = level
-                            ? (levelColors[level.toLowerCase()] || { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" })
-                            : null;
-                          return (
-                            <div
-                              key={index}
-                              style={{
-                                padding: 18,
-                                borderRadius: 12,
-                                border: "1px solid var(--lu-border)",
-                                backgroundColor: "var(--lu-bg-page)",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 10,
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{
-                                  width: 34, height: 34, borderRadius: 10,
-                                  backgroundColor: "rgba(99,102,241,0.1)",
-                                  display: "flex", alignItems: "center", justifyContent: "center",
-                                  color: "var(--lu-accent)", flexShrink: 0,
-                                }}>
-                                  <Globe2 size={16} />
-                                </div>
-                                <strong style={{ fontSize: "1rem", color: "var(--lu-text-primary)" }}>{langName}</strong>
-                              </div>
-                              {levelStyle && level && (
-                                <span style={{
-                                  alignSelf: "flex-start",
-                                  padding: "4px 12px",
+                    {/* ── SKILLS TAB ── */}
+                    {activeProfileTab === "skills" && (
+                      profileSkills.length > 0 ? (
+                        <div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                            {profileSkills.map((skill, index) => (
+                              <span
+                                key={index}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  padding: "7px 14px",
                                   borderRadius: 999,
-                                  fontSize: "0.82em",
-                                  fontWeight: 600,
-                                  backgroundColor: levelStyle.bg,
-                                  color: levelStyle.text,
-                                  textTransform: "capitalize",
-                                }}>
-                                  {level}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
-                      </div>
-                    )
-                  )}
+                                  fontSize: "0.9em",
+                                  fontWeight: 500,
+                                  backgroundColor: "var(--lu-bg-secondary)",
+                                  color: "var(--lu-text-primary)",
+                                  border: "1px solid var(--lu-border)",
+                                  transition: "background 0.15s",
+                                }}
+                              >
+                                <Cpu size={12} style={{ color: "var(--lu-accent)", flexShrink: 0 }} />
+                                {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
+                              </span>
+                            ))}
+                          </div>
+                          <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                            {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
+                        </div>
+                      )
+                    )}
 
+                    {/* ── LANGUAGES TAB ── */}
+                    {activeProfileTab === "languages" && (
+                      profileLanguages.length > 0 ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                          {profileLanguages.map((item, index) => {
+                            const langName = String(item.language || item.name || "Langue inconnue");
+                            const level = typeof item.level === "string" ? item.level : null;
+                            const levelColors: Record<string, { bg: string; text: string }> = {
+                              "native": { bg: "#dcfce7", text: "#166534" },
+                              "natif": { bg: "#dcfce7", text: "#166534" },
+                              "fluent": { bg: "#dbeafe", text: "#1e40af" },
+                              "courant": { bg: "#dbeafe", text: "#1e40af" },
+                              "professional": { bg: "#dbeafe", text: "#1e40af" },
+                              "intermediate": { bg: "#fef3c7", text: "#92400e" },
+                              "intermédiaire": { bg: "#fef3c7", text: "#92400e" },
+                              "basic": { bg: "#fee2e2", text: "#991b1b" },
+                              "débutant": { bg: "#fee2e2", text: "#991b1b" },
+                            };
+                            const levelStyle = level
+                              ? (levelColors[level.toLowerCase()] || { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" })
+                              : null;
+                            return (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: 18,
+                                  borderRadius: 12,
+                                  border: "1px solid var(--lu-border)",
+                                  backgroundColor: "var(--lu-bg-page)",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 10,
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    backgroundColor: "rgba(99,102,241,0.1)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    color: "var(--lu-accent)", flexShrink: 0,
+                                  }}>
+                                    <Globe2 size={16} />
+                                  </div>
+                                  <strong style={{ fontSize: "1rem", color: "var(--lu-text-primary)" }}>{langName}</strong>
+                                </div>
+                                {levelStyle && level && (
+                                  <span style={{
+                                    alignSelf: "flex-start",
+                                    padding: "4px 12px",
+                                    borderRadius: 999,
+                                    fontSize: "0.82em",
+                                    fontWeight: 600,
+                                    backgroundColor: levelStyle.bg,
+                                    color: levelStyle.text,
+                                    textTransform: "capitalize",
+                                  }}>
+                                    {level}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
+                        </div>
+                      )
+                    )}
+
+                  </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ COMPARISON MODE LAYOUT ═══ */}
+          {compareMode && compareCandidate && (
+            <>
+              <div className="compare-exit-bar" style={{ marginTop: 20 }}>
+                <span className="compare-exit-bar__label">
+                  <GitCompare size={16} />
+                  Mode comparaison
+                </span>
+                <button className="compare-exit-btn" onClick={handleExitCompare} id="compare-exit-btn">
+                  <X size={14} />
+                  Quitter la comparaison
+                </button>
               </div>
-            )}
-          </div>
+
+              <div className="compare-grid">
+                {[candidate, compareCandidate].map((cand, colIndex) => {
+                  const otherCand = colIndex === 0 ? compareCandidate : candidate;
+                  const isScoreWinner = (cand.score ?? -1) > (otherCand.score ?? -1);
+                  const otherMatchedSet = new Set(otherCand.scoring.matchedCriteria);
+                  const otherMissingSet = new Set(otherCand.scoring.missingCriteria);
+
+                  const cWorkExp = Array.isArray(cand.profile?.workExperience)
+                    ? (cand.profile.workExperience as Array<Record<string, unknown>>)
+                    : [];
+                  const cEducation = Array.isArray(cand.profile?.education)
+                    ? (cand.profile.education as Array<Record<string, unknown>>)
+                    : [];
+                  const cSkills = Array.isArray(cand.profile?.skills)
+                    ? (cand.profile.skills as string[])
+                    : [];
+                  const cLanguages = Array.isArray(cand.profile?.languages)
+                    ? (cand.profile.languages as Array<Record<string, unknown>>)
+                    : [];
+
+                  return (
+                    <div key={cand.id} className="compare-column">
+                      {/* ── Header ── */}
+                      <div className="compare-col-header">
+                        <button
+                          type="button"
+                          className="compare-col-name"
+                          onClick={() => {
+                            navigate(`/candidatures/${jobId}/candidats/${cand.id}`, {
+                              state: { fromJobDetail }
+                            });
+                            handleExitCompare();
+                          }}
+                        >
+                          <span>{cand.firstName || ""} {cand.lastName || ""}</span>
+                          <ArrowUpRight size={16} style={{ flexShrink: 0 }} />
+                        </button>
+                        <div className="compare-badges">
+                          <span
+                            className={`compare-badge ${isScoreWinner ? "compare-score--winner" : ""}`}
+                            style={!isScoreWinner ? {
+                              backgroundColor: getScoreBadgeColor(cand.score).backgroundColor,
+                              color: getScoreBadgeColor(cand.score).color,
+                            } : undefined}
+                          >
+                            Score : {cand.score ?? "-"}
+                          </span>
+                          <span
+                            className="compare-badge"
+                            style={{
+                              backgroundColor: getVerdictBadgeColor(cand.scoring.verdict).backgroundColor,
+                              color: getVerdictBadgeColor(cand.scoring.verdict).color,
+                            }}
+                          >
+                            {getVerdictLabel(cand.scoring.verdict)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* ── Matched Criteria ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <ShieldCheck size={14} /> Critères satisfaits
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cand.scoring.matchedCriteria.length > 0 ? (
+                            cand.scoring.matchedCriteria.map((item, i) => (
+                              <span
+                                key={i}
+                                className={`compare-tag ${otherMissingSet.has(item)
+                                    ? "compare-tag--diff-matched"
+                                    : "compare-tag--matched"
+                                  }`}
+                              >
+                                ✓ {item}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucun</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Missing Criteria ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <XCircle size={14} /> Critères manquants
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cand.scoring.missingCriteria.length > 0 ? (
+                            cand.scoring.missingCriteria.map((item, i) => (
+                              <span
+                                key={i}
+                                className={`compare-tag ${otherMatchedSet.has(item)
+                                    ? "compare-tag--diff-missing"
+                                    : "compare-tag--missing"
+                                  }`}
+                              >
+                                ✗ {item}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucun</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Skills ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Cpu size={14} /> Compétences
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cSkills.length > 0 ? (
+                            cSkills.map((skill, i) => (
+                              <span key={i} className="compare-tag compare-tag--neutral">
+                                {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucune</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Work Experience ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Briefcase size={14} /> Expérience
+                        </h4>
+                        {cWorkExp.length > 0 ? (
+                          <div>
+                            {cWorkExp.map((item, i) => (
+                              <div key={i} className="compare-entry">
+                                <p className="compare-entry-title">
+                                  {String(item.title || item.position || "Poste non spécifié")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.company || item.employer || "")}
+                                </p>
+                                <p className="compare-entry-dates">
+                                  {String(item.startDate ?? "")} – {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune expérience renseignée</p>
+                        )}
+                      </div>
+
+                      {/* ── Education ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <GraduationCap size={14} /> Formation
+                        </h4>
+                        {cEducation.length > 0 ? (
+                          <div>
+                            {cEducation.map((item, i) => (
+                              <div key={i} className="compare-entry">
+                                <p className="compare-entry-title">
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.fieldOfStudy && item.degree ? item.fieldOfStudy : "")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.school || item.institution || item.university || "")}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune formation renseignée</p>
+                        )}
+                      </div>
+
+                      {/* ── Languages ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Globe2 size={14} /> Langues
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cLanguages.length > 0 ? (
+                            cLanguages.map((item, i) => (
+                              <span key={i} className="compare-tag compare-tag--neutral">
+                                {String(item.language || item.name || "?")}
+                                {typeof item.level === "string" ? ` (${item.level})` : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucune</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Compare loading indicator */}
+          {compareLoading && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20, textAlign: "center" }}>
+              <Loader2 size={20} className="cand-skeleton-pulse" /> Chargement de la comparaison...
+            </div>
+          )}
         </>
       ) : null}
+
+      {/* ═══ CANDIDATE PICKER MODAL ═══ */}
+      {pickerOpen && (
+        <div className="compare-picker-overlay" onClick={() => setPickerOpen(false)}>
+          <div className="compare-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="compare-picker-header">
+              <h3>Comparer avec…</h3>
+              <button className="compare-picker-close" onClick={() => setPickerOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <input
+              className="compare-picker-search"
+              type="text"
+              placeholder="Rechercher un candidat..."
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="compare-picker-list">
+              {pickerLoading ? (
+                <div className="compare-picker-loading">
+                  <Loader2 size={16} className="cand-skeleton-pulse" /> Chargement...
+                </div>
+              ) : filteredPickerCandidates.length > 0 ? (
+                filteredPickerCandidates.map((c) => (
+                  <button
+                    key={c.id}
+                    className="compare-picker-item"
+                    onClick={() => handleSelectCompare(c.id)}
+                  >
+                    <span className="compare-picker-item-name">
+                      {c.firstName} {c.lastName}
+                    </span>
+                    <div className="compare-picker-item-badges">
+                      <span
+                        className="compare-badge"
+                        style={{
+                          ...getScoreBadgeColor(c.score),
+                          padding: "4px 10px",
+                          fontSize: "0.78em",
+                        }}
+                      >
+                        {c.score ?? "-"}
+                      </span>
+                      {c.verdict && (
+                        <span
+                          className="compare-badge"
+                          style={{
+                            ...getVerdictBadgeColor(c.verdict),
+                            padding: "4px 10px",
+                            fontSize: "0.78em",
+                          }}
+                        >
+                          {getVerdictLabel(c.verdict)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="compare-picker-empty">
+                  {pickerSearch ? "Aucun candidat trouvé" : "Aucun autre candidat dans ce poste"}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
