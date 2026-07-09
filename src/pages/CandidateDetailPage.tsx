@@ -554,70 +554,72 @@ export default function CandidateDetailPage() {
             </div>
           )}
 
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Analyse du score</h3>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div>
-                <h4 style={{ marginBottom: 12 }}>Critères satisfaits</h4>
-                {candidate.scoring.matchedCriteria.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
-                    {candidate.scoring.matchedCriteria.map((item, index) => (
-                      <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                        <span style={{ color: "#16a34a", marginTop: 2 }}>✓</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère satisfait</p>
-                )}
+          {!compareMode && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Analyse du score</h3>
               </div>
-
-              <div>
-                <h4 style={{ marginBottom: 12 }}>Critères manquants</h4>
-                {candidate.scoring.missingCriteria.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
-                    {candidate.scoring.missingCriteria.map((item, index) => (
-                      <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                        <span style={{ color: "#dc2626", marginTop: 2 }}>✕</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère manquant</p>
-                )}
-              </div>
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <h4 style={{ marginBottom: 12 }}>Points forts</h4>
-              {candidate.scoring.strengths.length > 0 ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  {candidate.scoring.strengths.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        backgroundColor: "var(--lu-bg-secondary)",
-                      }}
-                    >
-                      <Star size={16} style={{ color: "#f59e0b" }} />
-                      <span>{item}</span>
-                    </div>
-                  ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Critères satisfaits</h4>
+                  {candidate.scoring.matchedCriteria.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
+                      {candidate.scoring.matchedCriteria.map((item, index) => (
+                        <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                          <span style={{ color: "#16a34a", marginTop: 2 }}>✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère satisfait</p>
+                  )}
                 </div>
-              ) : (
-                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun point fort identifié</p>
-              )}
+
+                <div>
+                  <h4 style={{ marginBottom: 12 }}>Critères manquants</h4>
+                  {candidate.scoring.missingCriteria.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
+                      {candidate.scoring.missingCriteria.map((item, index) => (
+                        <li key={index} style={{ marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                          <span style={{ color: "#dc2626", marginTop: 2 }}>✕</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère manquant</p>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ marginBottom: 12 }}>Points forts</h4>
+                {candidate.scoring.strengths.length > 0 ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {candidate.scoring.strengths.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          backgroundColor: "var(--lu-bg-secondary)",
+                        }}
+                      >
+                        <Star size={16} style={{ color: "#f59e0b" }} />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun point fort identifié</p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {!compareMode && (
             <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
