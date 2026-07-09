@@ -64,90 +64,98 @@ export default function ResetPassword() {
     }
   }
 
-  if (status === 'invalid') {
-    return (
-      <div className="max-w-md mx-auto mt-12">
-        <h2 className="text-xl font-semibold mb-4">Ce lien est invalide</h2>
-        <p className="mb-6">Ce lien de réinitialisation est invalide. Veuillez retourner à la page de connexion.</p>
-        <Link to="/login" className="text-purple-400">Retour à la connexion</Link>
-      </div>
-    )
-  }
-
-  if (status === 'expired') {
-    return (
-      <div className="max-w-md mx-auto mt-12">
-        <h2 className="text-xl font-semibold mb-4">Lien expiré</h2>
-        <p className="mb-6">Ce lien a expiré (valable 1 heure). Veuillez faire une nouvelle demande.</p>
-        <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
-      </div>
-    )
-  }
-
-  if (status === 'used') {
-    return (
-      <div className="max-w-md mx-auto mt-12">
-        <h2 className="text-xl font-semibold mb-4">Lien déjà utilisé</h2>
-        <p className="mb-6">Ce lien a déjà été utilisé. Si vous avez besoin de réinitialiser à nouveau votre mot de passe, faites une nouvelle demande.</p>
-        <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
-      </div>
-    )
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="max-w-md mx-auto mt-12">
-        <h2 className="text-xl font-semibold mb-4">Mot de passe réinitialisé</h2>
-        <p className="mb-6">Votre mot de passe a été réinitialisé avec succès.</p>
-        <button onClick={() => navigate('/login')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">Se connecter</button>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-md mx-auto mt-12">
-      <h2 className="text-2xl font-semibold mb-2">Réinitialiser le mot de passe</h2>
-      <p className="text-gray-400 mb-6">Entrez votre nouveau mot de passe.</p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Nouveau mot de passe</label>
-          <div className="relative">
-            <input
-              type={showNew ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800/60 border border-purple-500/30 rounded-lg text-white"
-            />
-            <button type="button" onClick={() => setShowNew((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showNew ? 'Hide' : 'Show'}</button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-8">
+          <Link to="/">
+            <img src="/img/logolinkup.png" alt="Linkup" className="h-10 w-auto" />
+          </Link>
         </div>
 
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Confirmer le nouveau mot de passe</label>
-          <div className="relative">
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              value={confirmNewPassword}
-              onChange={(e) => setConfirmNewPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800/60 border border-purple-500/30 rounded-lg text-white"
-              onBlur={() => {
-                if (confirmNewPassword && confirmNewPassword !== newPassword) setError('Les mots de passe ne correspondent pas.')
-                else setError('')
-              }}
-            />
-            <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showConfirm ? 'Hide' : 'Show'}</button>
-          </div>
-        </div>
+        <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
+          {status === 'invalid' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Ce lien est invalide</h2>
+              <p className="mb-6">Ce lien de réinitialisation est invalide. Veuillez retourner à la page de connexion.</p>
+              <Link to="/login" className="text-purple-400">Retour à la connexion</Link>
+            </div>
+          )}
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+          {status === 'expired' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Lien expiré</h2>
+              <p className="mb-6">Ce lien a expiré (valable 1 heure). Veuillez faire une nouvelle demande.</p>
+              <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
+            </div>
+          )}
 
-        <div className="flex justify-end">
-          <button type="submit" disabled={isLoading} className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg disabled:opacity-60">
-            {isLoading ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
-          </button>
+          {status === 'used' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Lien déjà utilisé</h2>
+              <p className="mb-6">Ce lien a déjà été utilisé. Si vous avez besoin de réinitialiser à nouveau votre mot de passe, faites une nouvelle demande.</p>
+              <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Mot de passe réinitialisé</h2>
+              <p className="mb-6">Votre mot de passe a été réinitialisé avec succès.</p>
+              <button onClick={() => navigate('/login')} className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg">Se connecter</button>
+            </div>
+          )}
+
+          {status === 'form' && (
+            <>
+              <h1 className="text-3xl font-bold text-white mb-2">Réinitialiser le mot de passe</h1>
+              <p className="text-gray-400 mb-6">Entrez votre nouveau mot de passe.</p>
+
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Nouveau mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showNew ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className={`w-full px-4 py-3 bg-slate-800/60 border ${error ? 'border-red-500' : 'border-purple-500/30'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`}
+                    />
+                    <button type="button" onClick={() => setShowNew((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showNew ? 'Hide' : 'Show'}</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Confirmer le nouveau mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className={`w-full px-4 py-3 bg-slate-800/60 border ${error ? 'border-red-500' : 'border-purple-500/30'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`}
+                      onBlur={() => {
+                        if (confirmNewPassword && confirmNewPassword !== newPassword) setError('Les mots de passe ne correspondent pas.')
+                        else setError('')
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showConfirm ? 'Hide' : 'Show'}</button>
+                  </div>
+                </div>
+
+                {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full px-8 py-3 mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-60"
+                >
+                  {isLoading ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
-      </form>
+      </div>
     </div>
   )
 }
