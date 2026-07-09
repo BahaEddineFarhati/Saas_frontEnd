@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowUpRight,
   Loader2,
   XCircle,
   Star,
@@ -18,7 +19,6 @@ import {
   Calendar,
   GitCompare,
   X,
-  Search,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -280,9 +280,9 @@ export default function CandidateDetailPage() {
       setCandidate((prev) =>
         prev
           ? {
-              ...prev,
-              status: body.data.status,
-            }
+            ...prev,
+            status: body.data.status,
+          }
           : prev
       );
     } catch (err: any) {
@@ -537,21 +537,21 @@ export default function CandidateDetailPage() {
           </div>
 
           {!compareMode && (
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Résumé AI</h3>
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <FileText size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Résumé AI</h3>
+              </div>
+              <div style={{ minHeight: 120, padding: 18, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
+                {candidate.summary ? (
+                  <p style={{ margin: 0, lineHeight: 1.7 }}>{candidate.summary}</p>
+                ) : (
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
+                    Résumé non disponible pour le moment.
+                  </p>
+                )}
+              </div>
             </div>
-            <div style={{ minHeight: 120, padding: 18, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
-              {candidate.summary ? (
-                <p style={{ margin: 0, lineHeight: 1.7 }}>{candidate.summary}</p>
-              ) : (
-                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                  Résumé non disponible pour le moment.
-                </p>
-              )}
-            </div>
-          </div>
           )}
 
           <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
@@ -620,203 +620,297 @@ export default function CandidateDetailPage() {
           </div>
 
           {!compareMode && (
-          <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Questions d'entretien</h3>
-            </div>
-            {candidate.interviewQuestions.length > 0 ? (
-              <div style={{ display: "grid", gap: 12 }}>
-                {candidate.interviewQuestions.map((questionItem, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      border: "1px solid var(--lu-border)",
-                      borderRadius: 12,
-                      padding: 16,
-                      backgroundColor: "var(--lu-bg-page)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleQuestion(index)}
+            <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Questions d'entretien</h3>
+              </div>
+              {candidate.interviewQuestions.length > 0 ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {candidate.interviewQuestions.map((questionItem, index) => (
+                    <div
+                      key={index}
                       style={{
-                        width: "100%",
-                        textAlign: "left",
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        color: "inherit",
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        border: "1px solid var(--lu-border)",
+                        borderRadius: 12,
+                        padding: 16,
+                        backgroundColor: "var(--lu-bg-page)",
                       }}
                     >
-                      <div>
-                        <strong>{index + 1}. </strong>
-                        {questionItem.question}
-                      </div>
-                      {expandedQuestions[index] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                    {expandedQuestions[index] && (
-                      <p style={{ marginTop: 12, color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                        {questionItem.rationale}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                Les questions d'entretien ne sont pas encore disponibles.
-              </p>
-            )}
-          </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleQuestion(index)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          color: "inherit",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <strong>{index + 1}. </strong>
+                          {questionItem.question}
+                        </div>
+                        {expandedQuestions[index] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                      {expandedQuestions[index] && (
+                        <p style={{ marginTop: 12, color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                          {questionItem.rationale}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
+                  Les questions d'entretien ne sont pas encore disponibles.
+                </p>
+              )}
+            </div>
           )}
 
           {/* ── Raw profile data (hidden in compare mode) ── */}
           {!compareMode && (
-          <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
-            {/* Collapsible header */}
-            <button
-              type="button"
-              onClick={() => setRawOpen(!rawOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                padding: "20px 22px",
-                border: "none",
-                background: "var(--lu-bg-page)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                  <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
-                    Travail, formation, compétences et langues.
-                  </p>
-                </div>
-              </div>
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 24 }}>
-                {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-              </span>
-            </button>
-
-            {rawOpen && (
-              <div style={{ borderTop: "1px solid var(--lu-border)" }}>
-                {/* Tab bar */}
-                <div style={{
+            <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
+              {/* Collapsible header */}
+              <button
+                type="button"
+                onClick={() => setRawOpen(!rawOpen)}
+                style={{
                   display: "flex",
-                  gap: 0,
-                  padding: "0 22px",
-                  borderBottom: "1px solid var(--lu-border)",
-                  backgroundColor: "var(--lu-bg-secondary)",
-                  overflowX: "auto",
-                }}>
-                  {([
-                    { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
-                    { key: "education",  label: "Formation",  icon: <GraduationCap size={14} />, count: profileEducation.length },
-                    { key: "skills",     label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
-                    { key: "languages",  label: "Langues",    icon: <Globe2 size={14} />, count: profileLanguages.length },
-                  ] as const).map(tab => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setActiveProfileTab(tab.key)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 7,
-                        padding: "12px 18px",
-                        border: "none",
-                        borderBottom: activeProfileTab === tab.key
-                          ? "2px solid var(--lu-accent)"
-                          : "2px solid transparent",
-                        background: "none",
-                        color: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-text-secondary)",
-                        fontWeight: activeProfileTab === tab.key ? 600 : 400,
-                        fontSize: "0.9em",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        transition: "color 0.15s, border-color 0.15s",
-                      }}
-                    >
-                      {tab.icon}
-                      {tab.label}
-                      {tab.count > 0 && (
-                        <span style={{
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  padding: "20px 22px",
+                  border: "none",
+                  background: "var(--lu-bg-page)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  <FileText size={18} style={{ color: "var(--lu-accent)" }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                    <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
+                      Travail, formation, compétences et langues.
+                    </p>
+                  </div>
+                </div>
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 24 }}>
+                  {rawOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </span>
+              </button>
+
+              {rawOpen && (
+                <div style={{ borderTop: "1px solid var(--lu-border)" }}>
+                  {/* Tab bar */}
+                  <div style={{
+                    display: "flex",
+                    gap: 0,
+                    padding: "0 22px",
+                    borderBottom: "1px solid var(--lu-border)",
+                    backgroundColor: "var(--lu-bg-secondary)",
+                    overflowX: "auto",
+                  }}>
+                    {([
+                      { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
+                      { key: "education", label: "Formation", icon: <GraduationCap size={14} />, count: profileEducation.length },
+                      { key: "skills", label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
+                      { key: "languages", label: "Langues", icon: <Globe2 size={14} />, count: profileLanguages.length },
+                    ] as const).map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveProfileTab(tab.key)}
+                        style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          minWidth: 18,
-                          height: 18,
-                          padding: "0 5px",
-                          borderRadius: 999,
-                          fontSize: "0.78em",
-                          fontWeight: 600,
-                          backgroundColor: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-border)",
-                          color: activeProfileTab === tab.key ? "#fff" : "var(--lu-text-secondary)",
-                        }}>
-                          {tab.count}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                          gap: 7,
+                          padding: "12px 18px",
+                          border: "none",
+                          borderBottom: activeProfileTab === tab.key
+                            ? "2px solid var(--lu-accent)"
+                            : "2px solid transparent",
+                          background: "none",
+                          color: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-text-secondary)",
+                          fontWeight: activeProfileTab === tab.key ? 600 : 400,
+                          fontSize: "0.9em",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          transition: "color 0.15s, border-color 0.15s",
+                        }}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 18,
+                            height: 18,
+                            padding: "0 5px",
+                            borderRadius: 999,
+                            fontSize: "0.78em",
+                            fontWeight: 600,
+                            backgroundColor: activeProfileTab === tab.key ? "var(--lu-accent)" : "var(--lu-border)",
+                            color: activeProfileTab === tab.key ? "#fff" : "var(--lu-text-secondary)",
+                          }}>
+                            {tab.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
 
-                {/* Tab content */}
-                <div style={{ padding: "24px 22px" }}>
+                  {/* Tab content */}
+                  <div style={{ padding: "24px 22px" }}>
 
-                  {/* ── EXPERIENCE TAB ── */}
-                  {activeProfileTab === "experience" && (
-                    profileWorkExperience.length > 0 ? (
-                      <div style={{ display: "grid", gap: 16 }}>
-                        {profileWorkExperience.map((item, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              gap: 16,
-                              padding: 20,
-                              borderRadius: 12,
-                              border: "1px solid var(--lu-border)",
-                              backgroundColor: "var(--lu-bg-page)",
-                            }}
-                          >
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
-                              <div style={{
-                                width: 36, height: 36, borderRadius: 10,
-                                backgroundColor: "rgba(var(--lu-accent-rgb, 99,102,241), 0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "var(--lu-accent)",
-                              }}>
-                                <Briefcase size={16} />
+                    {/* ── EXPERIENCE TAB ── */}
+                    {activeProfileTab === "experience" && (
+                      profileWorkExperience.length > 0 ? (
+                        <div style={{ display: "grid", gap: 16 }}>
+                          {profileWorkExperience.map((item, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                display: "flex",
+                                gap: 16,
+                                padding: 20,
+                                borderRadius: 12,
+                                border: "1px solid var(--lu-border)",
+                                backgroundColor: "var(--lu-bg-page)",
+                              }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: 10,
+                                  backgroundColor: "rgba(var(--lu-accent-rgb, 99,102,241), 0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: "var(--lu-accent)",
+                                }}>
+                                  <Briefcase size={16} />
+                                </div>
+                                {index < profileWorkExperience.length - 1 && (
+                                  <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
+                                )}
                               </div>
-                              {index < profileWorkExperience.length - 1 && (
-                                <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
-                              )}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-                                <div>
-                                  <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                    {String(item.title || item.position || "Poste non spécifié")}
-                                  </p>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                                    <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
-                                    <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                      {String(item.company || item.employer || "Entreprise non spécifiée")}
-                                      {item.location ? ` · ${String(item.location)}` : ""}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+                                  <div>
+                                    <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                      {String(item.title || item.position || "Poste non spécifié")}
+                                    </p>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                                      <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                      <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                        {String(item.company || item.employer || "Entreprise non spécifiée")}
+                                        {item.location ? ` · ${String(item.location)}` : ""}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                                    <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
+                                    <span style={{
+                                      fontSize: "0.82em",
+                                      color: "var(--lu-text-secondary)",
+                                      padding: "3px 10px",
+                                      borderRadius: 999,
+                                      backgroundColor: "var(--lu-bg-secondary)",
+                                      whiteSpace: "nowrap",
+                                    }}>
+                                      {String(item.startDate ?? "?")}{" "}–{" "}
+                                      {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
                                     </span>
                                   </div>
                                 </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                                {typeof item.description === "string" && item.description && (
+                                  <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {item.description}
+                                  </p>
+                                )}
+                                {Array.isArray(item.responsibilities) && (item.responsibilities as string[]).length > 0 && (
+                                  <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
+                                  </ul>
+                                )}
+                                {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+                                    {(item.technologies as string[]).map((tech, i) => (
+                                      <span key={i} style={{
+                                        padding: "3px 10px",
+                                        borderRadius: 999,
+                                        fontSize: "0.8em",
+                                        fontWeight: 500,
+                                        backgroundColor: "var(--lu-bg-secondary)",
+                                        color: "var(--lu-accent)",
+                                        border: "1px solid var(--lu-border)",
+                                      }}>{tech}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
+                        </div>
+                      )
+                    )}
+
+                    {/* ── EDUCATION TAB ── */}
+                    {activeProfileTab === "education" && (
+                      profileEducation.length > 0 ? (
+                        <div style={{ display: "grid", gap: 16 }}>
+                          {profileEducation.map((item, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                display: "flex",
+                                gap: 16,
+                                padding: 20,
+                                borderRadius: 12,
+                                border: "1px solid var(--lu-border)",
+                                backgroundColor: "var(--lu-bg-page)",
+                              }}
+                            >
+                              <div style={{ flexShrink: 0, paddingTop: 4 }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: 10,
+                                  backgroundColor: "rgba(34,197,94,0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: "#16a34a",
+                                }}>
+                                  <GraduationCap size={16} />
+                                </div>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
+                                </p>
+                                {Boolean(item.fieldOfStudy && item.degree) && (
+                                  <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
+                                    {String(item.fieldOfStudy)}
+                                  </p>
+                                )}
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
+                                  <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
+                                  <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
+                                    {String(item.school || item.institution || item.university || "Établissement non spécifié")}
+                                    {item.location ? ` · ${String(item.location)}` : ""}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
                                   <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
                                   <span style={{
                                     fontSize: "0.82em",
@@ -824,246 +918,152 @@ export default function CandidateDetailPage() {
                                     padding: "3px 10px",
                                     borderRadius: 999,
                                     backgroundColor: "var(--lu-bg-secondary)",
-                                    whiteSpace: "nowrap",
                                   }}>
-                                    {String(item.startDate ?? "?")}{" "}–{" "}
-                                    {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                    {item.startDate || item.endDate
+                                      ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
+                                      : "Dates non renseignées"}
                                   </span>
                                 </div>
-                              </div>
-                              {typeof item.description === "string" && item.description && (
-                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {item.description}
-                                </p>
-                              )}
-                              {Array.isArray(item.responsibilities) && (item.responsibilities as string[]).length > 0 && (
-                                <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
-                                </ul>
-                              )}
-                              {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-                                  {(item.technologies as string[]).map((tech, i) => (
-                                    <span key={i} style={{
-                                      padding: "3px 10px",
-                                      borderRadius: 999,
-                                      fontSize: "0.8em",
-                                      fontWeight: 500,
-                                      backgroundColor: "var(--lu-bg-secondary)",
-                                      color: "var(--lu-accent)",
-                                      border: "1px solid var(--lu-border)",
-                                    }}>{tech}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
-                      </div>
-                    )
-                  )}
-
-                  {/* ── EDUCATION TAB ── */}
-                  {activeProfileTab === "education" && (
-                    profileEducation.length > 0 ? (
-                      <div style={{ display: "grid", gap: 16 }}>
-                        {profileEducation.map((item, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              gap: 16,
-                              padding: 20,
-                              borderRadius: 12,
-                              border: "1px solid var(--lu-border)",
-                              backgroundColor: "var(--lu-bg-page)",
-                            }}
-                          >
-                            <div style={{ flexShrink: 0, paddingTop: 4 }}>
-                              <div style={{
-                                width: 36, height: 36, borderRadius: 10,
-                                backgroundColor: "rgba(34,197,94,0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "#16a34a",
-                              }}>
-                                <GraduationCap size={16} />
+                                {typeof item.description === "string" && item.description && (
+                                  <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
+                                    {item.description}
+                                  </p>
+                                )}
+                                {typeof item.grade === "string" && item.grade && (
+                                  <span style={{
+                                    display: "inline-block", marginTop: 10,
+                                    padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
+                                    fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
+                                  }}>
+                                    Mention : {item.grade}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
-                              </p>
-                              {Boolean(item.fieldOfStudy && item.degree) && (
-                                <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
-                                  {String(item.fieldOfStudy)}
-                                </p>
-                              )}
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
-                                <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
-                                <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                  {String(item.school || item.institution || item.university || "Établissement non spécifié")}
-                                  {item.location ? ` · ${String(item.location)}` : ""}
-                                </span>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-                                <Calendar size={12} style={{ color: "var(--lu-text-tertiary)" }} />
-                                <span style={{
-                                  fontSize: "0.82em",
-                                  color: "var(--lu-text-secondary)",
-                                  padding: "3px 10px",
-                                  borderRadius: 999,
-                                  backgroundColor: "var(--lu-bg-secondary)",
-                                }}>
-                                  {item.startDate || item.endDate
-                                    ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
-                                    : "Dates non renseignées"}
-                                </span>
-                              </div>
-                              {typeof item.description === "string" && item.description && (
-                                <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
-                                  {item.description}
-                                </p>
-                              )}
-                              {typeof item.grade === "string" && item.grade && (
-                                <span style={{
-                                  display: "inline-block", marginTop: 10,
-                                  padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
-                                  fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
-                                }}>
-                                  Mention : {item.grade}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
-                      </div>
-                    )
-                  )}
-
-                  {/* ── SKILLS TAB ── */}
-                  {activeProfileTab === "skills" && (
-                    profileSkills.length > 0 ? (
-                      <div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                          {profileSkills.map((skill, index) => (
-                            <span
-                              key={index}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 6,
-                                padding: "7px 14px",
-                                borderRadius: 999,
-                                fontSize: "0.9em",
-                                fontWeight: 500,
-                                backgroundColor: "var(--lu-bg-secondary)",
-                                color: "var(--lu-text-primary)",
-                                border: "1px solid var(--lu-border)",
-                                transition: "background 0.15s",
-                              }}
-                            >
-                              <Cpu size={12} style={{ color: "var(--lu-accent)", flexShrink: 0 }} />
-                              {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
-                            </span>
                           ))}
                         </div>
-                        <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-                          {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
-                        </p>
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
-                      </div>
-                    )
-                  )}
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
+                        </div>
+                      )
+                    )}
 
-                  {/* ── LANGUAGES TAB ── */}
-                  {activeProfileTab === "languages" && (
-                    profileLanguages.length > 0 ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-                        {profileLanguages.map((item, index) => {
-                          const langName = String(item.language || item.name || "Langue inconnue");
-                          const level = typeof item.level === "string" ? item.level : null;
-                          const levelColors: Record<string, { bg: string; text: string }> = {
-                            "native": { bg: "#dcfce7", text: "#166534" },
-                            "natif": { bg: "#dcfce7", text: "#166534" },
-                            "fluent": { bg: "#dbeafe", text: "#1e40af" },
-                            "courant": { bg: "#dbeafe", text: "#1e40af" },
-                            "professional": { bg: "#dbeafe", text: "#1e40af" },
-                            "intermediate": { bg: "#fef3c7", text: "#92400e" },
-                            "intermédiaire": { bg: "#fef3c7", text: "#92400e" },
-                            "basic": { bg: "#fee2e2", text: "#991b1b" },
-                            "débutant": { bg: "#fee2e2", text: "#991b1b" },
-                          };
-                          const levelStyle = level
-                            ? (levelColors[level.toLowerCase()] || { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" })
-                            : null;
-                          return (
-                            <div
-                              key={index}
-                              style={{
-                                padding: 18,
-                                borderRadius: 12,
-                                border: "1px solid var(--lu-border)",
-                                backgroundColor: "var(--lu-bg-page)",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 10,
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{
-                                  width: 34, height: 34, borderRadius: 10,
-                                  backgroundColor: "rgba(99,102,241,0.1)",
-                                  display: "flex", alignItems: "center", justifyContent: "center",
-                                  color: "var(--lu-accent)", flexShrink: 0,
-                                }}>
-                                  <Globe2 size={16} />
-                                </div>
-                                <strong style={{ fontSize: "1rem", color: "var(--lu-text-primary)" }}>{langName}</strong>
-                              </div>
-                              {levelStyle && level && (
-                                <span style={{
-                                  alignSelf: "flex-start",
-                                  padding: "4px 12px",
+                    {/* ── SKILLS TAB ── */}
+                    {activeProfileTab === "skills" && (
+                      profileSkills.length > 0 ? (
+                        <div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                            {profileSkills.map((skill, index) => (
+                              <span
+                                key={index}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  padding: "7px 14px",
                                   borderRadius: 999,
-                                  fontSize: "0.82em",
-                                  fontWeight: 600,
-                                  backgroundColor: levelStyle.bg,
-                                  color: levelStyle.text,
-                                  textTransform: "capitalize",
-                                }}>
-                                  {level}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
-                        <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                        <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
-                      </div>
-                    )
-                  )}
+                                  fontSize: "0.9em",
+                                  fontWeight: 500,
+                                  backgroundColor: "var(--lu-bg-secondary)",
+                                  color: "var(--lu-text-primary)",
+                                  border: "1px solid var(--lu-border)",
+                                  transition: "background 0.15s",
+                                }}
+                              >
+                                <Cpu size={12} style={{ color: "var(--lu-accent)", flexShrink: 0 }} />
+                                {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
+                              </span>
+                            ))}
+                          </div>
+                          <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
+                            {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
+                        </div>
+                      )
+                    )}
 
+                    {/* ── LANGUAGES TAB ── */}
+                    {activeProfileTab === "languages" && (
+                      profileLanguages.length > 0 ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                          {profileLanguages.map((item, index) => {
+                            const langName = String(item.language || item.name || "Langue inconnue");
+                            const level = typeof item.level === "string" ? item.level : null;
+                            const levelColors: Record<string, { bg: string; text: string }> = {
+                              "native": { bg: "#dcfce7", text: "#166534" },
+                              "natif": { bg: "#dcfce7", text: "#166534" },
+                              "fluent": { bg: "#dbeafe", text: "#1e40af" },
+                              "courant": { bg: "#dbeafe", text: "#1e40af" },
+                              "professional": { bg: "#dbeafe", text: "#1e40af" },
+                              "intermediate": { bg: "#fef3c7", text: "#92400e" },
+                              "intermédiaire": { bg: "#fef3c7", text: "#92400e" },
+                              "basic": { bg: "#fee2e2", text: "#991b1b" },
+                              "débutant": { bg: "#fee2e2", text: "#991b1b" },
+                            };
+                            const levelStyle = level
+                              ? (levelColors[level.toLowerCase()] || { bg: "var(--lu-bg-secondary)", text: "var(--lu-text-secondary)" })
+                              : null;
+                            return (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: 18,
+                                  borderRadius: 12,
+                                  border: "1px solid var(--lu-border)",
+                                  backgroundColor: "var(--lu-bg-page)",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 10,
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    backgroundColor: "rgba(99,102,241,0.1)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    color: "var(--lu-accent)", flexShrink: 0,
+                                  }}>
+                                    <Globe2 size={16} />
+                                  </div>
+                                  <strong style={{ fontSize: "1rem", color: "var(--lu-text-primary)" }}>{langName}</strong>
+                                </div>
+                                {levelStyle && level && (
+                                  <span style={{
+                                    alignSelf: "flex-start",
+                                    padding: "4px 12px",
+                                    borderRadius: 999,
+                                    fontSize: "0.82em",
+                                    fontWeight: 600,
+                                    backgroundColor: levelStyle.bg,
+                                    color: levelStyle.text,
+                                    textTransform: "capitalize",
+                                  }}>
+                                    {level}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
+                          <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                          <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
+                        </div>
+                      )
+                    )}
+
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           )}
 
           {/* ═══ COMPARISON MODE LAYOUT ═══ */}
@@ -1104,9 +1104,19 @@ export default function CandidateDetailPage() {
                     <div key={cand.id} className="compare-column">
                       {/* ── Header ── */}
                       <div className="compare-col-header">
-                        <h3 className="compare-col-name">
-                          {cand.firstName || ""} {cand.lastName || ""}
-                        </h3>
+                        <button
+                          type="button"
+                          className="compare-col-name"
+                          onClick={() => {
+                            navigate(`/candidatures/${jobId}/candidats/${cand.id}`, {
+                              state: { fromJobDetail }
+                            });
+                            handleExitCompare();
+                          }}
+                        >
+                          <span>{cand.firstName || ""} {cand.lastName || ""}</span>
+                          <ArrowUpRight size={16} style={{ flexShrink: 0 }} />
+                        </button>
                         <div className="compare-badges">
                           <span
                             className={`compare-badge ${isScoreWinner ? "compare-score--winner" : ""}`}
@@ -1139,11 +1149,10 @@ export default function CandidateDetailPage() {
                             cand.scoring.matchedCriteria.map((item, i) => (
                               <span
                                 key={i}
-                                className={`compare-tag ${
-                                  otherMissingSet.has(item)
+                                className={`compare-tag ${otherMissingSet.has(item)
                                     ? "compare-tag--diff-matched"
                                     : "compare-tag--matched"
-                                }`}
+                                  }`}
                               >
                                 ✓ {item}
                               </span>
@@ -1164,11 +1173,10 @@ export default function CandidateDetailPage() {
                             cand.scoring.missingCriteria.map((item, i) => (
                               <span
                                 key={i}
-                                className={`compare-tag ${
-                                  otherMatchedSet.has(item)
+                                className={`compare-tag ${otherMatchedSet.has(item)
                                     ? "compare-tag--diff-missing"
                                     : "compare-tag--missing"
-                                }`}
+                                  }`}
                               >
                                 ✗ {item}
                               </span>
