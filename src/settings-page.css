@@ -1,0 +1,379 @@
+/* ══════════════════════════════════════════════════════
+   SETTINGS PAGE
+   ══════════════════════════════════════════════════════ */
+
+.sp-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── Section ── */
+.sp-section {
+  padding: 24px;
+  border: 1px solid var(--lu-border);
+  border-radius: 16px;
+  background: var(--lu-bg-card, #ffffff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.sp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sp-section-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--lu-accent-soft, rgba(37, 99, 235, 0.12));
+  color: var(--lu-accent, #2563eb);
+}
+
+.sp-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--lu-text-primary);
+  margin: 0;
+}
+
+html.dark .sp-section-title {
+  color: var(--lu-text-primary);
+}
+
+/* ── Divider ── */
+
+/* ── Form ── */
+.sp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Form Group ── */
+.sp-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Label ── */
+.sp-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lu-text-primary);
+}
+
+html.dark .sp-label {
+  color: var(--lu-text-primary);
+}
+
+.sp-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* ── Input ── */
+.sp-input {
+  padding: 10px 12px;
+  border: 1px solid var(--lu-border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--lu-bg-input);
+  color: var(--lu-text-primary);
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.sp-input:focus {
+  outline: none;
+  border-color: var(--lu-primary, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.sp-input:disabled {
+  background: var(--lu-bg-disabled);
+  color: var(--lu-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+html.dark .sp-input {
+  background: var(--lu-bg-input);
+  color: var(--lu-text-primary);
+  border-color: var(--lu-border);
+}
+
+html.dark .sp-input:focus {
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2);
+}
+
+/* ── Password Input Wrapper ── */
+.sp-password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sp-password-input-wrapper .sp-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+/* ── Password Toggle ── */
+.sp-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lu-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.sp-password-toggle:hover:not(:disabled) {
+  color: var(--lu-text-primary);
+}
+
+.sp-password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+html.dark .sp-password-toggle {
+  color: var(--lu-text-secondary);
+}
+
+/* ── Error Message ── */
+.sp-error {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* ── Button ── */
+.sp-button {
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  width: fit-content;
+}
+
+.sp-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Button Primary ── */
+.sp-button-primary {
+  background: var(--lu-accent);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.sp-button-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+html.dark .sp-button-primary {
+  background: var(--lu-accent);
+  color: #ffffff;
+}
+
+/* ── Skeleton Loading ── */
+.sp-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sp-skeleton {
+  background: var(--lu-border-md);
+  border-radius: 8px;
+  animation: sp-shimmer 1.6s ease-in-out infinite;
+}
+
+.sp-skeleton-text {
+  height: 40px;
+  width: 100%;
+}
+
+@keyframes sp-shimmer {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+html.dark .sp-skeleton {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .sp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .sp-container {
+    padding: 16px;
+  }
+
+  .sp-section {
+    padding: 16px;
+  }
+
+  .sp-section-title {
+    font-size: 16px;
+  }
+
+  .sp-form {
+    gap: 16px;
+  }
+}
+
+/* ── Toast Notifications ── */
+.sp-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.sp-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--lu-border);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
+  animation: sp-toast-slide-in 0.3s ease-out;
+}
+
+.sp-toast-success {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+html.dark .sp-toast-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.sp-toast-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+html.dark .sp-toast-error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.sp-toast-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.sp-toast-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sp-toast-success .sp-toast-icon {
+  color: #10b981;
+}
+
+.sp-toast-error .sp-toast-icon {
+  color: #ef4444;
+}
+
+.sp-toast-message {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lu-text-primary);
+  margin: 0;
+}
+
+html.dark .sp-toast-message {
+  color: var(--lu-text-primary);
+}
+
+.sp-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--lu-text-secondary);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.sp-toast-close:hover {
+  color: var(--lu-text-primary);
+}
+
+@keyframes sp-toast-slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .sp-toast-container {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .sp-toast {
+    width: 100%;
+  }
+}
