@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -16,6 +16,9 @@ import {
   Globe2,
   MapPin,
   Calendar,
+  GitCompare,
+  X,
+  Search,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -42,6 +45,15 @@ interface CandidateDetail {
   };
   summary: string | null;
   interviewQuestions: Array<{ question: string; rationale: string }>;
+}
+
+interface PickerCandidate {
+  id: string;
+  firstName: string;
+  lastName: string;
+  score: number | null;
+  scoreExplanation: Record<string, unknown> | null;
+  verdict?: string;
 }
 
 function getScoreBadgeColor(score: number | null) {
@@ -173,6 +185,15 @@ export default function CandidateDetailPage() {
   const [expandedQuestions, setExpandedQuestions] = useState<Record<number, boolean>>({});
   const [rawOpen, setRawOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState<"experience" | "education" | "skills" | "languages">("experience");
+
+  // ── Comparison state ──
+  const [compareMode, setCompareMode] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [compareCandidate, setCompareCandidate] = useState<CandidateDetail | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [pickerCandidates, setPickerCandidates] = useState<PickerCandidate[]>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerLoading, setPickerLoading] = useState(false);
 
   const fromJobDetail = useMemo(() => {
     return (location.state as CandidateLocationState | null)?.fromJobDetail === true;
@@ -316,6 +337,66 @@ export default function CandidateDetailPage() {
     }));
   };
 
+  // ── Comparison handlers ──
+  const handleOpenPicker = useCallback(async () => {
+    if (!jobId || !candidateId) return;
+    setPickerOpen(true);
+    setPickerSearch("");
+    setPickerLoading(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(
+        `${API_BASE_URL}/jobs/${jobId}/candidates?excludeId=${candidateId}&limit=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Impossible de charger les candidats.");
+      const body = await res.json();
+      setPickerCandidates(body?.data?.candidates ?? []);
+    } catch {
+      setPickerCandidates([]);
+    } finally {
+      setPickerLoading(false);
+    }
+  }, [jobId, candidateId]);
+
+  const handleSelectCompare = useCallback(async (selectedId: string) => {
+    if (!jobId || !candidateId) return;
+    setPickerOpen(false);
+    setCompareLoading(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(
+        `${API_BASE_URL}/jobs/${jobId}/candidates/compare?ids=${candidateId},${selectedId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Impossible de comparer les candidats.");
+      const body = await res.json();
+      if (body?.data?.length === 2) {
+        // Update current candidate data with fresh data
+        setCandidate(body.data[0]);
+        setCompareCandidate(body.data[1]);
+        setCompareMode(true);
+      }
+    } catch (err: any) {
+      setActionError(err?.message || "Erreur lors de la comparaison.");
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [jobId, candidateId]);
+
+  const handleExitCompare = useCallback(() => {
+    setCompareMode(false);
+    setCompareCandidate(null);
+  }, []);
+
+  const filteredPickerCandidates = useMemo(() => {
+    if (!pickerSearch.trim()) return pickerCandidates;
+    const q = pickerSearch.toLowerCase();
+    return pickerCandidates.filter((c) =>
+      `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)
+    );
+  }, [pickerCandidates, pickerSearch]);
+
   const profileWorkExperience = Array.isArray(candidate?.profile?.workExperience)
     ? (candidate?.profile?.workExperience as Array<Record<string, unknown>>)
     : [];
@@ -428,6 +509,15 @@ export default function CandidateDetailPage() {
                 Rejeter
               </button>
               <button
+                onClick={handleOpenPicker}
+                disabled={actionLoading || compareLoading || compareMode}
+                className="cand-btn-compare"
+                id="compare-trigger-btn"
+              >
+                <GitCompare size={15} strokeWidth={2} />
+                <span>Comparer avec un autre candidat</span>
+              </button>
+              <button
                 onClick={handleDownloadCV}
                 disabled={actionLoading}
                 className="cand-btn-secondary"
@@ -446,6 +536,7 @@ export default function CandidateDetailPage() {
             )}
           </div>
 
+          {!compareMode && (
           <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <FileText size={18} style={{ color: "var(--lu-accent)" }} />
@@ -461,6 +552,7 @@ export default function CandidateDetailPage() {
               )}
             </div>
           </div>
+          )}
 
           <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -527,6 +619,7 @@ export default function CandidateDetailPage() {
             </div>
           </div>
 
+          {!compareMode && (
           <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
@@ -580,7 +673,10 @@ export default function CandidateDetailPage() {
               </p>
             )}
           </div>
+          )}
 
+          {/* ── Raw profile data (hidden in compare mode) ── */}
+          {!compareMode && (
           <div className="db-card" style={{ padding: 0, marginTop: 20, overflow: "hidden", borderRadius: 12 }}>
             {/* Collapsible header */}
             <button
@@ -693,7 +789,6 @@ export default function CandidateDetailPage() {
                               backgroundColor: "var(--lu-bg-page)",
                             }}
                           >
-                            {/* Timeline dot */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, flexShrink: 0 }}>
                               <div style={{
                                 width: 36, height: 36, borderRadius: 10,
@@ -707,8 +802,6 @@ export default function CandidateDetailPage() {
                                 <div style={{ width: 2, flex: 1, marginTop: 8, backgroundColor: "var(--lu-border)", minHeight: 24 }} />
                               )}
                             </div>
-
-                            {/* Content */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
                                 <div>
@@ -738,8 +831,6 @@ export default function CandidateDetailPage() {
                                   </span>
                                 </div>
                               </div>
-
-                              {/* Description / responsibilities */}
                               {typeof item.description === "string" && item.description && (
                                 <p style={{ margin: "10px 0 0", fontSize: "0.9em", color: "var(--lu-text-secondary)", lineHeight: 1.7 }}>
                                   {item.description}
@@ -750,8 +841,6 @@ export default function CandidateDetailPage() {
                                   {(item.responsibilities as string[]).map((r, i) => <li key={i}>{r}</li>)}
                                 </ul>
                               )}
-
-                              {/* Technologies / skills used */}
                               {Array.isArray(item.technologies) && (item.technologies as string[]).length > 0 && (
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
                                   {(item.technologies as string[]).map((tech, i) => (
@@ -795,7 +884,6 @@ export default function CandidateDetailPage() {
                               backgroundColor: "var(--lu-bg-page)",
                             }}
                           >
-                            {/* Icon */}
                             <div style={{ flexShrink: 0, paddingTop: 4 }}>
                               <div style={{
                                 width: 36, height: 36, borderRadius: 10,
@@ -806,8 +894,6 @@ export default function CandidateDetailPage() {
                                 <GraduationCap size={16} />
                               </div>
                             </div>
-
-                            {/* Content */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
                                 {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
@@ -978,8 +1064,293 @@ export default function CandidateDetailPage() {
               </div>
             )}
           </div>
+          )}
+
+          {/* ═══ COMPARISON MODE LAYOUT ═══ */}
+          {compareMode && compareCandidate && (
+            <>
+              <div className="compare-exit-bar" style={{ marginTop: 20 }}>
+                <span className="compare-exit-bar__label">
+                  <GitCompare size={16} />
+                  Mode comparaison
+                </span>
+                <button className="compare-exit-btn" onClick={handleExitCompare} id="compare-exit-btn">
+                  <X size={14} />
+                  Quitter la comparaison
+                </button>
+              </div>
+
+              <div className="compare-grid">
+                {[candidate, compareCandidate].map((cand, colIndex) => {
+                  const otherCand = colIndex === 0 ? compareCandidate : candidate;
+                  const isScoreWinner = (cand.score ?? -1) > (otherCand.score ?? -1);
+                  const otherMatchedSet = new Set(otherCand.scoring.matchedCriteria);
+                  const otherMissingSet = new Set(otherCand.scoring.missingCriteria);
+
+                  const cWorkExp = Array.isArray(cand.profile?.workExperience)
+                    ? (cand.profile.workExperience as Array<Record<string, unknown>>)
+                    : [];
+                  const cEducation = Array.isArray(cand.profile?.education)
+                    ? (cand.profile.education as Array<Record<string, unknown>>)
+                    : [];
+                  const cSkills = Array.isArray(cand.profile?.skills)
+                    ? (cand.profile.skills as string[])
+                    : [];
+                  const cLanguages = Array.isArray(cand.profile?.languages)
+                    ? (cand.profile.languages as Array<Record<string, unknown>>)
+                    : [];
+
+                  return (
+                    <div key={cand.id} className="compare-column">
+                      {/* ── Header ── */}
+                      <div className="compare-col-header">
+                        <h3 className="compare-col-name">
+                          {cand.firstName || ""} {cand.lastName || ""}
+                        </h3>
+                        <div className="compare-badges">
+                          <span
+                            className={`compare-badge ${isScoreWinner ? "compare-score--winner" : ""}`}
+                            style={!isScoreWinner ? {
+                              backgroundColor: getScoreBadgeColor(cand.score).backgroundColor,
+                              color: getScoreBadgeColor(cand.score).color,
+                            } : undefined}
+                          >
+                            Score : {cand.score ?? "-"}
+                          </span>
+                          <span
+                            className="compare-badge"
+                            style={{
+                              backgroundColor: getVerdictBadgeColor(cand.scoring.verdict).backgroundColor,
+                              color: getVerdictBadgeColor(cand.scoring.verdict).color,
+                            }}
+                          >
+                            {getVerdictLabel(cand.scoring.verdict)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* ── Matched Criteria ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <ShieldCheck size={14} /> Critères satisfaits
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cand.scoring.matchedCriteria.length > 0 ? (
+                            cand.scoring.matchedCriteria.map((item, i) => (
+                              <span
+                                key={i}
+                                className={`compare-tag ${
+                                  otherMissingSet.has(item)
+                                    ? "compare-tag--diff-matched"
+                                    : "compare-tag--matched"
+                                }`}
+                              >
+                                ✓ {item}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucun</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Missing Criteria ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <XCircle size={14} /> Critères manquants
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cand.scoring.missingCriteria.length > 0 ? (
+                            cand.scoring.missingCriteria.map((item, i) => (
+                              <span
+                                key={i}
+                                className={`compare-tag ${
+                                  otherMatchedSet.has(item)
+                                    ? "compare-tag--diff-missing"
+                                    : "compare-tag--missing"
+                                }`}
+                              >
+                                ✗ {item}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucun</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Skills ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Cpu size={14} /> Compétences
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cSkills.length > 0 ? (
+                            cSkills.map((skill, i) => (
+                              <span key={i} className="compare-tag compare-tag--neutral">
+                                {typeof skill === "string" ? skill : String((skill as any)?.name || skill)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucune</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ── Work Experience ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Briefcase size={14} /> Expérience
+                        </h4>
+                        {cWorkExp.length > 0 ? (
+                          <div>
+                            {cWorkExp.map((item, i) => (
+                              <div key={i} className="compare-entry">
+                                <p className="compare-entry-title">
+                                  {String(item.title || item.position || "Poste non spécifié")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.company || item.employer || "")}
+                                </p>
+                                <p className="compare-entry-dates">
+                                  {String(item.startDate ?? "")} – {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune expérience renseignée</p>
+                        )}
+                      </div>
+
+                      {/* ── Education ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <GraduationCap size={14} /> Formation
+                        </h4>
+                        {cEducation.length > 0 ? (
+                          <div>
+                            {cEducation.map((item, i) => (
+                              <div key={i} className="compare-entry">
+                                <p className="compare-entry-title">
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.fieldOfStudy && item.degree ? item.fieldOfStudy : "")}
+                                </p>
+                                <p className="compare-entry-sub">
+                                  {String(item.school || item.institution || item.university || "")}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune formation renseignée</p>
+                        )}
+                      </div>
+
+                      {/* ── Languages ── */}
+                      <div>
+                        <h4 className="compare-section-title">
+                          <Globe2 size={14} /> Langues
+                        </h4>
+                        <div className="compare-criteria-list" style={{ marginTop: 8 }}>
+                          {cLanguages.length > 0 ? (
+                            cLanguages.map((item, i) => (
+                              <span key={i} className="compare-tag compare-tag--neutral">
+                                {String(item.language || item.name || "?")}
+                                {typeof item.level === "string" ? ` (${item.level})` : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="compare-empty">Aucune</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Compare loading indicator */}
+          {compareLoading && (
+            <div className="db-card" style={{ padding: 24, marginTop: 20, textAlign: "center" }}>
+              <Loader2 size={20} className="cand-skeleton-pulse" /> Chargement de la comparaison...
+            </div>
+          )}
         </>
       ) : null}
+
+      {/* ═══ CANDIDATE PICKER MODAL ═══ */}
+      {pickerOpen && (
+        <div className="compare-picker-overlay" onClick={() => setPickerOpen(false)}>
+          <div className="compare-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="compare-picker-header">
+              <h3>Comparer avec…</h3>
+              <button className="compare-picker-close" onClick={() => setPickerOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <input
+              className="compare-picker-search"
+              type="text"
+              placeholder="Rechercher un candidat..."
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="compare-picker-list">
+              {pickerLoading ? (
+                <div className="compare-picker-loading">
+                  <Loader2 size={16} className="cand-skeleton-pulse" /> Chargement...
+                </div>
+              ) : filteredPickerCandidates.length > 0 ? (
+                filteredPickerCandidates.map((c) => (
+                  <button
+                    key={c.id}
+                    className="compare-picker-item"
+                    onClick={() => handleSelectCompare(c.id)}
+                  >
+                    <span className="compare-picker-item-name">
+                      {c.firstName} {c.lastName}
+                    </span>
+                    <div className="compare-picker-item-badges">
+                      <span
+                        className="compare-badge"
+                        style={{
+                          ...getScoreBadgeColor(c.score),
+                          padding: "4px 10px",
+                          fontSize: "0.78em",
+                        }}
+                      >
+                        {c.score ?? "-"}
+                      </span>
+                      {c.verdict && (
+                        <span
+                          className="compare-badge"
+                          style={{
+                            ...getVerdictBadgeColor(c.verdict),
+                            padding: "4px 10px",
+                            fontSize: "0.78em",
+                          }}
+                        >
+                          {getVerdictLabel(c.verdict)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="compare-picker-empty">
+                  {pickerSearch ? "Aucun candidat trouvé" : "Aucun autre candidat dans ce poste"}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
