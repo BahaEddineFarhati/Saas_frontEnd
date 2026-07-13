@@ -20,8 +20,8 @@
   overflow: hidden;
   transition: transform 200ms ease;
   box-shadow:
-    0 4px 14px rgba(13, 148, 136, 0.35),
-    0 0 20px rgba(13, 148, 136, 0.15);
+    0 4px 14px rgba(108, 92, 231, 0.35),
+    0 0 20px rgba(108, 92, 231, 0.15);
 }
 
 .ai-chat-btn:hover {
@@ -41,11 +41,11 @@
   height: 200%;
   background: conic-gradient(
     from 0deg,
-    #0d9488 0%,
-    #14b8a6 25%,
-    #0d9488 50%,
-    #5eead4 75%,
-    #0d9488 100%
+    #6C5CE7 0%,
+    #7C6BFF 25%,
+    #6C5CE7 50%,
+    #a89cff 75%,
+    #6C5CE7 100%
   );
   animation: ai-orb-rotate 3s linear infinite;
   transition: animation-duration 400ms ease;
@@ -113,7 +113,7 @@
 }
 
 .ai-chat-header__icon {
-  color: #0d9488;
+  color: #6C5CE7;
   flex-shrink: 0;
   display: flex;
 }
@@ -210,7 +210,7 @@
 }
 
 .ai-chat-msg--user .ai-chat-msg__bubble {
-  background: #0d9488;
+  background: #6C5CE7;
   color: #ffffff;
   border-radius: 16px 16px 4px 16px;
 }
@@ -247,15 +247,15 @@
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #0d9488;
-  border: 1px solid #0d9488;
+  color: #6C5CE7;
+  border: 1px solid #6C5CE7;
   border-radius: 12px;
   cursor: pointer;
   transition: background 160ms ease;
 }
 
 .ai-chat-msg__retry-btn:hover {
-  background: rgba(13, 148, 136, 0.08);
+  background: rgba(108, 92, 231, 0.08);
 }
 
 /* ── Typing Indicator ─────────────────────────────────── */
@@ -323,9 +323,9 @@
 }
 
 .ai-chat-suggestion-chip:hover {
-  background: rgba(13, 148, 136, 0.06);
-  color: #0d9488;
-  border-color: rgba(13, 148, 136, 0.3);
+  background: rgba(108, 92, 231, 0.06);
+  color: #6C5CE7;
+  border-color: rgba(108, 92, 231, 0.3);
 }
 
 /* ── Contextual Suggestions Bar ───────────────────────── */
@@ -384,7 +384,7 @@
 }
 
 .ai-chat-textarea:focus {
-  border-color: #0d9488;
+  border-color: #6C5CE7;
 }
 
 .ai-chat-send-btn {
@@ -392,7 +392,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #0d9488;
+  background: #6C5CE7;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -402,7 +402,7 @@
 }
 
 .ai-chat-send-btn:hover:not(:disabled) {
-  background: #0f766e;
+  background: #5a4bd6;
   transform: scale(1.05);
 }
 
@@ -503,8 +503,8 @@
 
 html.dark .ai-chat-btn {
   box-shadow:
-    0 4px 14px rgba(13, 148, 136, 0.25),
-    0 0 24px rgba(13, 148, 136, 0.1);
+    0 4px 14px rgba(108, 92, 231, 0.25),
+    0 0 24px rgba(108, 92, 231, 0.1);
 }
 
 html.dark .ai-chat-panel {
@@ -553,7 +553,82 @@ html.dark .ai-chat-suggestion-chip {
 }
 
 html.dark .ai-chat-suggestion-chip:hover {
-  background: rgba(13, 148, 136, 0.1);
-  color: #5eead4;
-  border-color: rgba(94, 234, 212, 0.3);
+  background: rgba(108, 92, 231, 0.1);
+  color: #a89cff;
+  border-color: rgba(168, 156, 255, 0.3);
+}
+
+/* ── First-Time Popup Toast ──────────────────────────── */
+
+.ai-chat-first-time-popup {
+  position: absolute;
+  bottom: 80px;
+  left: 16px;
+  right: 16px;
+  z-index: 70;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--lu-bg-card, #ffffff);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(108, 92, 231, 0.25);
+  animation: ai-popup-fade-in 300ms ease;
+}
+
+.ai-chat-first-time-popup__icon {
+  color: #6C5CE7;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ai-chat-first-time-popup__text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--lu-text-secondary, #6B7280);
+  flex: 1;
+}
+
+.ai-chat-first-time-popup__close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--lu-text-muted, #9CA3AF);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.ai-chat-first-time-popup__close:hover {
+  background: rgba(108, 92, 231, 0.12);
+  color: #6C5CE7;
+}
+
+@keyframes ai-popup-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html.dark .ai-chat-first-time-popup {
+  background: #1e2538;
+  border-color: rgba(108, 92, 231, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .ai-chat-first-time-popup__text {
+  color: var(--lu-text-secondary);
+}
+
+html.dark .ai-chat-first-time-popup__icon {
+  color: #a89cff;
 }

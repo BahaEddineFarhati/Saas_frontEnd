@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, Trash2, SendHorizontal, RotateCw, Square } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Sparkles, Trash2, SendHorizontal, RotateCw, Square, X as XIcon, Info } from "lucide-react";
 import {
   fetchChatMessages,
   sendChatMessage,
@@ -12,7 +12,7 @@ import {
 
 const MAX_CHARS = 1000;
 const CHAR_WARN_THRESHOLD = 800;
-const LLM_TIMEOUT_MS = 30_000;
+const LLM_TIMEOUT_MS = 120_000;
 
 const WELCOME_MESSAGE =
   "Bonjour ! Je suis votre assistant IA pour ce poste. Vous pouvez me poser des questions sur les candidats, leurs profils, et qui correspond le mieux à votre recherche.";
@@ -70,6 +70,10 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showFirstTimePopup, setShowFirstTimePopup] = useState(false);
+
+  // Track if a message has been sent in this browser session (resets on reload)
+  const hasSentInThisSession = useRef(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,6 +124,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
     setError(null);
     setSuggestions([]);
     cancelPendingRequest(); // Abort any query when moving to a different job
+    hasSentInThisSession.current = false; // Reset session send state for new job context
 
     fetchChatMessages(jobId)
       .then((msgs) => {
@@ -214,7 +219,13 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       textareaRef.current.style.height = "auto";
     }
 
-    // Set 30s timeout
+    // Show first-time popup if this is the first message sent since the page loaded
+    if (!hasSentInThisSession.current) {
+      setShowFirstTimePopup(true);
+      hasSentInThisSession.current = true;
+    }
+
+    // Set timeout
     timeoutRef.current = setTimeout(() => {
       setIsPending(false);
       setError("La réponse a pris trop longtemps. Veuillez réessayer.");
@@ -243,6 +254,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       }
 
       setError(null);
+      setShowFirstTimePopup(false);
     } catch (err: any) {
       // Clear timeout
       if (timeoutRef.current) {
@@ -397,6 +409,8 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
             </div>
           )}
 
+
+
           {/* Error bubble */}
           {error && !isPending && (
             <div className="ai-chat-msg ai-chat-msg--error">
@@ -434,6 +448,24 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
               {s}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* First-time popup toast - positioned absolutely at the bottom above input area */}
+      {showFirstTimePopup && isPending && (
+        <div className="ai-chat-first-time-popup">
+          <Info size={16} strokeWidth={2} className="ai-chat-first-time-popup__icon" />
+          <span className="ai-chat-first-time-popup__text">
+            La première réponse peut prendre un peu plus de temps, le temps que l'assistant analyse les candidats.
+          </span>
+          <button
+            type="button"
+            className="ai-chat-first-time-popup__close"
+            onClick={() => setShowFirstTimePopup(false)}
+            title="Fermer"
+          >
+            <XIcon size={14} strokeWidth={2} />
+          </button>
         </div>
       )}
 
