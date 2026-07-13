@@ -26,8 +26,10 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { NotificationProvider } from "./lib/NotificationContext";
 import { ToastViewport } from "./components/ui/Toast";
+import AIChatButton from "./components/ui/AIChatButton";
 
 import "./auth-layout.css";
+import "./components/ui/ai-chat-widget.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const DARK_KEY = "linkup_dark";
@@ -236,6 +238,7 @@ function AppContent({
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      <AIChatButton />
     </>
   );
 }
