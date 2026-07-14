@@ -8,8 +8,10 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  ArrowUpDown,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+import { fetchUsageSummaries } from '../../api/usageApi';
 
 interface Organisation {
   id: string;
@@ -63,6 +65,8 @@ export default function AdminOrganisations() {
   const [search, setSearch] = useState('');
   const [suspendedFilter, setSuspendedFilter] = useState<'all' | 'true' | 'false'>('all');
   const [loading, setLoading] = useState(true);
+  const [usageMap, setUsageMap] = useState<Map<string, number>>(new Map());
+  const [tokenSort, setTokenSort] = useState<'none' | 'desc' | 'asc'>('none');
   const [error, setError] = useState<string | null>(null);
 
   // Create modal state
@@ -110,6 +114,24 @@ export default function AdminOrganisations() {
     fetchOrgs();
   }, [fetchOrgs]);
 
+  // Fetch current month usage summaries for all orgs (batch)
+  useEffect(() => {
+    const now = new Date();
+    fetchUsageSummaries({
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      limit: 1000, // fetch all in one call
+    })
+      .then((res) => {
+        const map = new Map<string, number>();
+        res.data.forEach((s) => map.set(s.organisation.id, s.totalTokens));
+        setUsageMap(map);
+      })
+      .catch(() => {
+        // usage data is non-critical, silent fail
+      });
+  }, []);
+
   // Reset page when search or filter changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -149,6 +171,24 @@ export default function AdminOrganisations() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   };
+
+  const formatTokens = (n: number) =>
+    new Intl.NumberFormat('fr-FR').format(n);
+
+  const getTokenColor = (tokens: number) => {
+    if (tokens > 200_000) return 'bg-red-500';
+    if (tokens >= 50_000) return 'bg-amber-500';
+    return 'bg-emerald-500';
+  };
+
+  // Apply client-side token sorting
+  const sortedOrgs = tokenSort === 'none'
+    ? orgs
+    : [...orgs].sort((a, b) => {
+        const aTokens = usageMap.get(a.id) ?? -1;
+        const bTokens = usageMap.get(b.id) ?? -1;
+        return tokenSort === 'desc' ? bTokens - aTokens : aTokens - bTokens;
+      });
 
   return (
     <div className="p-6 space-y-6">
@@ -232,6 +272,19 @@ export default function AdminOrganisations() {
                   <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-center">
                     CVs
                   </th>
+                  <th
+                    className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-right cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    onClick={() =>
+                      setTokenSort((s) =>
+                        s === 'none' ? 'desc' : s === 'desc' ? 'asc' : 'none'
+                      )
+                    }
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Tokens ce mois
+                      <ArrowUpDown size={13} className={tokenSort !== 'none' ? 'text-indigo-500' : 'opacity-40'} />
+                    </span>
+                  </th>
                   <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">
                     Date création
                   </th>
@@ -241,7 +294,9 @@ export default function AdminOrganisations() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                {orgs.map((org) => (
+                {sortedOrgs.map((org) => {
+                  const tokens = usageMap.get(org.id);
+                  return (
                   <tr
                     key={org.id}
                     onClick={() => navigate(`/admin/organisations/${org.id}`)}
@@ -266,6 +321,16 @@ export default function AdminOrganisations() {
                     <td className="px-5 py-3.5 text-center text-gray-700 dark:text-gray-300">
                       {org._count.cvsAnalysed}
                     </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {tokens != null ? (
+                        <span className="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                          <span className={`w-2 h-2 rounded-full ${getTokenColor(tokens)} shrink-0`} />
+                          {formatTokens(tokens)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">
                       {formatDate(org.createdAt)}
                     </td>
@@ -283,11 +348,12 @@ export default function AdminOrganisations() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {orgs.length === 0 && (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-5 py-10 text-center text-gray-400 dark:text-gray-500"
                     >
                       Aucune organisation trouvée.

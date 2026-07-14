@@ -9,8 +9,15 @@ import {
   AlertTriangle,
   RefreshCw,
   CheckCircle,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+import {
+  fetchUsageDetail,
+  fetchUsageHistory,
+  type UsageDetailSummary,
+  type UsageHistoryPoint,
+} from '../../api/usageApi';
 
 interface OrgUser {
   id: string;
@@ -67,6 +74,12 @@ export default function AdminOrgDetail() {
   // Success toast
   const [toast, setToast] = useState<string | null>(null);
 
+  // Usage data
+  const [usageSummary, setUsageSummary] = useState<UsageDetailSummary | null>(null);
+  const [usageHistory, setUsageHistory] = useState<UsageHistoryPoint[]>([]);
+  const [usageLoading, setUsageLoading] = useState(true);
+  const [usageError, setUsageError] = useState(false);
+
   const fetchOrg = useCallback(async () => {
     if (!orgId) return;
     try {
@@ -86,6 +99,27 @@ export default function AdminOrgDetail() {
   useEffect(() => {
     fetchOrg();
   }, [fetchOrg]);
+
+  // Fetch usage data
+  useEffect(() => {
+    if (!orgId) return;
+    setUsageLoading(true);
+    setUsageError(false);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    Promise.all([
+      fetchUsageDetail(orgId, year, month),
+      fetchUsageHistory(orgId),
+    ])
+      .then(([detail, history]) => {
+        setUsageSummary(detail.summary);
+        setUsageHistory(history.history);
+      })
+      .catch(() => setUsageError(true))
+      .finally(() => setUsageLoading(false));
+  }, [orgId]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -153,6 +187,14 @@ export default function AdminOrgDetail() {
       month: 'long',
       year: 'numeric',
     });
+  };
+
+  const formatTokens = (n: number) =>
+    new Intl.NumberFormat('fr-FR').format(n);
+
+  const formatMonthYear = (m: number, y: number) => {
+    const d = new Date(y, m - 1);
+    return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -302,6 +344,103 @@ export default function AdminOrgDetail() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Utilisation IA Section ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center gap-2">
+          <Sparkles size={18} className="text-indigo-500" />
+          <h3 className="font-semibold text-gray-900 dark:text-white">
+            Utilisation IA
+          </h3>
+        </div>
+
+        {usageLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-7 w-7 border-4 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : usageError ? (
+          <div className="px-5 py-8 text-center text-sm text-red-500 dark:text-red-400 flex items-center justify-center gap-2">
+            <AlertTriangle size={16} />
+            Impossible de charger les données d'utilisation.
+          </div>
+        ) : (
+          <div className="p-5 space-y-6">
+            {/* Metric Tiles */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Tokens', value: usageSummary?.totalTokens ?? 0, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-300' },
+                { label: 'CV Parsing', value: usageSummary?.cvParsingTokens ?? 0, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-300' },
+                { label: 'CV Scoring', value: usageSummary?.cvScoringTokens ?? 0, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-300' },
+                { label: 'Chat', value: usageSummary?.chatTokens ?? 0, color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-300' },
+              ].map((tile) => (
+                <div
+                  key={tile.label}
+                  className={`rounded-xl border p-4 ${tile.color} transition-all hover:shadow-sm`}
+                >
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {tile.label}
+                  </p>
+                  <p className={`text-xl font-bold ${tile.textColor}`}>
+                    {formatTokens(tile.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* History Table */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+                Historique (12 derniers mois)
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-slate-700/50 text-left">
+                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400">
+                        Mois
+                      </th>
+                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400 text-right">
+                        Total Tokens
+                      </th>
+                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400 text-right">
+                        Nombre d'appels
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                    {[...usageHistory].reverse().map((h) => (
+                      <tr
+                        key={`${h.year}-${h.month}`}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
+                      >
+                        <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 capitalize">
+                          {formatMonthYear(h.month, h.year)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300 font-mono text-xs">
+                          {h.totalTokens > 0 ? formatTokens(h.totalTokens) : '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                          {h.callCount > 0 ? formatTokens(h.callCount) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                    {usageHistory.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="px-4 py-8 text-center text-gray-400 dark:text-gray-500"
+                        >
+                          Aucune donnée d'utilisation.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

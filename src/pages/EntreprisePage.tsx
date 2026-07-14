@@ -14,7 +14,9 @@ import {
   X,
   Mail,
   Clock,
+  Sparkles,
 } from 'lucide-react'
+import { fetchOwnOrgUsage, type UsageDetailSummary } from '../api/usageApi'
 
 const API_BASE = 'http://localhost:3001/api/v1'
 
@@ -302,6 +304,11 @@ export default function EntreprisePage() {
   // toast
   const [toast, setToast] = useState<Toast | null>(null)
 
+  // AI usage
+  const [aiUsage, setAiUsage] = useState<UsageDetailSummary | null>(null)
+  const [aiUsageLoading, setAiUsageLoading] = useState(true)
+  const [aiUsageUnavailable, setAiUsageUnavailable] = useState(false)
+
   /* ── fetchers ── */
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)
@@ -350,6 +357,20 @@ export default function EntreprisePage() {
     fetchMembers()
     fetchOrg()
   }, [fetchMembers, fetchOrg])
+
+  // Fetch own org AI usage
+  useEffect(() => {
+    setAiUsageLoading(true)
+    setAiUsageUnavailable(false)
+    fetchOwnOrgUsage()
+      .then((summary) => setAiUsage(summary))
+      .catch((err) => {
+        if (err?.response?.status === 403) {
+          setAiUsageUnavailable(true)
+        }
+      })
+      .finally(() => setAiUsageLoading(false))
+  }, [])
 
   /* ── member actions ── */
   async function handleRoleChange(member: Member) {
@@ -702,6 +723,87 @@ export default function EntreprisePage() {
             </button>
           </form>
         ) : null}
+      </section>
+
+      {/* ═══ Section 3: AI Usage This Month ═══ */}
+      <section className="ent-section">
+        <div className="ent-section-header">
+          <div className="ent-section-title-row">
+            <div className="ent-section-icon ent-section-icon--purple">
+              <Sparkles size={20} strokeWidth={1.8} />
+            </div>
+            <div>
+              <h2 className="ent-section-title">Utilisation IA ce mois</h2>
+              <p className="ent-section-sub">Token consumption for the current month</p>
+            </div>
+          </div>
+        </div>
+
+        {aiUsageLoading ? (
+          <div className="ent-loading">
+            <Loader2 size={24} className="ent-spin" />
+            <span>Loading usage data…</span>
+          </div>
+        ) : aiUsageUnavailable ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
+            <AlertTriangle size={20} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+            Données non disponibles
+          </div>
+        ) : aiUsage ? (
+          <div style={{ padding: '1.25rem' }}>
+            {/* Total tokens - large display */}
+            <div style={{
+              textAlign: 'center',
+              padding: '1.5rem 0 1rem',
+              borderBottom: '1px solid var(--border, rgba(148,163,184,0.15))',
+              marginBottom: '1rem',
+            }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted, #94a3b8)', marginBottom: 4 }}>
+                Total Tokens
+              </p>
+              <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary, #e2e8f0)' }}>
+                {new Intl.NumberFormat('fr-FR').format(aiUsage.totalTokens)}
+              </p>
+            </div>
+
+            {/* Feature breakdown */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+              {[
+                { label: 'CV Parsing', value: aiUsage.cvParsingTokens, accent: '#6366f1' },
+                { label: 'CV Scoring', value: aiUsage.cvScoringTokens, accent: '#8b5cf6' },
+                { label: 'Enrichment', value: aiUsage.cvEnrichmentTokens, accent: '#f59e0b' },
+                { label: 'Chat', value: aiUsage.chatTokens, accent: '#10b981' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '0.75rem',
+                    borderRadius: '0.625rem',
+                    border: '1px solid var(--border, rgba(148,163,184,0.15))',
+                    background: 'var(--card-bg, rgba(148,163,184,0.04))',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: item.accent, display: 'inline-block', flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-muted, #94a3b8)' }}>
+                      {item.label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary, #e2e8f0)' }}>
+                    {new Intl.NumberFormat('fr-FR').format(item.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
+            Aucune utilisation ce mois
+          </div>
+        )}
       </section>
 
       {/* ═══ Modals ═══ */}
