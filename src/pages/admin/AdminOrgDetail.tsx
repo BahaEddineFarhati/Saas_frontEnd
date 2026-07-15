@@ -11,6 +11,16 @@ import {
   CheckCircle,
   Sparkles,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { apiClient } from '../../api/apiClient';
 import {
   fetchUsageDetail,
@@ -388,56 +398,84 @@ export default function AdminOrgDetail() {
               ))}
             </div>
 
-            {/* History Table */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-                Historique (12 derniers mois)
+            {/* History Chart */}
+            <div className="pt-2">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+                Historique d'utilisation des tokens (12 derniers mois)
               </h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-slate-700/50 text-left">
-                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400">
-                        Mois
-                      </th>
-                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400 text-right">
-                        Total Tokens
-                      </th>
-                      <th className="px-4 py-2.5 font-medium text-gray-500 dark:text-gray-400 text-right">
-                        Nombre d'appels
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {[...usageHistory].reverse().map((h) => (
-                      <tr
-                        key={`${h.year}-${h.month}`}
-                        className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
-                      >
-                        <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 capitalize">
-                          {formatMonthYear(h.month, h.year)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300 font-mono text-xs">
-                          {h.totalTokens > 0 ? formatTokens(h.totalTokens) : '—'}
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                          {h.callCount > 0 ? formatTokens(h.callCount) : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                    {usageHistory.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-4 py-8 text-center text-gray-400 dark:text-gray-500"
-                        >
-                          Aucune donnée d'utilisation.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {usageHistory.length === 0 || usageHistory.every(h => h.totalTokens === 0) ? (
+                <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50/50 dark:bg-slate-900/10">
+                  Aucune donnée d'utilisation sur cette période.
+                </div>
+              ) : (
+                <div className="w-full h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={usageHistory.map((h) => ({
+                        ...h,
+                        name: formatMonthYear(h.month, h.year),
+                      }))}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--lu-border)" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "var(--lu-text-secondary)" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "var(--lu-text-secondary)" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          return (
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xl text-xs min-w-[180px] space-y-2">
+                              <p className="font-semibold text-gray-900 dark:text-white capitalize border-b border-gray-100 dark:border-slate-800 pb-1.5">{label}</p>
+                              <div className="space-y-1.5">
+                                {payload.map((entry: any) => (
+                                  <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                      <span>{entry.name}</span>
+                                    </div>
+                                    <span className="font-mono font-medium text-gray-900 dark:text-white">
+                                      {new Intl.NumberFormat('fr-FR').format(entry.value)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
+                                <span>Total Tokens</span>
+                                <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
+                              </div>
+                              <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
+                                <span>Appels d'API</span>
+                                <span>{payload[0]?.payload?.callCount ?? 0}</span>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12 }}
+                      />
+                      <Bar name="CV Parsing" dataKey="cvParsingTokens" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+                      <Bar name="CV Scoring" dataKey="cvScoringTokens" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                      <Bar name="Enrichment" dataKey="cvEnrichmentTokens" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                      <Bar name="Chat" dataKey="chatTokens" stackId="a" fill="#10b981" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           </div>
         )}

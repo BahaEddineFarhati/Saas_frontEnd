@@ -61,6 +61,10 @@ export interface UsageHistoryPoint {
   year: number;
   totalTokens: number;
   callCount: number;
+  cvParsingTokens: number;
+  cvScoringTokens: number;
+  cvEnrichmentTokens: number;
+  chatTokens: number;
 }
 
 export interface UsageHistoryResponse {
@@ -72,6 +76,14 @@ export interface OwnUsageResponse {
   success: boolean;
   data: {
     summary: UsageDetailSummary | null;
+  };
+}
+
+export interface OwnUsageHistoryResponse {
+  success: boolean;
+  data: {
+    organisation: { id: string; name: string; slug: string };
+    history: UsageHistoryPoint[];
   };
 }
 
@@ -123,3 +135,9 @@ export async function fetchOwnOrgUsage(): Promise<UsageDetailSummary | null> {
   const res = await apiClient.get<OwnUsageResponse>("/v1/organisation/usage");
   return res.data.data.summary;
 }
+
+export async function fetchOwnOrgUsageHistory(): Promise<UsageHistoryPoint[]> {
+  const res = await apiClient.get<OwnUsageHistoryResponse>("/v1/organisation/usage/history");
+  return res.data.data.history;
+}
+
