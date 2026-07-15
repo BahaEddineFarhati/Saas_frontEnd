@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sparkles, Trash2, SendHorizontal, RotateCw, Square, X as XIcon, Info } from "lucide-react";
 import {
   fetchChatMessages,
@@ -72,8 +72,8 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showFirstTimePopup, setShowFirstTimePopup] = useState(false);
 
-  // Track if a message has been sent in this browser session (resets on reload)
-  const hasSentInThisSession = useRef(false);
+  // Timer ref for the delayed first-time popup
+  const firstTimePopupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -92,6 +92,11 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    if (firstTimePopupTimerRef.current) {
+      clearTimeout(firstTimePopupTimerRef.current);
+      firstTimePopupTimerRef.current = null;
+    }
+    setShowFirstTimePopup(false);
     setIsPending(false);
   }, []);
 
@@ -124,7 +129,6 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
     setError(null);
     setSuggestions([]);
     cancelPendingRequest(); // Abort any query when moving to a different job
-    hasSentInThisSession.current = false; // Reset session send state for new job context
 
     fetchChatMessages(jobId)
       .then((msgs) => {
@@ -219,11 +223,14 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       textareaRef.current.style.height = "auto";
     }
 
-    // Show first-time popup if this is the first message sent since the page loaded
-    if (!hasSentInThisSession.current) {
-      setShowFirstTimePopup(true);
-      hasSentInThisSession.current = true;
+    // Show first-time popup after a short delay (only if response is still pending)
+    // This avoids flashing the popup for instant responses (e.g. greetings)
+    if (firstTimePopupTimerRef.current) {
+      clearTimeout(firstTimePopupTimerRef.current);
     }
+    firstTimePopupTimerRef.current = setTimeout(() => {
+      setShowFirstTimePopup(true);
+    }, 2000);
 
     // Set timeout
     timeoutRef.current = setTimeout(() => {
@@ -254,6 +261,10 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       }
 
       setError(null);
+      if (firstTimePopupTimerRef.current) {
+        clearTimeout(firstTimePopupTimerRef.current);
+        firstTimePopupTimerRef.current = null;
+      }
       setShowFirstTimePopup(false);
     } catch (err: any) {
       // Clear timeout
@@ -264,6 +275,11 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       
       // If request was aborted, ignore and clean up UI peacefully
       if (err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+        if (firstTimePopupTimerRef.current) {
+          clearTimeout(firstTimePopupTimerRef.current);
+          firstTimePopupTimerRef.current = null;
+        }
+        setShowFirstTimePopup(false);
         // Restore previous suggestions or default chips
         if (prevSuggestionsRef.current.length > 0) {
           setSuggestions(prevSuggestionsRef.current);
@@ -456,7 +472,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
         <div className="ai-chat-first-time-popup">
           <Info size={16} strokeWidth={2} className="ai-chat-first-time-popup__icon" />
           <span className="ai-chat-first-time-popup__text">
-            La première réponse peut prendre un peu plus de temps, le temps que l'assistant analyse les candidats.
+            La réponse peut prendre un peu plus de temps, le temps que l'assistant analyse les candidats.
           </span>
           <button
             type="button"
