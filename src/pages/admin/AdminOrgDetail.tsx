@@ -377,11 +377,12 @@ export default function AdminOrgDetail() {
         ) : (
           <div className="p-5 space-y-6">
             {/* Metric Tiles */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
                 { label: 'Total Tokens', value: usageSummary?.totalTokens ?? 0, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-300' },
                 { label: 'CV Parsing', value: usageSummary?.cvParsingTokens ?? 0, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-300' },
                 { label: 'CV Scoring', value: usageSummary?.cvScoringTokens ?? 0, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-300' },
+                { label: 'Enrichment', value: usageSummary?.cvEnrichmentTokens ?? 0, color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-300' },
                 { label: 'Chat', value: usageSummary?.chatTokens ?? 0, color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-300' },
               ].map((tile) => (
                 <div
