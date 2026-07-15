@@ -230,7 +230,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
     }
     firstTimePopupTimerRef.current = setTimeout(() => {
       setShowFirstTimePopup(true);
-    }, 2000);
+    }, 4000);
 
     // Set timeout
     timeoutRef.current = setTimeout(() => {
