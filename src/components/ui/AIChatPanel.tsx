@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sparkles, Trash2, SendHorizontal, RotateCw, Square, X as XIcon, Info } from "lucide-react";
 import {
   fetchChatMessages,

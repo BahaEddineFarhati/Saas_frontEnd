@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -20,8 +21,6 @@ import {
   GitCompare,
   X,
 } from "lucide-react";
-
-const API_BASE_URL = "http://localhost:3001/api/v1";
 
 interface CandidateDetail {
   id: string;

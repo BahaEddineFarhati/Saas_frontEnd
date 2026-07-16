@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-
-const API_BASE = 'http://localhost:3001/api/v1'
+import { API_BASE_URL } from '../config/api'
 
 interface FormState {
   email: string
@@ -57,7 +56,7 @@ export default function Login() {
     setErrors({})
 
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, password: form.password }),

@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
+import { API_BASE_URL } from '../config/api';
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
@@ -62,7 +63,7 @@ apiClient.interceptors.response.use(
         refreshPromise = (async () => {
           try {
             const response = await axios.post(
-              `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/v1/auth/refresh`,
+              `${API_BASE_URL}/auth/refresh`,
               {},
               { withCredentials: true }
             );

@@ -1,9 +1,10 @@
 import { apiClient } from "./apiClient";
+import type { DashboardStats, RecentActivity, ChartDataPoint, FunnelStage } from "../types";
+
+export type { DashboardStats, RecentActivity, ChartDataPoint, FunnelStage } from "../types";
 
 // ─── Response types ──────────────────────────────────────────────────────────
-
-export interface DashboardStats {
-  activeJobOpenings: number;
+export interface DashboardStatsResponse extends DashboardStats {
   totalJobOpenings: number;
   totalCandidatesUploaded: number;
   candidatesUploadedThisMonth: number;
@@ -22,27 +23,12 @@ export interface RecentJobOpening {
   updatedAt: string;
 }
 
-export interface ActivityEvent {
-  type: "job_created" | "cvs_uploaded" | "job_closed";
-  message: string;
-  jobOpeningId: string;
-  jobOpeningTitle: string;
-  timestamp: string;
-  timeAgo: string;
-}
+export interface ActivityEvent extends RecentActivity {}
 
-export interface TimeSeriesPoint {
-  date: string;  // "YYYY-MM-DD"
-  count: number;
-}
+export interface TimeSeriesPoint extends ChartDataPoint {}
 
 export interface ParsingStatusPoint {
   status: "PENDING" | "SCORED" | "FAILED";
-  count: number;
-}
-
-export interface FunnelStage {
-  stage: string;
   count: number;
 }
 
@@ -52,21 +38,21 @@ export type TimeRange = "7d" | "30d" | "90d";
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const res = await apiClient.get<{ success: boolean; data: DashboardStats }>(
-    "/v1/dashboard/stats"
+    "/dashboard/stats"
   );
   return res.data.data;
 }
 
 export async function fetchRecentJobOpenings(): Promise<RecentJobOpening[]> {
   const res = await apiClient.get<{ success: boolean; data: RecentJobOpening[] }>(
-    "/v1/dashboard/recent-job-openings"
+    "/dashboard/recent-job-openings"
   );
   return res.data.data;
 }
 
 export async function fetchRecentActivity(): Promise<ActivityEvent[]> {
   const res = await apiClient.get<{ success: boolean; data: ActivityEvent[] }>(
-    "/v1/dashboard/recent-activity"
+    "/dashboard/recent-activity"
   );
   return res.data.data;
 }
@@ -75,7 +61,7 @@ export async function fetchCandidatesOverTime(
   range: TimeRange = "30d"
 ): Promise<TimeSeriesPoint[]> {
   const res = await apiClient.get<{ success: boolean; data: TimeSeriesPoint[] }>(
-    `/v1/dashboard/charts/candidates-over-time?range=${range}`
+    `/dashboard/charts/candidates-over-time?range=${range}`
   );
   return res.data.data;
 }
@@ -84,13 +70,13 @@ export async function fetchParsingStatus(): Promise<ParsingStatusPoint[]> {
   const res = await apiClient.get<{
     success: boolean;
     data: ParsingStatusPoint[];
-  }>("/v1/dashboard/charts/parsing-status");
+  }>('/dashboard/charts/parsing-status');
   return res.data.data;
 }
 
 export async function fetchOpeningsFunnel(): Promise<FunnelStage[]> {
   const res = await apiClient.get<{ success: boolean; data: FunnelStage[] }>(
-    "/v1/dashboard/charts/openings-funnel"
+    "/dashboard/charts/openings-funnel"
   );
   return res.data.data;
 }

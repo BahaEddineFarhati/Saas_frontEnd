@@ -22,12 +22,23 @@ An AI-powered recruitment SaaS platform that helps HR teams instantly analyze, r
 npm install
 ```
 
-2. Start the development server:
+2. Create a local environment file:
+```bash
+cp .env.example .env
+```
+
+3. Start the development server:
 ```bash
 npm run dev
 ```
 
 The application will automatically open at `http://localhost:3000`
+
+### API configuration
+Set `VITE_API_BASE_URL` in your local `.env` file to point the frontend at the backend API, for example:
+```env
+VITE_API_BASE_URL=http://localhost:3001/api/v1
+```
 
 ### Build for Production
 

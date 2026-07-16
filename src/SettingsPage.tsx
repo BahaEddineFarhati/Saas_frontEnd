@@ -152,7 +152,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await apiClient.get('/v1/profile');
+        const response = await apiClient.get('/profile');
         const profile = response.data.data;
         profileReset({
           firstName: profile.firstName,
@@ -177,7 +177,7 @@ export default function SettingsPage() {
     setProfileSubmitting(true);
     setProfileEmailError('');
     try {
-      const response = await apiClient.patch('/v1/profile', {
+      const response = await apiClient.patch('/profile', {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -222,7 +222,7 @@ export default function SettingsPage() {
     setPasswordSubmitting(true);
     setPasswordCurrentError('');
     try {
-      const response = await apiClient.patch('/v1/profile/password', {
+      const response = await apiClient.patch('/profile/password', {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
         confirmNewPassword: data.confirmNewPassword,

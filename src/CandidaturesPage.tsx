@@ -1,16 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, X, Loader2, AlertCircle, ExternalLink, Trash2 } from "lucide-react";
-
-// Configured backend API Base URL
-const API_BASE_URL = "http://localhost:3001/api/v1";
-
-interface JobOpening {
-  id: string;
-  title: string;
-  status: "OPEN" | "CLOSED";
-  createdAt: string;
-  candidateCount: number;
-}
+import type { JobOpening } from "./types";
+import { API_BASE_URL } from "./config/api";
 
 // Active auth promise to handle concurrent calls during StrictMode
 let activeAuthPromise: Promise<string> | null = null;
@@ -137,8 +128,8 @@ export default function CandidaturesPage() {
   // Client-Side Search & Filter Logic
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "ALL" || job.status.toUpperCase() === statusFilter;
+    const normalizedStatus = (job.status ?? "OPEN").toUpperCase();
+    const matchesStatus = statusFilter === "ALL" || normalizedStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -419,13 +410,13 @@ export default function CandidaturesPage() {
                       <p className="db-job-dept">Ressources Humaines</p>
                     </td>
                     <td>
-                      <span className={`db-badge ${job.status.toUpperCase() === "OPEN" ? "badge--green" : "badge--gray"}`}>
-                        {job.status.toUpperCase() === "OPEN" ? "Ouverte" : "Clôturée"}
+                      <span className={`db-badge ${(job.status ?? "OPEN").toUpperCase() === "OPEN" ? "badge--green" : "badge--gray"}`}>
+                        {(job.status ?? "OPEN").toUpperCase() === "OPEN" ? "Ouverte" : "Clôturée"}
                       </span>
                     </td>
                     <td>
                       <span style={{ color: "var(--lu-text-secondary)", fontSize: "12.5px" }}>
-                        {formatDate(job.createdAt)}
+                        {formatDate(job.createdAt ?? "")}
                       </span>
                     </td>
                     <td className="db-td-num">{job.candidateCount}</td>

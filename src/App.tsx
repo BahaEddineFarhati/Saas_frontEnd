@@ -31,6 +31,7 @@ import AIChatButton from "./components/ui/AIChatButton";
 import "./auth-layout.css";
 import "./components/ui/ai-chat-widget.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { API_BASE_URL } from "./config/api";
 
 const DARK_KEY = "linkup_dark";
 
@@ -88,7 +89,7 @@ function AppContent({
     let cancelled = false;
 
     const fetchProfile = () => {
-      fetch("http://localhost:3001/api/v1/auth/me", {
+      fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
