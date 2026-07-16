@@ -1,12 +1,15 @@
-export interface User {
-  id: string;
-  fullName: string;
-  email: string;
-  firstName: string;
-  lastName?: string;
-  organisationId?: string;
-  role?: string | undefined;
-}
+import type { User } from './user';
+
+export * from './user';
+export * from './job';
+export * from './candidate';
+export * from './notification';
+export * from './chat';
+export * from './activity';
+export * from './dashboard';
+export * from './email';
+export * from './usage';
+export * from './api';
 
 export interface AuthContextType {
   user: User | null;

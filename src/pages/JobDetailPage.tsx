@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 import {
   ArrowLeft,
   Calendar,
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 
 // ── Config ──────────────────────────────────────────────
-const API_BASE_URL = "http://localhost:3001/api/v1";
 const ALLOWED_FILE_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 

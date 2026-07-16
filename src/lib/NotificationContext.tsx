@@ -33,7 +33,7 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
 
 const fetchNotifications = async (): Promise<NotificationItem[]> => {
-  const response = await apiClient.get('/v1/notifications');
+  const response = await apiClient.get('/notifications');
   return response.data.data ?? [];
 };
 
@@ -121,14 +121,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [toasts]);
 
   const markAllAsRead = useCallback(async () => {
-    await apiClient.patch('/v1/notifications/read-all');
+    await apiClient.patch('/notifications/read-all');
     setNotifications([]);
     setToasts([]);
     setQueuedToasts([]);
   }, []);
 
   const markOneAsRead = useCallback(async (id: string) => {
-    await apiClient.patch(`/v1/notifications/${id}/read`);
+    await apiClient.patch(`/notifications/${id}/read`);
     setNotifications((current) => current.filter((item) => item.id !== id));
     setToasts((current) => current.filter((toast) => toast.notification.id !== id));
     setQueuedToasts((current) => current.filter((toast) => toast.notification.id !== id));

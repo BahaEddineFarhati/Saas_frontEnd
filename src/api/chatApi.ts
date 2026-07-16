@@ -1,13 +1,9 @@
 import { apiClient } from "./apiClient";
+import type { ChatMessage } from "../types";
+
+export type { ChatMessage } from "../types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface ChatMessage {
-  id: string;
-  role: "USER" | "ASSISTANT";
-  content: string;
-  createdAt: string;
-}
 
 export interface SendMessageResponse {
   message: ChatMessage;
@@ -18,7 +14,7 @@ export interface SendMessageResponse {
 
 export async function fetchChatMessages(jobId: string): Promise<ChatMessage[]> {
   const res = await apiClient.get<{ messages: ChatMessage[] }>(
-    `/v1/jobs/${jobId}/chat/messages`
+    `/jobs/${jobId}/chat/messages`
   );
   return res.data.messages;
 }
@@ -29,7 +25,7 @@ export async function sendChatMessage(
   signal?: AbortSignal
 ): Promise<SendMessageResponse> {
   const res = await apiClient.post<any>(
-    `/v1/jobs/${jobId}/chat/message`,
+    `/jobs/${jobId}/chat/message`,
     { message },
     { signal: signal as any }
   );
@@ -37,12 +33,12 @@ export async function sendChatMessage(
 }
 
 export async function clearChatSession(jobId: string): Promise<void> {
-  await apiClient.delete(`/v1/jobs/${jobId}/chat/session`);
+  await apiClient.delete(`/jobs/${jobId}/chat/session`);
 }
 
 export async function fetchJobTitle(jobId: string): Promise<string> {
   const res = await apiClient.get<{ success: boolean; data: { title: string } }>(
-    `/v1/jobs/${jobId}`
+    `/jobs/${jobId}`
   );
   return res.data.data.title;
 }

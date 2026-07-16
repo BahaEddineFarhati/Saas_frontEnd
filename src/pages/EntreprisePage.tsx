@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../config/api'
 import {
   Users,
   Building2,
@@ -15,8 +16,6 @@ import {
   Mail,
   Clock,
 } from 'lucide-react'
-
-const API_BASE = 'http://localhost:3001/api/v1'
 
 /* ── types ─────────────────────────────────────────────────────────────── */
 interface Member {
@@ -120,7 +119,7 @@ function InviteModal({
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE}/organisation/members/invite`, {
+      const res = await fetch(`${API_BASE_URL}/organisation/members/invite`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ email, role }),
@@ -306,7 +305,7 @@ export default function EntreprisePage() {
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)
     try {
-      const res = await fetch(`${API_BASE}/organisation/members`, { headers: authHeaders() })
+      const res = await fetch(`${API_BASE_URL}/organisation/members`, { headers: authHeaders() })
       if (res.status === 403) {
         localStorage.setItem('userRole', 'RECRUITER')
         navigate('/dashboard')
@@ -327,7 +326,7 @@ export default function EntreprisePage() {
   const fetchOrg = useCallback(async () => {
     setLoadingOrg(true)
     try {
-      const res = await fetch(`${API_BASE}/organisation`, { headers: authHeaders() })
+      const res = await fetch(`${API_BASE_URL}/organisation`, { headers: authHeaders() })
       if (res.status === 403) {
         localStorage.setItem('userRole', 'RECRUITER')
         navigate('/dashboard')
@@ -363,7 +362,7 @@ export default function EntreprisePage() {
       confirmLabel: action === 'promote' ? 'Promote to Admin' : 'Demote to Recruiter',
       danger: action === 'demote',
       action: async () => {
-        const res = await fetch(`${API_BASE}/organisation/members/${member.id}/role`, {
+        const res = await fetch(`${API_BASE_URL}/organisation/members/${member.id}/role`, {
           method: 'PATCH',
           headers: authHeaders(),
           body: JSON.stringify({ role: newRole }),
@@ -410,7 +409,7 @@ export default function EntreprisePage() {
       confirmLabel: 'Remove Member',
       danger: true,
       action: async () => {
-        const res = await fetch(`${API_BASE}/organisation/members/${member.id}`, {
+        const res = await fetch(`${API_BASE_URL}/organisation/members/${member.id}`, {
           method: 'DELETE',
           headers: authHeaders(),
         })
@@ -454,7 +453,7 @@ export default function EntreprisePage() {
         return
       }
 
-      const res = await fetch(`${API_BASE}/organisation`, {
+      const res = await fetch(`${API_BASE_URL}/organisation`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify(body),

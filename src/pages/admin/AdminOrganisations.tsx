@@ -96,7 +96,7 @@ export default function AdminOrganisations() {
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (suspendedFilter !== 'all') params.set('suspended', suspendedFilter);
 
-      const res = await apiClient.get(`/v1/admin/organisations?${params.toString()}`);
+      const res = await apiClient.get(`/admin/organisations?${params.toString()}`);
       setOrgs(res.data.data);
       setPagination(res.data.pagination);
     } catch {
@@ -120,7 +120,7 @@ export default function AdminOrganisations() {
     try {
       setCreating(true);
       setCreateError(null);
-      await apiClient.post('/v1/admin/organisations', createForm);
+      await apiClient.post('/admin/organisations', createForm);
       setShowCreate(false);
       setCreateForm(emptyForm);
       await fetchOrgs();

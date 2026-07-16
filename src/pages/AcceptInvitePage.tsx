@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-
-const API_BASE = 'http://localhost:3001/api/v1'
+import { API_BASE_URL } from '../config/api'
 
 interface FormState {
   firstName: string
@@ -95,7 +94,7 @@ export default function AcceptInvitePage() {
     setErrors({})
 
     try {
-      const res = await fetch(`${API_BASE}/auth/accept-invite`, {
+      const res = await fetch(`${API_BASE_URL}/auth/accept-invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

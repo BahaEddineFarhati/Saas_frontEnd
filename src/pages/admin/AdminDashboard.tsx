@@ -73,8 +73,8 @@ export default function AdminDashboard() {
       setError(null);
 
       const [statsRes, orgsRes] = await Promise.all([
-        apiClient.get('/v1/admin/stats'),
-        apiClient.get('/v1/admin/organisations?limit=10&page=1'),
+        apiClient.get('/admin/stats'),
+        apiClient.get('/admin/organisations?limit=10&page=1'),
       ]);
 
       setStats(statsRes.data.data);
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
       // If there are suspended orgs beyond the first 10, fetch them
       if (statsRes.data.data.suspendedOrganisations > 0 && suspended.length === 0) {
         const suspRes = await apiClient.get(
-          '/v1/admin/organisations?suspended=true&limit=50'
+          '/admin/organisations?suspended=true&limit=50'
         );
         setSuspendedOrgs(suspRes.data.data);
       } else {
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   const handleUnsuspend = async (orgId: string) => {
     try {
       setUnsuspending(orgId);
-      await apiClient.post(`/v1/admin/organisations/${orgId}/unsuspend`);
+      await apiClient.post(`/admin/organisations/${orgId}/unsuspend`);
       await fetchData();
     } catch {
       setError("Échec de la levée de suspension.");
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
               <p>
                 Des erreurs ont été détectées dans la file de traitement. Vérifiez le tableau de bord{' '}
                 <a
-                  href="http://localhost:3001/admin/queues"
+                  href="/admin/queues"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:text-red-800 dark:hover:text-red-300 transition-colors"

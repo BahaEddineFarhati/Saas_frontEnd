@@ -72,7 +72,7 @@ export default function AdminOrgDetail() {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get(`/v1/admin/organisations/${orgId}`);
+      const res = await apiClient.get(`/admin/organisations/${orgId}`);
       const data = res.data.data;
       setOrg(data);
       setEditForm({ name: data.name, slug: data.slug, plan: data.plan });
@@ -98,7 +98,7 @@ export default function AdminOrgDetail() {
     if (!orgId) return;
     try {
       setSuspending(true);
-      await apiClient.post(`/v1/admin/organisations/${orgId}/suspend`, {
+      await apiClient.post(`/admin/organisations/${orgId}/suspend`, {
         reason: suspendReason || undefined,
       });
       setShowSuspend(false);
@@ -116,7 +116,7 @@ export default function AdminOrgDetail() {
     if (!orgId) return;
     try {
       setUnsuspending(true);
-      await apiClient.post(`/v1/admin/organisations/${orgId}/unsuspend`);
+      await apiClient.post(`/admin/organisations/${orgId}/unsuspend`);
       setToast('Suspension levée avec succès.');
       await fetchOrg();
     } catch {
@@ -132,7 +132,7 @@ export default function AdminOrgDetail() {
     try {
       setSaving(true);
       setEditError(null);
-      await apiClient.patch(`/v1/admin/organisations/${orgId}`, editForm);
+      await apiClient.patch(`/admin/organisations/${orgId}`, editForm);
       setShowEdit(false);
       setToast('Organisation mise à jour.');
       await fetchOrg();

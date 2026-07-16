@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // ── Attempt token refresh ──
       if (refreshToken) {
         try {
-          const response = await apiClient.post('/v1/auth/refresh', {
+          const response = await apiClient.post('/auth/refresh', {
             refreshToken,
           });
 
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Call logout endpoint to invalidate refresh token
       if (refreshToken) {
-        await apiClient.post('/v1/auth/logout', { refreshToken });
+        await apiClient.post('/auth/logout', { refreshToken });
       }
     } catch (error) {
       // Logout endpoint might fail, but we still clear client state
