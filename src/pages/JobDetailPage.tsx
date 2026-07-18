@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
+import type { Candidate, CandidateStatus, CurrentUser, FileValidationError, JobDetail, ScoringStatusSummary, SelectedFile } from "../types";
 import {
   ArrowLeft,
   Calendar,
@@ -21,58 +22,6 @@ import {
 // ── Config ──────────────────────────────────────────────
 const ALLOWED_FILE_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-// ── Types ───────────────────────────────────────────────
-interface JobDetail {
-  id: string;
-  title: string;
-  profileDescription: string;
-  status: "OPEN" | "CLOSED";
-  organisationId: string;
-  createdById: string;
-  creatorName?: string;
-  createdAt: string;
-  updatedAt: string;
-  candidateCount: number;
-}
-
-interface CurrentUser {
-  userId: string;
-  role: string;
-  organisationId: string;
-}
-
-interface SelectedFile {
-  file: File;
-  id: string;
-}
-
-interface Candidate {
-  id: string;
-  status: "PENDING" | "SCORED" | "FAILED" | "NEW" | "SHORTLISTED" | "REJECTED" | "OFFERED";
-  parsedName?: string;
-  firstName?: string;
-  lastName?: string;
-  fileName: string;
-  score?: number;
-  email?: string;
-  verdict?: "STRONG_FIT" | "GOOD_FIT" | "PARTIAL_FIT" | "WEAK_FIT";
-  scoreExplanation?: Record<string, unknown>;
-  createdAt?: string;
-}
-
-interface ScoringStatusSummary {
-  totalCandidates: number;
-  parsedCount: number;
-  scoredCount: number;
-  failedCount: number;
-  scoringStatus: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
-}
-
-interface FileValidationError {
-  fileName: string;
-  reason: string;
-}
 
 // ── Helpers ─────────────────────────────────────────────
 
@@ -389,57 +338,72 @@ export default function JobDetailPage() {
       const resData = await res.json();
       if (resData?.success && resData?.data) {
         // Handle both structures: data.candidates (with pagination) or data (array)
-        let candidatesArray = [];
+        let candidatesArray: Array<Record<string, any>> = [];
         let pagination = { page: 1, limit: 10, total: 0, pages: 1 };
 
         if (Array.isArray(resData.data)) {
-          // If data is already an array
-          candidatesArray = resData.data;
+          candidatesArray = resData.data.filter(
+            (candidate: unknown): candidate is Record<string, any> =>
+              Boolean(candidate && typeof candidate === "object")
+          );
         } else if (resData.data.candidates && Array.isArray(resData.data.candidates)) {
-          // If data has a candidates property (with pagination)
-          candidatesArray = resData.data.candidates;
+          candidatesArray = resData.data.candidates.filter(
+            (candidate: unknown): candidate is Record<string, any> =>
+              Boolean(candidate && typeof candidate === "object")
+          );
           pagination = resData.data.pagination || pagination;
         }
 
-        console.log("[JobDetailPage] poll candidates response:", candidatesArray.map((c: any) => ({ id: c.id, status: c.status, score: c.score, verdict: c.verdict })));
+        console.log("[JobDetailPage] poll candidates response:", candidatesArray.map((c) => ({ id: c.id, status: c.status, score: c.score, verdict: c.verdict })));
 
-        const loadedCandidates: Candidate[] = candidatesArray.map(
-          (candidate: any) => {
-            const explanation = candidate.scoreExplanation as Record<string, unknown> | null;
-            const verdict = (candidate.verdict ?? explanation?.verdict) as
-              | Candidate["verdict"]
-              | undefined;
-            const score =
-              typeof candidate.score === "number"
-                ? candidate.score
-                : candidate.score && !Number.isNaN(Number(candidate.score))
-                  ? Number(candidate.score)
-                  : undefined;
-            const status =
-              candidate.status && candidate.status !== ""
-                ? candidate.status
-                : score !== undefined
-                  ? "SCORED"
-                  : "PENDING";
+        const loadedCandidates: Candidate[] = candidatesArray.map((candidate): Candidate => {
+          const candidateData = candidate as Record<string, unknown>;
+          const explanation = candidateData.scoreExplanation as Record<string, unknown> | null;
+          const verdict = (candidateData.verdict ?? explanation?.verdict) as
+            | Candidate["verdict"]
+            | undefined;
+          const scoreValue = candidateData.score;
+          const score: Candidate["score"] =
+            typeof scoreValue === "number"
+              ? scoreValue
+              : typeof scoreValue === "string" && scoreValue && !Number.isNaN(Number(scoreValue))
+                ? Number(scoreValue)
+                : null;
+          const statusValue = candidateData.status;
+          const status: CandidateStatus =
+            typeof statusValue === "string" && statusValue !== ""
+              ? (statusValue as CandidateStatus)
+              : score !== null && score !== undefined
+                ? "SCORED"
+                : "PENDING";
 
-            return {
-              id: candidate.id,
-              status,
-              fileName: candidate.fileName || `${candidate.firstName} ${candidate.lastName}`.trim() || "CV",
-              parsedName:
-                candidate.lastName || candidate.firstName
-                  ? `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim()
-                  : undefined,
-              firstName: candidate.firstName,
-              lastName: candidate.lastName,
-              score,
-              email: candidate.email,
-              verdict,
-              scoreExplanation: explanation,
-              createdAt: candidate.createdAt,
-            };
+          const firstName = typeof candidateData.firstName === "string" ? candidateData.firstName : undefined;
+          const lastName = typeof candidateData.lastName === "string" ? candidateData.lastName : undefined;
+
+          const mappedCandidate: Candidate = {
+            id: typeof candidateData.id === "string" ? candidateData.id : "",
+            status,
+            fileName: typeof candidateData.fileName === "string"
+              ? candidateData.fileName
+              : `${firstName ?? ""} ${lastName ?? ""}`.trim() || "CV",
+            parsedName:
+              lastName || firstName
+                ? `${firstName || ""} ${lastName || ""}`.trim()
+                : "",
+            firstName: firstName ?? null,
+            lastName: lastName ?? null,
+            score,
+            email: typeof candidateData.email === "string" ? candidateData.email : null,
+            scoreExplanation: explanation,
+            createdAt: typeof candidateData.createdAt === "string" ? candidateData.createdAt : "",
+          };
+
+          if (verdict) {
+            mappedCandidate.verdict = verdict;
           }
-        );
+
+          return mappedCandidate;
+        });
 
         // Sort candidates based on sortBy preference
         let sortedCandidates = [...loadedCandidates];
@@ -535,19 +499,13 @@ export default function JobDetailPage() {
     }
   };
 
-  // Stop polling when scoring is completed
+  // Stop scoring-status polling once the run is complete, but keep refreshing candidates
+  // until their own statuses leave the pending state.
   useEffect(() => {
     if (scoringStatus?.scoringStatus === "COMPLETED") {
       stopScoringStatusPolling();
-      // Stop candidate polling when scoring completes
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-        setIsPolling(false);
-      }
-      // Refresh candidate list immediately once scoring completes
       setCurrentPage(1);
-      fetchCandidates(1);
+      void fetchCandidates(1);
     }
   }, [scoringStatus?.scoringStatus]);
 
@@ -722,16 +680,20 @@ export default function JobDetailPage() {
       const response = JSON.parse(responseText);
 
       if (response?.success && response?.data) {
-        // Create candidate objects with initial PENDING status
-        const newCandidates: Candidate[] = response.data.map(
-          (candidate: any) => ({
-            id: candidate.id,
+        const newCandidates: Candidate[] = (Array.isArray(response.data) ? response.data : [])
+          .filter(
+            (candidate: unknown): candidate is Record<string, any> =>
+              Boolean(candidate && typeof candidate === "object")
+          )
+          .map((candidate: Record<string, any>): Candidate => ({
+            id: typeof candidate.id === "string" ? candidate.id : "",
             status: "PENDING" as const,
-            fileName: candidate.fileName || "",
-            parsedName: undefined,
-            email: candidate.email,
-          })
-        );
+            fileName: typeof candidate.fileName === "string" ? candidate.fileName : "",
+            parsedName: "",
+            email: typeof candidate.email === "string" ? candidate.email : null,
+            firstName: null,
+            lastName: null,
+          }));
 
         setCandidates((prev) => [...prev, ...newCandidates]);
         setSelectedFiles([]);
@@ -759,16 +721,18 @@ export default function JobDetailPage() {
     startScoringStatusPolling();
   };
 
-  // Run candidate polling on interval when polling is active
+  // Run candidate polling on interval while there are pending items or while the upload flow is active.
   useEffect(() => {
     if (!id) return;
 
-    if (!pollingIntervalRef.current && (candidates.some((candidate) => candidate.status === "PENDING") || isPolling)) {
+    const hasPendingCandidates = candidates.some((candidate) => candidate.status === "PENDING");
+
+    if (!pollingIntervalRef.current && (hasPendingCandidates || isPolling)) {
       setIsPolling(true);
       startScoringStatusPolling();
 
       const poll = () => {
-        fetchCandidates(currentPage, CANDIDATES_PER_PAGE);
+        void fetchCandidates(currentPage, CANDIDATES_PER_PAGE);
       };
 
       pollingIntervalRef.current = setInterval(poll, 3000);
@@ -1166,7 +1130,7 @@ export default function JobDetailPage() {
             <div className="jd-meta-row">
               <span className="jd-meta-item">
                 <Calendar size={13} strokeWidth={2} />
-                <span>Créé le {formatDate(job.createdAt)}</span>
+                <span>Créé le {formatDate(job.createdAt ?? "")}</span>
               </span>
               <span className="jd-meta-item">
                 <User size={13} strokeWidth={2} />
@@ -1686,7 +1650,7 @@ export default function JobDetailPage() {
                           textAlign: "center",
                         }}
                       >
-                        {candidate.score !== undefined && candidate.score > 0 ? (
+                        {candidate.score !== undefined && candidate.score !== null && candidate.score > 0 ? (
                           <div
                             style={{
                               display: "inline-block",
@@ -1694,10 +1658,10 @@ export default function JobDetailPage() {
                               borderRadius: "4px",
                               fontWeight: 600,
                               fontSize: "0.85em",
-                              ...getScoreBadgeColor(candidate.score),
+                              ...getScoreBadgeColor(candidate.score ?? 0),
                             }}
                           >
-                            {candidate.score.toFixed(0)}
+                            {candidate.score?.toFixed(0) ?? "0"}
                           </div>
                         ) : (
                           <div
@@ -2175,7 +2139,7 @@ export default function JobDetailPage() {
 
       {/* ── Last updated ── */}
       <p className="jd-updated-note">
-        Dernière mise à jour : {formatDateRelative(job.updatedAt)}
+        Dernière mise à jour : {formatDateRelative(job.updatedAt ?? "")}
       </p>
     </div>
   );
