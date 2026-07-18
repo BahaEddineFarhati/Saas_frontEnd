@@ -15,6 +15,9 @@ export interface Candidate {
   jobOpeningId?: string;
   createdAt?: string;
   updatedAt?: string;
+  parsedName?: string;
+  fileName?: string;
+  verdict?: "STRONG_FIT" | "GOOD_FIT" | "PARTIAL_FIT" | "WEAK_FIT";
 }
 
 export interface ParsedCV {
