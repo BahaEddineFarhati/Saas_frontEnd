@@ -9,8 +9,25 @@ import {
   AlertTriangle,
   RefreshCw,
   CheckCircle,
+  Sparkles,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { apiClient } from '../../api/apiClient';
+import {
+  fetchUsageDetail,
+  fetchUsageHistory,
+  type UsageDetailSummary,
+  type UsageHistoryPoint,
+} from '../../api/usageApi';
 
 interface OrgUser {
   id: string;
@@ -67,6 +84,12 @@ export default function AdminOrgDetail() {
   // Success toast
   const [toast, setToast] = useState<string | null>(null);
 
+  // Usage data
+  const [usageSummary, setUsageSummary] = useState<UsageDetailSummary | null>(null);
+  const [usageHistory, setUsageHistory] = useState<UsageHistoryPoint[]>([]);
+  const [usageLoading, setUsageLoading] = useState(true);
+  const [usageError, setUsageError] = useState(false);
+
   const fetchOrg = useCallback(async () => {
     if (!orgId) return;
     try {
@@ -86,6 +109,27 @@ export default function AdminOrgDetail() {
   useEffect(() => {
     fetchOrg();
   }, [fetchOrg]);
+
+  // Fetch usage data
+  useEffect(() => {
+    if (!orgId) return;
+    setUsageLoading(true);
+    setUsageError(false);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    Promise.all([
+      fetchUsageDetail(orgId, year, month),
+      fetchUsageHistory(orgId),
+    ])
+      .then(([detail, history]) => {
+        setUsageSummary(detail.summary);
+        setUsageHistory(history.history);
+      })
+      .catch(() => setUsageError(true))
+      .finally(() => setUsageLoading(false));
+  }, [orgId]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -153,6 +197,14 @@ export default function AdminOrgDetail() {
       month: 'long',
       year: 'numeric',
     });
+  };
+
+  const formatTokens = (n: number) =>
+    new Intl.NumberFormat('fr-FR').format(n);
+
+  const formatMonthYear = (m: number, y: number) => {
+    const d = new Date(y, m - 1);
+    return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -302,6 +354,132 @@ export default function AdminOrgDetail() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Utilisation IA Section ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center gap-2">
+          <Sparkles size={18} className="text-indigo-500" />
+          <h3 className="font-semibold text-gray-900 dark:text-white">
+            Utilisation IA
+          </h3>
+        </div>
+
+        {usageLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-7 w-7 border-4 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : usageError ? (
+          <div className="px-5 py-8 text-center text-sm text-red-500 dark:text-red-400 flex items-center justify-center gap-2">
+            <AlertTriangle size={16} />
+            Impossible de charger les données d'utilisation.
+          </div>
+        ) : (
+          <div className="p-5 space-y-6">
+            {/* Metric Tiles */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[
+                { label: 'Total Tokens', value: usageSummary?.totalTokens ?? 0, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-300' },
+                { label: 'CV Parsing', value: usageSummary?.cvParsingTokens ?? 0, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-300' },
+                { label: 'CV Scoring', value: usageSummary?.cvScoringTokens ?? 0, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-300' },
+                { label: 'Enrichment', value: usageSummary?.cvEnrichmentTokens ?? 0, color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-300' },
+                { label: 'Chat', value: usageSummary?.chatTokens ?? 0, color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-300' },
+              ].map((tile) => (
+                <div
+                  key={tile.label}
+                  className={`rounded-xl border p-4 ${tile.color} transition-all hover:shadow-sm`}
+                >
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {tile.label}
+                  </p>
+                  <p className={`text-xl font-bold ${tile.textColor}`}>
+                    {formatTokens(tile.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* History Chart */}
+            <div className="pt-2">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+                Historique d'utilisation des tokens (12 derniers mois)
+              </h4>
+              {usageHistory.length === 0 || usageHistory.every(h => h.totalTokens === 0) ? (
+                <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50/50 dark:bg-slate-900/10">
+                  Aucune donnée d'utilisation sur cette période.
+                </div>
+              ) : (
+                <div className="w-full h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={usageHistory.map((h) => ({
+                        ...h,
+                        name: formatMonthYear(h.month, h.year),
+                      }))}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--lu-border)" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "var(--lu-text-secondary)" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "var(--lu-text-secondary)" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          return (
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xl text-xs min-w-[180px] space-y-2">
+                              <p className="font-semibold text-gray-900 dark:text-white capitalize border-b border-gray-100 dark:border-slate-800 pb-1.5">{label}</p>
+                              <div className="space-y-1.5">
+                                {payload.map((entry: any) => (
+                                  <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                      <span>{entry.name}</span>
+                                    </div>
+                                    <span className="font-mono font-medium text-gray-900 dark:text-white">
+                                      {new Intl.NumberFormat('fr-FR').format(entry.value)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
+                                <span>Total Tokens</span>
+                                <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
+                              </div>
+                              <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
+                                <span>Appels d'API</span>
+                                <span>{payload[0]?.payload?.callCount ?? 0}</span>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12 }}
+                      />
+                      <Bar name="CV Parsing" dataKey="cvParsingTokens" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+                      <Bar name="CV Scoring" dataKey="cvScoringTokens" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                      <Bar name="Enrichment" dataKey="cvEnrichmentTokens" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                      <Bar name="Chat" dataKey="chatTokens" stackId="a" fill="#10b981" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

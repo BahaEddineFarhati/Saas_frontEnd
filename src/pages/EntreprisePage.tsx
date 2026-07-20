@@ -15,7 +15,24 @@ import {
   X,
   Mail,
   Clock,
+  Sparkles,
 } from 'lucide-react'
+import {
+  fetchOwnOrgUsage,
+  fetchOwnOrgUsageHistory,
+  type UsageDetailSummary,
+  type UsageHistoryPoint,
+} from '../api/usageApi'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 
 /* ── types ─────────────────────────────────────────────────────────────── */
 interface Member {
@@ -301,6 +318,12 @@ export default function EntreprisePage() {
   // toast
   const [toast, setToast] = useState<Toast | null>(null)
 
+  // AI usage
+  const [aiUsage, setAiUsage] = useState<UsageDetailSummary | null>(null)
+  const [aiUsageHistory, setAiUsageHistory] = useState<UsageHistoryPoint[]>([])
+  const [aiUsageLoading, setAiUsageLoading] = useState(true)
+  const [aiUsageUnavailable, setAiUsageUnavailable] = useState(false)
+
   /* ── fetchers ── */
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)
@@ -349,6 +372,26 @@ export default function EntreprisePage() {
     fetchMembers()
     fetchOrg()
   }, [fetchMembers, fetchOrg])
+
+  // Fetch own org AI usage and history
+  useEffect(() => {
+    setAiUsageLoading(true)
+    setAiUsageUnavailable(false)
+    Promise.all([
+      fetchOwnOrgUsage(),
+      fetchOwnOrgUsageHistory(),
+    ])
+      .then(([summary, history]) => {
+        setAiUsage(summary)
+        setAiUsageHistory(history)
+      })
+      .catch((err) => {
+        if (err?.response?.status === 403) {
+          setAiUsageUnavailable(true)
+        }
+      })
+      .finally(() => setAiUsageLoading(false))
+  }, [])
 
   /* ── member actions ── */
   async function handleRoleChange(member: Member) {
@@ -701,6 +744,175 @@ export default function EntreprisePage() {
             </button>
           </form>
         ) : null}
+      </section>
+
+      {/* ═══ Section 3: AI Usage This Month ═══ */}
+      <section className="ent-section">
+        <div className="ent-section-header">
+          <div className="ent-section-title-row">
+            <div className="ent-section-icon ent-section-icon--purple">
+              <Sparkles size={20} strokeWidth={1.8} />
+            </div>
+            <div>
+              <h2 className="ent-section-title">Utilisation IA ce mois</h2>
+              <p className="ent-section-sub">Token consumption for the current month</p>
+            </div>
+          </div>
+        </div>
+
+        {aiUsageLoading ? (
+          <div className="ent-loading">
+            <Loader2 size={24} className="ent-spin" />
+            <span>Loading usage data…</span>
+          </div>
+        ) : aiUsageUnavailable ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
+            <AlertTriangle size={20} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+            Données non disponibles
+          </div>
+        ) : aiUsage ? (
+          <div style={{ padding: '1.25rem' }}>
+            {/* Total tokens - large display */}
+            <div style={{
+              textAlign: 'center',
+              padding: '1.5rem 0 1rem',
+              borderBottom: '1px solid var(--border, rgba(148,163,184,0.15))',
+              marginBottom: '1rem',
+            }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted, #94a3b8)', marginBottom: 4 }}>
+                Total Tokens
+              </p>
+              <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary, #e2e8f0)' }}>
+                {new Intl.NumberFormat('fr-FR').format(aiUsage.totalTokens)}
+              </p>
+            </div>
+
+            {/* Feature breakdown */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+              {[
+                { label: 'CV Parsing', value: aiUsage.cvParsingTokens, accent: '#6366f1' },
+                { label: 'CV Scoring', value: aiUsage.cvScoringTokens, accent: '#8b5cf6' },
+                { label: 'Enrichment', value: aiUsage.cvEnrichmentTokens, accent: '#f59e0b' },
+                { label: 'Chat', value: aiUsage.chatTokens, accent: '#10b981' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '0.75rem',
+                    borderRadius: '0.625rem',
+                    border: '1px solid var(--border, rgba(148,163,184,0.15))',
+                    background: 'var(--card-bg, rgba(148,163,184,0.04))',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: item.accent, display: 'inline-block', flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-muted, #94a3b8)' }}>
+                      {item.label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary, #e2e8f0)' }}>
+                    {new Intl.NumberFormat('fr-FR').format(item.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* 12-month usage history chart */}
+            {aiUsageHistory && aiUsageHistory.length > 0 && !aiUsageHistory.every(h => h.totalTokens === 0) && (
+              <div style={{
+                marginTop: '2rem',
+                paddingTop: '1.5rem',
+                borderTop: '1px solid var(--border, rgba(148,163,184,0.15))',
+              }}>
+                <h4 style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #e2e8f0)',
+                  marginBottom: '1rem',
+                }}>
+                  Historique d'utilisation des tokens (12 derniers mois)
+                </h4>
+                <div style={{ width: '100%', height: 280 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={aiUsageHistory.map((h) => ({
+                        ...h,
+                        name: (() => {
+                          const d = new Date(h.year, h.month - 1);
+                          return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+                        })(),
+                      }))}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border, rgba(148,163,184,0.15))" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "var(--text-muted, #94a3b8)" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "var(--text-muted, #94a3b8)" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          return (
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xl text-xs min-w-[180px] space-y-2">
+                              <p className="font-semibold text-gray-900 dark:text-white capitalize border-b border-gray-100 dark:border-slate-800 pb-1.5">{label}</p>
+                              <div className="space-y-1.5">
+                                {payload.map((entry: any) => (
+                                  <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                      <span>{entry.name}</span>
+                                    </div>
+                                    <span className="font-mono font-medium text-gray-900 dark:text-white">
+                                      {new Intl.NumberFormat('fr-FR').format(entry.value)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
+                                <span>Total Tokens</span>
+                                <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
+                              </div>
+                              <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
+                                <span>Appels d'API</span>
+                                <span>{payload[0]?.payload?.callCount ?? 0}</span>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12 }}
+                      />
+                      <Bar name="CV Parsing" dataKey="cvParsingTokens" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+                      <Bar name="CV Scoring" dataKey="cvScoringTokens" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                      <Bar name="Enrichment" dataKey="cvEnrichmentTokens" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                      <Bar name="Chat" dataKey="chatTokens" stackId="a" fill="#10b981" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
+            Aucune utilisation ce mois
+          </div>
+        )}
       </section>
 
       {/* ═══ Modals ═══ */}
