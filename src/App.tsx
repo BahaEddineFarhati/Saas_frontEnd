@@ -36,6 +36,9 @@ import { API_BASE_URL } from "./config/api";
 const DARK_KEY = "linkup_dark";
 
 function loadDark(): boolean {
+  // The inline script in index.html already applies the 'dark' class before
+  // React mounts. Check the DOM first to stay in sync and avoid a flash.
+  if (document.documentElement.classList.contains('dark')) return true;
   const stored = localStorage.getItem(DARK_KEY);
   if (stored !== null) return stored === "true";
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -250,6 +253,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem(DARK_KEY, String(darkMode));
+    // Clear the inline background-color set in index.html (FOUC prevention)
+    // so the CSS variable from auth-layout.css takes over for runtime toggles.
+    document.body.style.backgroundColor = "";
   }, [darkMode]);
 
   return (

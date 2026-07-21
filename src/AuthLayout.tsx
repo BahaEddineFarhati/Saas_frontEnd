@@ -174,7 +174,7 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
           <button
             ref={buttonRef}
             type="button"
-            className="relative rounded-full p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="relative rounded-full p-2 text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
             onClick={() => setIsDropdownOpen((open) => !open)}
             aria-label="Notifications"
           >
@@ -189,17 +189,17 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
           {isDropdownOpen && buttonPosition && createPortal(
             <div
               ref={dropdownRef}
-              className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] rounded-xl border border-slate-200 bg-white p-3 shadow-2xl"
+              className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C2236] p-3 shadow-2xl"
               style={{
                 top: `${buttonPosition.top}px`,
                 right: `${buttonPosition.right}px`,
               }}
             >
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
                 <button
                   type="button"
-                  className="text-xs font-medium text-blue-600"
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400"
                   onClick={async () => {
                     await markAllAsRead();
                     setIsDropdownOpen(false);
@@ -210,22 +210,22 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
               </div>
               <div className="max-h-[min(24rem,70vh)] space-y-2 overflow-auto pr-1">
                 {notifications.length === 0 ? (
-                  <p className="px-2 py-3 text-sm text-slate-500">Aucune notification non lue.</p>
+                  <p className="px-2 py-3 text-sm text-slate-500 dark:text-slate-400">Aucune notification non lue.</p>
                 ) : (
                   notifications.map((notification) => (
                     <button
                       key={notification.id}
                       type="button"
-                      className="w-full rounded-lg border border-slate-100 p-3 text-left transition hover:bg-slate-50"
+                      className="w-full rounded-lg border border-slate-100 dark:border-slate-700 p-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
                       onClick={async () => {
                         await markOneAsRead(notification.id);
                         setIsDropdownOpen(false);
                         await openNotification(notification);
                       }}
                     >
-                      <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">{notification.message}</p>
-                      <p className="mt-2 text-xs text-slate-400">{formatRelativeTime(notification.createdAt)}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{notification.title}</p>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{notification.message}</p>
+                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(notification.createdAt)}</p>
                     </button>
                   ))
                 )}

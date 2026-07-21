@@ -4,9 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Linkup - AI-Powered Recruitment SaaS</title>
+    <title>LinkUp - AI-Powered Recruitment SaaS</title>
+    <script>
+      // Prevent FOUC: apply dark mode class & background before first paint
+      (function() {
+        var stored = localStorage.getItem('linkup_dark');
+        var isDark = stored !== null ? stored === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
+        // Set background immediately so body is never white
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.style.backgroundColor = isDark ? '#0F1117' : '#F5F6FA';
+        });
+      })();
+    </script>
   </head>
-  <body>
+  <body style="background-color: #F5F6FA; margin: 0;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
