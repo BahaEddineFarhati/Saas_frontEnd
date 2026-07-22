@@ -13,41 +13,32 @@ import {
   Bell,
 } from "lucide-react";
 import { useNotifications } from "./lib/NotificationContext";
+import { useTranslation } from "./i18n/I18nContext";
 
-// ── nav items ──────────────────────────────────────────────────────────────
-const baseNavItems = [
-  { to: "/dashboard",    label: "Dashboard",     icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
-  { to: "/candidatures", label: "Candidatures",  icon: <Users           size={18} strokeWidth={1.8} /> },
-  { to: "/settings",     label: "Settings",      icon: <Settings        size={18} strokeWidth={1.8} /> },
+// ── nav item definitions (icons only — labels come from i18n) ──────────────
+const baseNavDefs = [
+  { to: "/dashboard",    labelKey: "nav.dashboard",     icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
+  { to: "/candidatures", labelKey: "nav.candidatures",  icon: <Users           size={18} strokeWidth={1.8} /> },
+  { to: "/settings",     labelKey: "nav.settings",      icon: <Settings        size={18} strokeWidth={1.8} /> },
 ];
 
-const adminOnlyItems = [
-  { to: "/entreprise",   label: "Entreprise",    icon: <Building2      size={18} strokeWidth={1.8} /> },
+const adminOnlyDefs = [
+  { to: "/entreprise",   labelKey: "nav.entreprise",    icon: <Building2      size={18} strokeWidth={1.8} /> },
 ];
 
-const superAdminNavItems = [
-  { to: '/admin/dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
-  { to: '/admin/organisations',  label: 'Organisations',  icon: <Building2       size={18} strokeWidth={1.8} /> },
+const superAdminNavDefs = [
+  { to: '/admin/dashboard',      labelKey: 'nav.dashboard',      icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },
+  { to: '/admin/organisations',  labelKey: 'nav.organisations',  icon: <Building2       size={18} strokeWidth={1.8} /> },
 ];
 
-function formatRelativeTime(value: string) {
-  const diffMs = Date.now() - new Date(value).getTime();
-  const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
-  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return `Il y a ${diffHours} h`;
-  const diffDays = Math.round(diffHours / 24);
-  return `Il y a ${diffDays} j`;
-}
-
-// ── page title map ─────────────────────────────────────────────────────────
-const pageTitles: Record<string, string> = {
-  "/dashboard":           "Dashboard",
-  "/candidatures":        "Candidatures",
-  "/settings":            "Settings",
-  "/entreprise":          "Entreprise",
-  "/admin/dashboard":     "Dashboard",
-  "/admin/organisations": "Organisations",
+// ── page title key map ─────────────────────────────────────────────────────
+const pageTitleKeys: Record<string, string> = {
+  "/dashboard":           "pageTitles.dashboard",
+  "/candidatures":        "pageTitles.candidatures",
+  "/settings":            "pageTitles.settings",
+  "/entreprise":          "pageTitles.entreprise",
+  "/admin/dashboard":     "pageTitles.dashboard",
+  "/admin/organisations": "pageTitles.organisations",
 };
 
 interface User { fullName: string; email: string; firstName: string; role?: string; }
@@ -59,26 +50,28 @@ interface AuthLayoutProps {
 }
 
 export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: AuthLayoutProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const { notifications, unreadCount, markAllAsRead, markOneAsRead, openNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [buttonPosition, setButtonPosition] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  let pageTitle = pageTitles[location.pathname] ?? "LinkUp";
+
+  let pageTitle = t(pageTitleKeys[location.pathname] ?? "pageTitles.default");
   if (location.pathname.startsWith("/candidatures/")) {
-    pageTitle = "Détail de l'offre";
+    pageTitle = t("pageTitles.jobDetail");
   }
   if (location.pathname.startsWith("/admin/organisations/")) {
-    pageTitle = "Détail de l'organisation";
+    pageTitle = t("pageTitles.orgDetail");
   }
 
   // Build nav items based on user role
   const navItems = useMemo(() => {
     const role = user.role || localStorage.getItem("userRole");
-    if (role === "SUPER_ADMIN") return superAdminNavItems;
-    if (role === "ADMIN") return [...baseNavItems, ...adminOnlyItems];
-    return baseNavItems;
+    if (role === "SUPER_ADMIN") return superAdminNavDefs;
+    if (role === "ADMIN") return [...baseNavDefs, ...adminOnlyDefs];
+    return baseNavDefs;
   }, [user.role]);
 
   const initials = user.fullName
@@ -87,6 +80,17 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  // Format relative time using i18n keys
+  function formatRelativeTime(value: string) {
+    const diffMs = Date.now() - new Date(value).getTime();
+    const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+    if (diffMinutes < 60) return t("common.relativeTime.minutesAgo", { count: diffMinutes });
+    const diffHours = Math.round(diffMinutes / 60);
+    if (diffHours < 24) return t("common.relativeTime.hoursAgo", { count: diffHours });
+    const diffDays = Math.round(diffHours / 24);
+    return t("common.relativeTime.daysAgo", { count: diffDays });
+  }
 
   useEffect(() => {
     if (!isDropdownOpen) return;
@@ -117,9 +121,9 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
       {/* ── sidebar ── */}
       <aside className="lu-sidebar">
 
-        <nav className="lu-nav" aria-label="Main navigation">
+        <nav className="lu-nav" aria-label={t('nav.mainNavigation')}>
           <ul>
-            {navItems.map(({ to, label, icon }) => (
+            {navItems.map(({ to, labelKey, icon }) => (
               <li key={to}>
                 <NavLink
                   to={to}
@@ -128,7 +132,7 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
                   }
                 >
                   <span className="lu-nav-icon" aria-hidden="true">{icon}</span>
-                  <span className="lu-nav-label">{label}</span>
+                  <span className="lu-nav-label">{t(labelKey)}</span>
                 </NavLink>
               </li>
             ))}
@@ -139,13 +143,13 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
         <button
           className="lu-dark-toggle"
           onClick={onToggleDark}
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={darkMode ? t("common.lightMode") : t("common.darkMode")}
         >
           {darkMode
             ? <Sun  size={16} strokeWidth={1.8} />
             : <Moon size={16} strokeWidth={1.8} />
           }
-          <span>{darkMode ? "Light mode" : "Dark mode"}</span>
+          <span>{darkMode ? t("common.lightMode") : t("common.darkMode")}</span>
         </button>
 
         {/* user footer */}
@@ -158,8 +162,8 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
           <button
             className="lu-logout-btn"
             onClick={onLogout}
-            aria-label="Log out"
-            title="Log out"
+            aria-label={t("common.logOut")}
+            title={t("common.logOut")}
           >
             <LogOut size={16} strokeWidth={1.8} />
           </button>
@@ -174,9 +178,9 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
           <button
             ref={buttonRef}
             type="button"
-            className="relative rounded-full p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="relative rounded-full p-2 text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
             onClick={() => setIsDropdownOpen((open) => !open)}
-            aria-label="Notifications"
+            aria-label={t("common.notifications")}
           >
             <Bell size={18} />
             {unreadCount > 0 && (
@@ -189,43 +193,43 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
           {isDropdownOpen && buttonPosition && createPortal(
             <div
               ref={dropdownRef}
-              className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] rounded-xl border border-slate-200 bg-white p-3 shadow-2xl"
+              className="fixed z-[9999] w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C2236] p-3 shadow-2xl"
               style={{
                 top: `${buttonPosition.top}px`,
                 right: `${buttonPosition.right}px`,
               }}
             >
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("common.notifications")}</p>
                 <button
                   type="button"
-                  className="text-xs font-medium text-blue-600"
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400"
                   onClick={async () => {
                     await markAllAsRead();
                     setIsDropdownOpen(false);
                   }}
                 >
-                  Tout marquer comme lu
+                  {t("common.markAllRead")}
                 </button>
               </div>
               <div className="max-h-[min(24rem,70vh)] space-y-2 overflow-auto pr-1">
                 {notifications.length === 0 ? (
-                  <p className="px-2 py-3 text-sm text-slate-500">Aucune notification non lue.</p>
+                  <p className="px-2 py-3 text-sm text-slate-500 dark:text-slate-400">{t("common.noUnreadNotifications")}</p>
                 ) : (
                   notifications.map((notification) => (
                     <button
                       key={notification.id}
                       type="button"
-                      className="w-full rounded-lg border border-slate-100 p-3 text-left transition hover:bg-slate-50"
+                      className="w-full rounded-lg border border-slate-100 dark:border-slate-700 p-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
                       onClick={async () => {
                         await markOneAsRead(notification.id);
                         setIsDropdownOpen(false);
                         await openNotification(notification);
                       }}
                     >
-                      <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">{notification.message}</p>
-                      <p className="mt-2 text-xs text-slate-400">{formatRelativeTime(notification.createdAt)}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{notification.title}</p>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{notification.message}</p>
+                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(notification.createdAt)}</p>
                     </button>
                   ))
                 )}
@@ -242,7 +246,7 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
         {/* footer — only place the LinkUp logo appears */}
         <footer className="lu-footer">
           <img src="../img/logoLinkUP.png" alt="LinkUp logo" className="lu-footer-logo" width="50" height="50" />
-          <span className="lu-footer-copy">© {new Date().getFullYear()} All rights reserved.</span>
+          <span className="lu-footer-copy">© {new Date().getFullYear()} {t("common.allRightsReserved")}</span>
         </footer>
       </div>
     </div>

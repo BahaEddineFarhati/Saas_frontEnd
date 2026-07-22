@@ -5,30 +5,8 @@ import { z } from 'zod';
 import { Eye, EyeOff, CheckCircle, AlertCircle, User, Lock, Save } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { apiClient } from './api/apiClient';
+import { useTranslation } from './i18n/I18nContext';
 import './settings-page.css';
-
-// ── Validation schemas ──────────────────────────────────────────────────────
-
-const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email format'),
-});
-
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmNewPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmNewPassword, {
-  message: "Passwords do not match",
-  path: ["confirmNewPassword"],
-});
-
-type ProfileFormData = z.infer<typeof profileSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
 
 // ── Toast Notification ──────────────────────────────────────────────────────
 
@@ -59,7 +37,7 @@ function Toast({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
       <button
         onClick={onDismiss}
         className="sp-toast-close"
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
       >
         ×
       </button>
@@ -82,6 +60,7 @@ function ProfileSkeleton() {
 // ── Settings Page ──────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, updateUserProfile, updateTokens } = useAuth();
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSubmitting, setProfileSubmitting] = useState(false);
@@ -94,6 +73,29 @@ export default function SettingsPage() {
   const [profileEmailError, setProfileEmailError] = useState('');
   const [passwordCurrentError, setPasswordCurrentError] = useState('');
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // ── Validation schemas (with translated messages) ─────────────────────────
+
+  const profileSchema = z.object({
+    firstName: z.string().min(1, t('validation.firstNameRequired')),
+    lastName: z.string().min(1, t('validation.lastNameRequired')),
+    email: z.string().email(t('validation.emailInvalid')),
+  });
+
+  const passwordSchema = z.object({
+    currentPassword: z.string().min(1, t('validation.currentPasswordRequired')),
+    newPassword: z.string()
+      .min(8, t('validation.passwordMinLength'))
+      .regex(/[A-Z]/, t('validation.passwordUppercase'))
+      .regex(/[0-9]/, t('validation.passwordNumber')),
+    confirmNewPassword: z.string(),
+  }).refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: t('validation.passwordsDoNotMatch'),
+    path: ["confirmNewPassword"],
+  });
+
+  type ProfileFormData = z.infer<typeof profileSchema>;
+  type PasswordFormData = z.infer<typeof passwordSchema>;
 
   // ── Add toast notification ──
   const addToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -161,7 +163,7 @@ export default function SettingsPage() {
         });
       } catch (error) {
         console.error('Failed to fetch profile:', error);
-        addToast('Failed to load profile information.', 'error');
+        addToast(t('settings.toast.profileLoadFailed'), 'error');
       } finally {
         setProfileLoading(false);
       }
@@ -198,19 +200,19 @@ export default function SettingsPage() {
       );
 
       // Show success toast
-      addToast('Profil mis à jour avec succès.');
+      addToast(t('settings.toast.profileUpdated'));
     } catch (error: any) {
       // Handle email already taken error
       if (error.response?.status === 409) {
         const errorCode = error.response?.data?.error?.code;
         if (errorCode === 'PROFILE_EMAIL_TAKEN') {
-          setProfileEmailError('Cette adresse email est déjà utilisée.');
+          setProfileEmailError(t('settings.toast.emailTaken'));
         } else {
-          addToast('Failed to update profile.', 'error');
+          addToast(t('settings.toast.profileUpdateFailed'), 'error');
         }
       } else {
         console.error('Failed to update profile:', error);
-        addToast('Failed to update profile.', 'error');
+        addToast(t('settings.toast.profileUpdateFailed'), 'error');
       }
     } finally {
       setProfileSubmitting(false);
@@ -237,17 +239,17 @@ export default function SettingsPage() {
       passwordReset();
 
       // Show success toast
-      addToast('Mot de passe modifié avec succès.');
+      addToast(t('settings.toast.passwordChanged'));
     } catch (error: any) {
       const errorCode = error.response?.data?.error?.code;
       
       if (errorCode === 'PROFILE_WRONG_PASSWORD') {
-        setPasswordCurrentError('Mot de passe actuel incorrect.');
+        setPasswordCurrentError(t('settings.toast.wrongPassword'));
       } else if (errorCode === 'PROFILE_PASSWORDS_DO_NOT_MATCH') {
-        addToast('The new passwords do not match.', 'error');
+        addToast(t('settings.toast.passwordsMismatch'), 'error');
       } else {
         console.error('Failed to change password:', error);
-        addToast('Failed to change password.', 'error');
+        addToast(t('settings.toast.passwordChangeFailed'), 'error');
       }
     } finally {
       setPasswordSubmitting(false);
@@ -264,7 +266,7 @@ export default function SettingsPage() {
             <div className="sp-section-icon-wrap">
               <User size={18} strokeWidth={2.2} />
             </div>
-            <h2 className="sp-section-title">Informations du profil</h2>
+            <h2 className="sp-section-title">{t('settings.profile.title')}</h2>
           </div>
           
           {profileLoading ? (
@@ -274,12 +276,12 @@ export default function SettingsPage() {
               {/* First Name */}
               <div className="sp-form-group">
                 <label htmlFor="firstName" className="sp-label">
-                  First Name <span className="sp-required">*</span>
+                  {t('settings.profile.firstName.label')} <span className="sp-required">*</span>
                 </label>
                 <input
                   id="firstName"
                   type="text"
-                  placeholder="Enter your first name"
+                  placeholder={t('settings.profile.firstName.placeholder')}
                   {...profileRegister('firstName')}
                   disabled={profileSubmitting}
                   className="sp-input"
@@ -292,12 +294,12 @@ export default function SettingsPage() {
               {/* Last Name */}
               <div className="sp-form-group">
                 <label htmlFor="lastName" className="sp-label">
-                  Last Name <span className="sp-required">*</span>
+                  {t('settings.profile.lastName.label')} <span className="sp-required">*</span>
                 </label>
                 <input
                   id="lastName"
                   type="text"
-                  placeholder="Enter your last name"
+                  placeholder={t('settings.profile.lastName.placeholder')}
                   {...profileRegister('lastName')}
                   disabled={profileSubmitting}
                   className="sp-input"
@@ -310,12 +312,12 @@ export default function SettingsPage() {
               {/* Email */}
               <div className="sp-form-group">
                 <label htmlFor="email" className="sp-label">
-                  Email <span className="sp-required">*</span>
+                  {t('settings.profile.email.label')} <span className="sp-required">*</span>
                 </label>
                 <input
                   id="email"
                   type="email"
-                  placeholder="Enter your email address"
+                  placeholder={t('settings.profile.email.placeholder')}
                   {...profileRegister('email')}
                   disabled={profileSubmitting}
                   className="sp-input"
@@ -335,7 +337,7 @@ export default function SettingsPage() {
                 className="cand-btn-primary"
               >
                 <Save size={16} strokeWidth={2.2} />
-                <span>{profileSubmitting ? 'Enregistrement...' : 'Sauvegarder les modifications'}</span>
+                <span>{profileSubmitting ? t('settings.profile.saving') : t('settings.profile.saveButton')}</span>
               </button>
             </form>
           )}
@@ -347,20 +349,20 @@ export default function SettingsPage() {
             <div className="sp-section-icon-wrap">
               <Lock size={18} strokeWidth={2.2} />
             </div>
-            <h2 className="sp-section-title">Modifier le mot de passe</h2>
+            <h2 className="sp-section-title">{t('settings.password.title')}</h2>
           </div>
           
           <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="sp-form">
             {/* Current Password */}
             <div className="sp-form-group">
               <label htmlFor="currentPassword" className="sp-label">
-                Current Password <span className="sp-required">*</span>
+                {t('settings.password.current.label')} <span className="sp-required">*</span>
               </label>
               <div className="sp-password-input-wrapper">
                 <input
                   id="currentPassword"
                   type={showPasswords.current ? 'text' : 'password'}
-                  placeholder="Enter your current password"
+                  placeholder={t('settings.password.current.placeholder')}
                   {...passwordRegister('currentPassword')}
                   disabled={passwordSubmitting}
                   className="sp-input"
@@ -385,13 +387,13 @@ export default function SettingsPage() {
             {/* New Password */}
             <div className="sp-form-group">
               <label htmlFor="newPassword" className="sp-label">
-                New Password <span className="sp-required">*</span>
+                {t('settings.password.new.label')} <span className="sp-required">*</span>
               </label>
               <div className="sp-password-input-wrapper">
                 <input
                   id="newPassword"
                   type={showPasswords.new ? 'text' : 'password'}
-                  placeholder="Enter your new password"
+                  placeholder={t('settings.password.new.placeholder')}
                   {...passwordRegister('newPassword')}
                   disabled={passwordSubmitting}
                   className="sp-input"
@@ -413,13 +415,13 @@ export default function SettingsPage() {
             {/* Confirm New Password */}
             <div className="sp-form-group">
               <label htmlFor="confirmNewPassword" className="sp-label">
-                Confirm New Password <span className="sp-required">*</span>
+                {t('settings.password.confirm.label')} <span className="sp-required">*</span>
               </label>
               <div className="sp-password-input-wrapper">
                 <input
                   id="confirmNewPassword"
                   type={showPasswords.confirm ? 'text' : 'password'}
-                  placeholder="Confirm your new password"
+                  placeholder={t('settings.password.confirm.placeholder')}
                   {...passwordRegister('confirmNewPassword')}
                   disabled={passwordSubmitting}
                   className="sp-input"
@@ -445,7 +447,7 @@ export default function SettingsPage() {
               className="cand-btn-primary"
             >
               <Lock size={16} strokeWidth={2.2} />
-              <span>{passwordSubmitting ? 'Enregistrement...' : 'Changer le mot de passe'}</span>
+              <span>{passwordSubmitting ? t('settings.password.saving') : t('settings.password.changeButton')}</span>
             </button>
           </form>
           </div>
@@ -465,4 +467,3 @@ export default function SettingsPage() {
     </>
   );
 }
-

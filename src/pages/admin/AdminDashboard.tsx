@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+import { useTranslation } from '../../i18n/I18nContext';
 
 interface Stats {
   totalOrganisations: number;
@@ -60,6 +61,7 @@ const planColors: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [suspendedOrgs, setSuspendedOrgs] = useState<Organisation[]>([]);
@@ -95,7 +97,7 @@ export default function AdminDashboard() {
         setSuspendedOrgs(suspended);
       }
     } catch {
-      setError('Impossible de charger les données du tableau de bord.');
+      setError(t('admin.dashboard.loadError'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,7 @@ export default function AdminDashboard() {
       await apiClient.post(`/admin/organisations/${orgId}/unsuspend`);
       await fetchData();
     } catch {
-      setError("Échec de la levée de suspension.");
+      setError(t('admin.dashboard.unsuspendFailed'));
     } finally {
       setUnsuspending(null);
     }
@@ -143,7 +145,7 @@ export default function AdminDashboard() {
             onClick={fetchData}
             className="ml-auto text-sm font-medium text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
           >
-            <RefreshCw size={14} /> Réessayer
+            <RefreshCw size={14} /> {t('admin.dashboard.retry')}
           </button>
         </div>
       </div>
@@ -152,21 +154,21 @@ export default function AdminDashboard() {
 
   const kpiCards = [
     {
-      label: 'Total Organisations',
+      label: t('admin.dashboard.kpi.totalOrgs'),
       value: stats?.totalOrganisations ?? 0,
       icon: <Building2 size={22} />,
       color: 'text-indigo-600 dark:text-indigo-400',
       bg: 'bg-indigo-50 dark:bg-indigo-900/20',
     },
     {
-      label: 'Organisations actives',
+      label: t('admin.dashboard.kpi.activeOrgs'),
       value: stats?.activeOrganisations ?? 0,
       icon: <TrendingUp size={22} />,
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
     },
     {
-      label: 'Organisations suspendues',
+      label: t('admin.dashboard.kpi.suspendedOrgs'),
       value: stats?.suspendedOrganisations ?? 0,
       icon: <ShieldAlert size={22} />,
       color:
@@ -183,21 +185,21 @@ export default function AdminDashboard() {
           : '',
     },
     {
-      label: 'Utilisateurs total',
+      label: t('admin.dashboard.kpi.totalUsers'),
       value: stats?.totalUsers ?? 0,
       icon: <Users size={22} />,
       color: 'text-sky-600 dark:text-sky-400',
       bg: 'bg-sky-50 dark:bg-sky-900/20',
     },
     {
-      label: 'CVs analysés ce mois',
+      label: t('admin.dashboard.kpi.cvsThisMonth'),
       value: stats?.totalCVsThisMonth ?? 0,
       icon: <FileText size={22} />,
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-50 dark:bg-amber-900/20',
     },
     {
-      label: 'Offres actives',
+      label: t('admin.dashboard.kpi.activeOpenings'),
       value: stats?.activeJobOpenings ?? 0,
       icon: <Briefcase size={22} />,
       color: 'text-violet-600 dark:text-violet-400',
@@ -240,7 +242,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2 mb-3">
           <Activity size={18} className="text-gray-500 dark:text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            Santé de la file d'attente
+            {t('admin.dashboard.queueHealth')}
           </h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -253,7 +255,7 @@ export default function AdminDashboard() {
               {(stats?.queuePendingJobs ?? 0).toLocaleString('fr-FR')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
-              Jobs en attente
+              {t('admin.dashboard.pendingJobs')}
             </p>
           </div>
 
@@ -284,7 +286,7 @@ export default function AdminDashboard() {
               {(stats?.queueFailedJobs ?? 0).toLocaleString('fr-FR')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
-              Jobs en échec
+              {t('admin.dashboard.failedJobs')}
             </p>
           </div>
         </div>
@@ -295,7 +297,7 @@ export default function AdminDashboard() {
             <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
             <div className="text-sm text-red-700 dark:text-red-400">
               <p>
-                Des erreurs ont été détectées dans la file de traitement. Vérifiez le tableau de bord{' '}
+                {t('admin.dashboard.queueWarning')}{' '}
                 <a
                   href="/admin/queues"
                   target="_blank"
@@ -316,7 +318,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2 mb-3">
           <Target size={18} className="text-gray-500 dark:text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            KPIs de scoring
+            {t('admin.dashboard.scoringKpis')}
           </h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -329,7 +331,7 @@ export default function AdminDashboard() {
               {(stats?.totalCandidatesScored ?? 0).toLocaleString('fr-FR')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
-              Candidats scorés
+              {t('admin.dashboard.candidatesScored')}
             </p>
           </div>
 
@@ -345,7 +347,7 @@ export default function AdminDashboard() {
               </span>
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
-              Score moyen plateforme
+              {t('admin.dashboard.avgPlatformScore')}
             </p>
           </div>
 
@@ -358,7 +360,7 @@ export default function AdminDashboard() {
               {(stats?.strongFitCandidates ?? 0).toLocaleString('fr-FR')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
-              Candidats forte adéquation
+              {t('admin.dashboard.strongFitCandidates')}
             </p>
           </div>
         </div>
@@ -370,7 +372,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="text-red-500" size={18} />
             <h3 className="font-semibold text-red-800 dark:text-red-300">
-              Organisations suspendues ({suspendedOrgs.length})
+              {t('admin.dashboard.suspendedOrgsTitle', { count: suspendedOrgs.length })}
             </h3>
           </div>
           <div className="space-y-2">
@@ -385,7 +387,7 @@ export default function AdminDashboard() {
                   </span>
                   {org.suspendedAt && (
                     <span className="ml-3 text-xs text-gray-500 dark:text-gray-400">
-                      Suspendue le {formatDate(org.suspendedAt)}
+                      {t('admin.dashboard.suspendedOn', { date: formatDate(org.suspendedAt) })}
                     </span>
                   )}
                 </div>
@@ -399,7 +401,7 @@ export default function AdminDashboard() {
                   ) : (
                     <Unlock size={14} />
                   )}
-                  Lever la suspension
+                  {t('admin.dashboard.unsuspend')}
                 </button>
               </div>
             ))}
@@ -411,13 +413,13 @@ export default function AdminDashboard() {
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h3 className="font-semibold text-gray-900 dark:text-white">
-            Organisations récentes
+            {t('admin.dashboard.recentOrgs')}
           </h3>
           <Link
             to="/admin/organisations"
             className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
           >
-            Voir tout →
+            {t('admin.dashboard.viewAll')}
           </Link>
         </div>
 
@@ -425,12 +427,12 @@ export default function AdminDashboard() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-slate-700/50 text-left">
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">Nom</th>
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">Plan</th>
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-center">Utilisateurs</th>
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">Statut</th>
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">Date création</th>
-                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-center">Action</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">{t('admin.dashboard.table.name')}</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">{t('admin.dashboard.table.plan')}</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-center">{t('admin.dashboard.table.users')}</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">{t('admin.dashboard.table.status')}</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">{t('admin.dashboard.table.createdAt')}</th>
+                <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400 text-center">{t('admin.dashboard.table.action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -456,12 +458,12 @@ export default function AdminDashboard() {
                     {org.suspended ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        Suspendu
+                        {t('admin.dashboard.suspended')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Actif
+                        {t('admin.dashboard.active')}
                       </span>
                     )}
                   </td>
@@ -473,7 +475,7 @@ export default function AdminDashboard() {
                       to={`/admin/organisations/${org.id}`}
                       className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium"
                     >
-                      <Eye size={14} /> Voir
+                      <Eye size={14} /> {t('admin.dashboard.view')}
                     </Link>
                   </td>
                 </tr>
@@ -484,7 +486,7 @@ export default function AdminDashboard() {
                     colSpan={6}
                     className="px-5 py-10 text-center text-gray-400 dark:text-gray-500"
                   >
-                    Aucune organisation trouvée.
+                    {t('admin.dashboard.noOrgs')}
                   </td>
                 </tr>
               )}

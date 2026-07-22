@@ -46,6 +46,7 @@ import {
   type FunnelStage,
 } from "../api/dashboardApi";
 import "./dashboard.css";
+import { useTranslation } from "../i18n/I18nContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,11 +55,8 @@ interface OutletCtx { user: User; }
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
-const RANGE_OPTIONS: { label: string; value: TimeRange }[] = [
-  { label: "7 jours", value: "7d" },
-  { label: "30 jours", value: "30d" },
-  { label: "90 jours", value: "90d" },
-];
+// RANGE_OPTIONS labels are now resolved via t() at render time
+const RANGE_VALUES: TimeRange[] = ["7d", "30d", "90d"];
 
 const DONUT_COLORS: Record<string, string> = {
   PENDING: "#F59E0B",
@@ -66,11 +64,7 @@ const DONUT_COLORS: Record<string, string> = {
   FAILED:  "#EF4444",
 };
 
-const DONUT_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  SCORED:  "Analysées",
-  FAILED:  "Échec",
-};
+// DONUT_LABELS are now resolved via t() at render time
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN:     "badge--green",
@@ -78,11 +72,7 @@ const STATUS_BADGE: Record<string, string> = {
   ARCHIVED: "badge--gray",
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  OPEN:     "Ouverte",
-  CLOSED:   "Clôturée",
-  ARCHIVED: "Archivée",
-};
+// STATUS_LABEL resolved via t() at render time
 
 const ACTIVITY_ICONS: Record<string, ReactNode> = {
   job_created:  <Briefcase   size={14} strokeWidth={1.8} />,
@@ -166,7 +156,7 @@ function SectionEmptyState({ icon, title, body, action }: {
 
 // ── Donut chart centre label ───────────────────────────────────────────────
 
-function DonutCentreLabel({ total }: { total: number }) {
+function DonutCentreLabel({ total, label }: { total: number; label: string }) {
   return (
     <text
       x="50%" y="50%"
@@ -177,7 +167,7 @@ function DonutCentreLabel({ total }: { total: number }) {
         {total.toLocaleString()}
       </tspan>
       <tspan x="50%" dy="20" fontSize="11" fill="var(--lu-text-muted)">
-        candidats
+        {label}
       </tspan>
     </text>
   );
@@ -201,6 +191,7 @@ function LineTooltip({ active, payload, label }: any) {
 // (timeline range changes, table/activity refetches, etc).
 
 const KpiCards = memo(function KpiCards() {
+  const { t } = useTranslation();
   const statsQ = useQuery({ queryKey: ["dashboard", "stats"], queryFn: fetchDashboardStats, staleTime: 60_000 });
 
   const timeSavedMinutes = useMemo(() => {
@@ -221,7 +212,7 @@ const KpiCards = memo(function KpiCards() {
       <div className="db-kpi-grid" style={KPI_GRID_STYLE}>
         <div className="db-kpi-error" style={{ gridColumn: "1/-1" }}>
           <AlertCircle size={16} />
-          <span>Impossible de charger les statistiques.</span>
+          <span>{t('dashboard.statsError')}</span>
         </div>
       </div>
     );
@@ -234,18 +225,18 @@ const KpiCards = memo(function KpiCards() {
       {/* Active openings */}
       <div className="db-kpi-card" style={KPI_CARD_STYLE}>
         <span className="db-kpi-icon kpi-icon--blue" aria-hidden><Briefcase size={20} strokeWidth={1.6} /></span>
-        <p className="db-kpi-label">Offres actives</p>
+        <p className="db-kpi-label">{t('dashboard.kpi.activeOpenings')}</p>
         <p className="db-kpi-value">{stats.activeJobOpenings}</p>
-        <p className="db-kpi-note" style={KPI_NOTE_STYLE}>sur {stats.totalJobOpenings} au total</p>
+        <p className="db-kpi-note" style={KPI_NOTE_STYLE}>{t('dashboard.kpi.totalOpenings', { count: stats.totalJobOpenings })}</p>
       </div>
 
       {/* Uploaded this month */}
       <div className="db-kpi-card db-kpi-card--row" style={KPI_CARD_STYLE}>
         <div className="db-kpi-card-main">
           <span className="db-kpi-icon kpi-icon--purple" aria-hidden><Upload size={20} strokeWidth={1.6} /></span>
-          <p className="db-kpi-label">CVs ce mois-ci</p>
+          <p className="db-kpi-label">{t('dashboard.kpi.cvsThisMonth')}</p>
           <p className="db-kpi-value">{stats.candidatesUploadedThisMonth}</p>
-          <p className="db-kpi-note" style={KPI_NOTE_STYLE}>{stats.totalCandidatesUploaded} au total</p>
+          <p className="db-kpi-note" style={KPI_NOTE_STYLE}>{t('dashboard.kpi.totalCvs', { count: stats.totalCandidatesUploaded })}</p>
         </div>
         <div
           className="db-kpi-time-badge"
@@ -253,27 +244,27 @@ const KpiCards = memo(function KpiCards() {
         >
           <Zap size={14} strokeWidth={2.2} className="db-kpi-time-badge-icon" />
           <span className="db-kpi-time-badge-value">{formatTimeSaved(timeSavedMinutes)}</span>
-          <span className="db-kpi-time-badge-label">gagnés</span>
+          <span className="db-kpi-time-badge-label">{t('dashboard.kpi.timeSaved')}</span>
         </div>
       </div>
 
       {/* Pending — highlighted if > 0 */}
       <div className={`db-kpi-card ${stats.candidatesPendingParsing > 0 ? "db-kpi-card--amber" : ""}`} style={KPI_CARD_STYLE}>
         <span className="db-kpi-icon kpi-icon--amber" aria-hidden><Clock size={20} strokeWidth={1.6} /></span>
-        <p className="db-kpi-label">En attente d'analyse</p>
+        <p className="db-kpi-label">{t('dashboard.kpi.pendingParsing')}</p>
         <p className="db-kpi-value">{stats.candidatesPendingParsing}</p>
         <p className="db-kpi-note" style={KPI_NOTE_STYLE}>
-          {stats.candidatesPendingParsing > 0 ? "Analyse en cours…" : "Tous analysés ✓"}
+          {stats.candidatesPendingParsing > 0 ? t('dashboard.kpi.parsingInProgress') : t('dashboard.kpi.allParsed')}
         </p>
       </div>
 
       {/* Successfully parsed */}
       <div className="db-kpi-card" style={KPI_CARD_STYLE}>
         <span className="db-kpi-icon kpi-icon--green" aria-hidden><CheckCircle2 size={20} strokeWidth={1.6} /></span>
-        <p className="db-kpi-label">Analysés avec succès</p>
+        <p className="db-kpi-label">{t('dashboard.kpi.parsedSuccessfully')}</p>
         <p className="db-kpi-value">{stats.candidatesParsedSuccessfully}</p>
         <p className="db-kpi-note" style={KPI_NOTE_STYLE}>
-          {stats.candidatesFailedParsing > 0 ? `${stats.candidatesFailedParsing} en échec` : "Aucun échec"}
+          {stats.candidatesFailedParsing > 0 ? t('dashboard.kpi.failedCount', { count: stats.candidatesFailedParsing }) : t('dashboard.kpi.noFailures')}
         </p>
       </div>
     </div>
@@ -285,13 +276,14 @@ const KpiCards = memo(function KpiCards() {
 // query's status changes instead of riding along with the whole page.
 
 const TeamFootnote = memo(function TeamFootnote() {
+  const { t } = useTranslation();
   const statsQ = useQuery({ queryKey: ["dashboard", "stats"], queryFn: fetchDashboardStats, staleTime: 60_000 });
   if (!statsQ.data) return null;
   const count = statsQ.data.teamMembersCount;
   return (
     <div className="db-team-note">
       <Users size={13} style={ICON_TITLE_STYLE} />
-      {count} membre{count !== 1 ? "s" : ""} dans l'organisation
+      {t('dashboard.teamNote', { count, plural: count !== 1 ? 's' : '' })}
     </div>
   );
 });
@@ -304,6 +296,7 @@ const TeamFootnote = memo(function TeamFootnote() {
 // screen (instead of flashing back to a skeleton) while the new range loads.
 
 const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
+  const { t } = useTranslation();
   const [range, setRange] = useState<TimeRange>("30d");
 
   const timelineQ = useQuery({
@@ -327,17 +320,17 @@ const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
     <div className="db-card db-chart-card">
       <div className="db-chart-header">
         <div>
-          <h3 className="db-card-title"><TrendingUp size={15} style={ICON_TITLE_STYLE} />Candidatures reçues</h3>
-          <p className="db-card-sub">Volumes quotidiens de CVs téléversés</p>
+          <h3 className="db-card-title"><TrendingUp size={15} style={ICON_TITLE_STYLE} />{t('dashboard.timeline.title')}</h3>
+          <p className="db-card-sub">{t('dashboard.timeline.subtitle')}</p>
         </div>
-        <div className="db-range-tabs" role="group" aria-label="Période">
-          {RANGE_OPTIONS.map((opt) => (
+        <div className="db-range-tabs" role="group" aria-label={t('dashboard.ranges.period')}>
+          {RANGE_VALUES.map((val) => (
             <button
-              key={opt.value}
-              className={`db-range-tab ${range === opt.value ? "db-range-tab--active" : ""}`}
-              onClick={() => setRange(opt.value)}
+              key={val}
+              className={`db-range-tab ${range === val ? "db-range-tab--active" : ""}`}
+              onClick={() => setRange(val)}
             >
-              {opt.label}
+              {t(`dashboard.ranges.${val}`)}
             </button>
           ))}
         </div>
@@ -350,14 +343,14 @@ const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
       ) : timelineQ.isError ? (
         <SectionEmptyState
           icon={<AlertCircle size={32} />}
-          title="Erreur de chargement"
-          body="Impossible de récupérer les données du graphique."
+          title={t('dashboard.timeline.loadError')}
+          body={t('dashboard.timeline.loadErrorBody')}
         />
       ) : timelineAllZero ? (
         <SectionEmptyState
           icon={<CalendarDays size={32} />}
-          title="Aucune candidature reçue"
-          body="Aucune candidature reçue sur cette période."
+          title={t('dashboard.timeline.noCandidates')}
+          body={t('dashboard.timeline.noCandidatesBody')}
         />
       ) : (
         <ResponsiveContainer width="100%" height={210}>
@@ -400,6 +393,7 @@ const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
 // ── Parsing status donut ─────────────────────────────────────────────────────
 
 const ParsingStatusDonut = memo(function ParsingStatusDonut() {
+  const { t } = useTranslation();
   const donutQ = useQuery({ queryKey: ["dashboard", "parsing-status"], queryFn: fetchParsingStatus, staleTime: 60_000 });
 
   const donutTotal = useMemo(
@@ -409,20 +403,20 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
 
   return (
     <div className="db-card db-chart-card">
-      <h3 className="db-card-title"><PieIcon size={15} style={ICON_TITLE_STYLE} />État d'analyse</h3>
-      <p className="db-card-sub">Répartition par statut de traitement</p>
+      <h3 className="db-card-title"><PieIcon size={15} style={ICON_TITLE_STYLE} />{t('dashboard.parsingStatus.title')}</h3>
+      <p className="db-card-sub">{t('dashboard.parsingStatus.subtitle')}</p>
 
       {donutQ.isLoading ? (
         <div className="db-chart-skeleton" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           <SkeletonBlock w={160} h={160} r={80} />
         </div>
       ) : donutQ.isError ? (
-        <SectionEmptyState icon={<AlertCircle size={32} />} title="Erreur de chargement" />
+        <SectionEmptyState icon={<AlertCircle size={32} />} title={t('dashboard.timeline.loadError')} />
       ) : donutTotal === 0 ? (
         <SectionEmptyState
           icon={<PieIcon size={32} />}
-          title="Aucune donnée"
-          body="Les statistiques apparaîtront une fois vos premières candidatures téléchargées."
+          title={t('dashboard.parsingStatus.noData')}
+          body={t('dashboard.parsingStatus.noDataBody')}
         />
       ) : (
         <>
@@ -443,7 +437,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
                   <Cell key={entry.status} fill={DONUT_COLORS[entry.status] ?? "#ccc"} />
                 ))}
               </Pie>
-              <DonutCentreLabel total={donutTotal} />
+              <DonutCentreLabel total={donutTotal} label={t('dashboard.parsingStatus.candidates')} />
             </PieChart>
           </ResponsiveContainer>
 
@@ -451,7 +445,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
             {donutQ.data!.map((entry: ParsingStatusPoint) => (
               <li key={entry.status} className="db-donut-legend-item">
                 <span className="db-donut-dot" style={{ background: DONUT_COLORS[entry.status] }} />
-                <span className="db-donut-status">{DONUT_LABELS[entry.status] ?? entry.status}</span>
+                <span className="db-donut-status">{t(`dashboard.donutLabels.${entry.status}`)}</span>
                 <span className="db-donut-count">{entry.count.toLocaleString()}</span>
               </li>
             ))}
@@ -465,6 +459,7 @@ const ParsingStatusDonut = memo(function ParsingStatusDonut() {
 // ── Recruitment funnel ───────────────────────────────────────────────────────
 
 const RecruitmentFunnel = memo(function RecruitmentFunnel() {
+  const { t } = useTranslation();
   const funnelQ = useQuery({ queryKey: ["dashboard", "funnel"], queryFn: fetchOpeningsFunnel, staleTime: 60_000 });
 
   const funnelMax = useMemo(
@@ -474,20 +469,20 @@ const RecruitmentFunnel = memo(function RecruitmentFunnel() {
 
   return (
     <div className="db-card">
-      <h3 className="db-card-title"><Activity size={15} style={ICON_TITLE_STYLE} />Entonnoir de recrutement</h3>
-      <p className="db-card-sub">Volumes agrégés sur toutes les offres</p>
+      <h3 className="db-card-title"><Activity size={15} style={ICON_TITLE_STYLE} />{t('dashboard.funnel.title')}</h3>
+      <p className="db-card-sub">{t('dashboard.funnel.subtitle')}</p>
 
       {funnelQ.isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
           {Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} h={36} r={6} />)}
         </div>
       ) : funnelQ.isError ? (
-        <SectionEmptyState icon={<AlertCircle size={32} />} title="Erreur de chargement" />
+        <SectionEmptyState icon={<AlertCircle size={32} />} title={t('dashboard.funnel.loadError')} />
       ) : funnelMax === 0 ? (
         <SectionEmptyState
           icon={<Activity size={32} />}
-          title="Aucune donnée"
-          body="L'entonnoir sera visible une fois des offres et candidatures créées."
+          title={t('dashboard.funnel.noData')}
+          body={t('dashboard.funnel.noDataBody')}
         />
       ) : (
         <ResponsiveContainer width="100%" height={180}>
@@ -540,35 +535,36 @@ const RecruitmentFunnel = memo(function RecruitmentFunnel() {
 // ── Recent job openings table ────────────────────────────────────────────────
 
 const RecentJobsTable = memo(function RecentJobsTable() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const jobsQ = useQuery({ queryKey: ["dashboard", "recent-jobs"], queryFn: fetchRecentJobOpenings, staleTime: 60_000 });
 
   return (
     <div className="db-card">
-      <h3 className="db-card-title">Offres récentes</h3>
-      <p className="db-card-sub">Les 5 offres les plus récemment mises à jour</p>
+      <h3 className="db-card-title">{t('dashboard.recentJobs.title')}</h3>
+      <p className="db-card-sub">{t('dashboard.recentJobs.subtitle')}</p>
 
       {jobsQ.isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
           {Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} h={44} r={8} />)}
         </div>
       ) : jobsQ.isError ? (
-        <SectionEmptyState icon={<AlertCircle size={32} />} title="Erreur de chargement" />
+        <SectionEmptyState icon={<AlertCircle size={32} />} title={t('dashboard.recentJobs.loadError')} />
       ) : jobsQ.data!.length === 0 ? (
         <SectionEmptyState
           icon={<Briefcase size={32} />}
-          title="Aucune offre d'emploi"
-          body="Les offres apparaîtront ici une fois créées."
+          title={t('dashboard.recentJobs.noJobs')}
+          body={t('dashboard.recentJobs.noJobsBody')}
         />
       ) : (
         <div className="db-table-wrap">
           <table className="db-table">
             <thead>
               <tr>
-                <th>Titre</th>
-                <th>Statut</th>
-                <th className="db-th-num">CVs</th>
-                <th className="db-th-num">Analysés</th>
+                <th>{t('dashboard.recentJobs.tableTitle')}</th>
+                <th>{t('dashboard.recentJobs.tableStatus')}</th>
+                <th className="db-th-num">{t('dashboard.recentJobs.tableCvs')}</th>
+                <th className="db-th-num">{t('dashboard.recentJobs.tableParsed')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -580,7 +576,7 @@ const RecentJobsTable = memo(function RecentJobsTable() {
                   </td>
                   <td>
                     <span className={`db-badge ${STATUS_BADGE[job.status] ?? "badge--gray"}`}>
-                      {STATUS_LABEL[job.status] ?? job.status}
+                      {t(`dashboard.statusLabels.${job.status}`)}
                     </span>
                   </td>
                   <td className="db-td-num">{job.candidateCount}</td>
@@ -589,10 +585,10 @@ const RecentJobsTable = memo(function RecentJobsTable() {
                     <button
                       className="db-open-link"
                       onClick={() => navigate(`/candidatures/${job.id}`)}
-                      aria-label={`Ouvrir ${job.title}`}
+                      aria-label={`${t('common.open')} ${job.title}`}
                     >
                       <ExternalLink size={12} strokeWidth={2} />
-                      Ouvrir
+                      {t('common.open')}
                     </button>
                   </td>
                 </tr>
@@ -608,12 +604,13 @@ const RecentJobsTable = memo(function RecentJobsTable() {
 // ── Recent activity feed ─────────────────────────────────────────────────────
 
 const RecentActivityFeed = memo(function RecentActivityFeed() {
+  const { t } = useTranslation();
   const activityQ = useQuery({ queryKey: ["dashboard", "activity"], queryFn: fetchRecentActivity, staleTime: 60_000 });
 
   return (
     <div className="db-card">
-      <h3 className="db-card-title">Activité récente</h3>
-      <p className="db-card-sub">Derniers événements de l'organisation</p>
+      <h3 className="db-card-title">{t('dashboard.activity.title')}</h3>
+      <p className="db-card-sub">{t('dashboard.activity.subtitle')}</p>
 
       {activityQ.isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
@@ -628,12 +625,12 @@ const RecentActivityFeed = memo(function RecentActivityFeed() {
           ))}
         </div>
       ) : activityQ.isError ? (
-        <SectionEmptyState icon={<AlertCircle size={32} />} title="Erreur de chargement" />
+        <SectionEmptyState icon={<AlertCircle size={32} />} title={t('dashboard.activity.loadError')} />
       ) : activityQ.data!.length === 0 ? (
         <SectionEmptyState
           icon={<Activity size={32} />}
-          title="Aucune activité"
-          body="L'activité apparaîtra dès que des offres ou des candidatures seront créées."
+          title={t('dashboard.activity.noActivity')}
+          body={t('dashboard.activity.noActivityBody')}
         />
       ) : (
         <ul className="db-activity">
@@ -664,13 +661,19 @@ const RecentActivityFeed = memo(function RecentActivityFeed() {
 // over the original single-fetch version while keeping each section isolated.
 
 const DashboardHeader = memo(function DashboardHeader({ firstName }: { firstName: string }) {
+  const { t } = useTranslation();
   const statsQ = useQuery({ queryKey: ["dashboard", "stats"], queryFn: fetchDashboardStats, staleTime: 60_000 });
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const greeting = hour < 12 ? t('dashboard.greeting.morning') : hour < 18 ? t('dashboard.greeting.afternoon') : t('dashboard.greeting.evening');
 
   const summaryLine = statsQ.data
-    ? `${statsQ.data.activeJobOpenings} offre${statsQ.data.activeJobOpenings !== 1 ? "s" : ""} active${statsQ.data.activeJobOpenings !== 1 ? "s" : ""} · ${statsQ.data.candidatesPendingParsing} candidature${statsQ.data.candidatesPendingParsing !== 1 ? "s" : ""} en attente d'analyse.`
+    ? t('dashboard.summary', {
+        activeJobs: statsQ.data.activeJobOpenings,
+        jobPlural: statsQ.data.activeJobOpenings !== 1 ? 's' : '',
+        pendingCandidates: statsQ.data.candidatesPendingParsing,
+        candidatePlural: statsQ.data.candidatesPendingParsing !== 1 ? 's' : '',
+      })
     : null;
 
   return (
@@ -680,7 +683,7 @@ const DashboardHeader = memo(function DashboardHeader({ firstName }: { firstName
           {greeting}, <span className="db-accent">{firstName}</span>
         </h2>
         <p className="db-welcome-sub">
-          {summaryLine ?? "Chargement des statistiques…"}
+          {summaryLine ?? t('dashboard.loadingStats')}
         </p>
       </div>
     </div>

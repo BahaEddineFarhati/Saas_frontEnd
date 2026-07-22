@@ -1,0 +1,703 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "loading": "Chargement…",
+    "delete": "Supprimer",
+    "open": "Ouvrir",
+    "retry": "Réessayer",
+    "allRightsReserved": "Tous droits réservés.",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "logOut": "Se déconnecter",
+    "notifications": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noUnreadNotifications": "Aucune notification non lue.",
+    "relativeTime": {
+      "minutesAgo": "Il y a {count} min",
+      "hoursAgo": "Il y a {count} h",
+      "daysAgo": "Il y a {count} j"
+    },
+    "dismiss": "Fermer",
+    "networkError": "Erreur réseau. Veuillez réessayer.",
+    "unexpectedError": "Une erreur inattendue s'est produite.",
+    "show": "Afficher",
+    "hide": "Masquer",
+    "viewResults": "Voir les résultats"
+  },
+
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "candidatures": "Candidatures",
+    "settings": "Paramètres",
+    "entreprise": "Entreprise",
+    "organisations": "Organisations",
+    "mainNavigation": "Navigation principale"
+  },
+
+  "pageTitles": {
+    "dashboard": "Tableau de bord",
+    "candidatures": "Candidatures",
+    "settings": "Paramètres",
+    "entreprise": "Entreprise",
+    "organisations": "Organisations",
+    "jobDetail": "Détail de l'offre",
+    "orgDetail": "Détail de l'organisation",
+    "default": "LinkUp"
+  },
+
+  "validation": {
+    "firstNameRequired": "Le prénom est requis",
+    "lastNameRequired": "Le nom est requis",
+    "emailRequired": "L'email est requis",
+    "emailInvalid": "Format d'email invalide",
+    "passwordRequired": "Le mot de passe est requis",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordUppercase": "Le mot de passe doit contenir au moins une majuscule",
+    "passwordNumber": "Le mot de passe doit contenir au moins un chiffre",
+    "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+    "currentPasswordRequired": "Le mot de passe actuel est requis",
+    "confirmPasswordRequired": "Veuillez confirmer votre mot de passe",
+    "validEmailRequired": "Veuillez saisir une adresse email valide"
+  },
+
+  "settings": {
+    "profile": {
+      "title": "Informations du profil",
+      "firstName": {
+        "label": "Prénom",
+        "placeholder": "Entrez votre prénom"
+      },
+      "lastName": {
+        "label": "Nom de famille",
+        "placeholder": "Entrez votre nom de famille"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "Entrez votre adresse email"
+      },
+      "saveButton": "Sauvegarder les modifications",
+      "saving": "Enregistrement…"
+    },
+    "password": {
+      "title": "Modifier le mot de passe",
+      "current": {
+        "label": "Mot de passe actuel",
+        "placeholder": "Entrez votre mot de passe actuel"
+      },
+      "new": {
+        "label": "Nouveau mot de passe",
+        "placeholder": "Entrez votre nouveau mot de passe"
+      },
+      "confirm": {
+        "label": "Confirmer le nouveau mot de passe",
+        "placeholder": "Confirmez votre nouveau mot de passe"
+      },
+      "changeButton": "Changer le mot de passe",
+      "saving": "Enregistrement…"
+    },
+    "toast": {
+      "profileUpdated": "Profil mis à jour avec succès.",
+      "emailTaken": "Cette adresse email est déjà utilisée.",
+      "profileUpdateFailed": "Échec de la mise à jour du profil.",
+      "profileLoadFailed": "Impossible de charger les informations du profil.",
+      "passwordChanged": "Mot de passe modifié avec succès.",
+      "wrongPassword": "Mot de passe actuel incorrect.",
+      "passwordsMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "passwordChangeFailed": "Échec du changement de mot de passe."
+    }
+  },
+
+  "entreprise": {
+    "team": {
+      "title": "Membres de l'équipe",
+      "activeCount": "{count} membre{plural} actif{plural}",
+      "inviteButton": "Inviter un membre",
+      "loadingMembers": "Chargement des membres…",
+      "loadFailed": "Impossible de charger les membres de l'équipe",
+      "table": {
+        "member": "Membre",
+        "email": "Email",
+        "role": "Rôle",
+        "joined": "Inscrit le",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Actif",
+        "pending": "En attente",
+        "quit": "Parti",
+        "deactivated": "Désactivé"
+      },
+      "inviteSent": "Invitation envoyée",
+      "demoteToRecruiter": "Rétrograder en Recruteur",
+      "promoteToAdmin": "Promouvoir en Admin",
+      "deactivateMember": "Désactiver le membre"
+    },
+    "invite": {
+      "title": "Inviter un membre de l'équipe",
+      "emailLabel": "Adresse email",
+      "emailPlaceholder": "collegue@entreprise.com",
+      "roleLabel": "Rôle",
+      "recruiter": "Recruteur",
+      "admin": "Admin",
+      "sending": "Envoi…",
+      "sendButton": "Envoyer l'invitation",
+      "emailRequired": "L'email est requis",
+      "inviteSentTo": "Invitation envoyée à {email}",
+      "sendFailed": "Échec de l'envoi de l'invitation",
+      "networkError": "Erreur réseau. Veuillez réessayer."
+    },
+    "confirm": {
+      "cancel": "Annuler",
+      "promoteTitle": "Promouvoir {name} ?",
+      "demoteTitle": "Rétrograder {name} ?",
+      "roleChangeMessage": "Changer le rôle de {firstName} {lastName} de {fromRole} à {toRole} ?",
+      "promoteConfirm": "Promouvoir en Admin",
+      "demoteConfirm": "Rétrograder en Recruteur",
+      "roleUpdated": "Le rôle de {name} a été mis à jour en {role}",
+      "roleUpdateFailed": "Échec de la mise à jour du rôle",
+      "removeTitle": "Retirer {name} ?",
+      "removeMessage": "Cela désactivera le compte de {firstName} {lastName}. Cette personne ne pourra plus se connecter et ses sessions actives seront terminées immédiatement. Cette action est irréversible.",
+      "removeConfirm": "Retirer le membre",
+      "deactivated": "{name} a été désactivé",
+      "deactivateFailed": "Échec de la désactivation du membre",
+      "unexpectedError": "Une erreur inattendue s'est produite"
+    },
+    "org": {
+      "title": "Informations de l'organisation",
+      "subtitle": "Gérez les détails de votre organisation",
+      "loading": "Chargement de l'organisation…",
+      "loadFailed": "Impossible de charger les informations de l'organisation",
+      "nameLabel": "Nom de l'organisation",
+      "namePlaceholder": "Acme Corp",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "acme-corp",
+      "slugTaken": "Ce slug est déjà utilisé par une autre organisation",
+      "planLabel": "Plan",
+      "createdLabel": "Créée le",
+      "saving": "Enregistrement…",
+      "saveButton": "Enregistrer les modifications",
+      "noChanges": "Aucune modification à enregistrer",
+      "updated": "Organisation mise à jour avec succès",
+      "updateFailed": "Échec de la mise à jour de l'organisation",
+      "networkError": "Erreur réseau. Veuillez réessayer."
+    },
+    "aiUsage": {
+      "title": "Utilisation IA ce mois",
+      "subtitle": "Consommation de tokens pour le mois en cours",
+      "loading": "Chargement des données d'utilisation…",
+      "unavailable": "Données non disponibles",
+      "totalTokens": "Total de tokens",
+      "cvParsing": "Analyse CV",
+      "cvScoring": "Score CV",
+      "enrichment": "Enrichissement",
+      "chat": "Chat",
+      "historyTitle": "Historique d'utilisation des tokens (12 derniers mois)",
+      "apiCalls": "Appels d'API",
+      "noUsage": "Aucune utilisation ce mois"
+    }
+  },
+
+  "dashboard": {
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir"
+    },
+    "summary": "{activeJobs} offre{jobPlural} active{jobPlural} · {pendingCandidates} candidature{candidatePlural} en attente d'analyse.",
+    "loadingStats": "Chargement des statistiques…",
+    "statsError": "Impossible de charger les statistiques.",
+    "kpi": {
+      "activeOpenings": "Offres actives",
+      "totalOpenings": "sur {count} au total",
+      "cvsThisMonth": "CVs ce mois-ci",
+      "totalCvs": "{count} au total",
+      "timeSaved": "gagnés",
+      "pendingParsing": "En attente d'analyse",
+      "parsingInProgress": "Analyse en cours…",
+      "allParsed": "Tous analysés ✓",
+      "parsedSuccessfully": "Analysés avec succès",
+      "failedCount": "{count} en échec",
+      "noFailures": "Aucun échec"
+    },
+    "teamNote": "{count} membre{plural} dans l'organisation",
+    "timeline": {
+      "title": "Candidatures reçues",
+      "subtitle": "Volumes quotidiens de CVs téléversés",
+      "loadError": "Erreur de chargement",
+      "loadErrorBody": "Impossible de récupérer les données du graphique.",
+      "noCandidates": "Aucune candidature reçue",
+      "noCandidatesBody": "Aucune candidature reçue sur cette période."
+    },
+    "ranges": {
+      "7d": "7 jours",
+      "30d": "30 jours",
+      "90d": "90 jours",
+      "period": "Période"
+    },
+    "parsingStatus": {
+      "title": "État d'analyse",
+      "subtitle": "Répartition par statut de traitement",
+      "noData": "Aucune donnée",
+      "noDataBody": "Les statistiques apparaîtront une fois vos premières candidatures téléchargées.",
+      "candidates": "candidats"
+    },
+    "donutLabels": {
+      "PENDING": "En attente",
+      "SCORED": "Analysées",
+      "FAILED": "Échec"
+    },
+    "funnel": {
+      "title": "Entonnoir de recrutement",
+      "subtitle": "Volumes agrégés sur toutes les offres",
+      "loadError": "Erreur de chargement",
+      "noData": "Aucune donnée",
+      "noDataBody": "L'entonnoir sera visible une fois des offres et candidatures créées."
+    },
+    "recentJobs": {
+      "title": "Offres récentes",
+      "subtitle": "Les 5 offres les plus récemment mises à jour",
+      "loadError": "Erreur de chargement",
+      "noJobs": "Aucune offre d'emploi",
+      "noJobsBody": "Les offres apparaîtront ici une fois créées.",
+      "tableTitle": "Titre",
+      "tableStatus": "Statut",
+      "tableCvs": "CVs",
+      "tableParsed": "Analysés"
+    },
+    "statusLabels": {
+      "OPEN": "Ouverte",
+      "CLOSED": "Clôturée",
+      "ARCHIVED": "Archivée"
+    },
+    "activity": {
+      "title": "Activité récente",
+      "subtitle": "Derniers événements de l'organisation",
+      "loadError": "Erreur de chargement",
+      "noActivity": "Aucune activité",
+      "noActivityBody": "L'activité apparaîtra dès que des offres ou des candidatures seront créées."
+    },
+    "tooltipCv": "{count} CV{plural}"
+  },
+
+  "candidatures": {
+    "title": "Offres d'emploi",
+    "subtitle": "Gérez et suivez les offres de recrutement de votre entreprise.",
+    "newJob": "Nouvelle offre",
+    "searchPlaceholder": "Rechercher par intitulé…",
+    "statusFilter": "Filtre par statut",
+    "filterAll": "Tous",
+    "filterOpen": "Actifs",
+    "filterClosed": "Clôturés",
+    "table": {
+      "title": "Titre de l'offre",
+      "status": "Statut",
+      "createdAt": "Date de création",
+      "candidates": "Candidats",
+      "department": "Ressources Humaines"
+    },
+    "statusOpen": "Ouverte",
+    "statusClosed": "Clôturée",
+    "emptyTitle": "Aucune offre trouvée",
+    "emptyBodyNoJobs": "Commencez par créer votre première offre d'emploi pour recevoir des candidatures.",
+    "emptyBodyNoMatch": "Aucune offre ne correspond aux critères de recherche actuels.",
+    "deleteTitle": "Supprimer l'offre ?",
+    "deleteMessage": "Voulez-vous vraiment supprimer l'offre « {title} » et tous ses candidats ? Cette action est irréversible.",
+    "deleteConfirm": "Confirmer la suppression",
+    "deleteError": "Erreur lors de la suppression",
+    "deleteErrorFallback": "Impossible de supprimer l'offre",
+    "createTitle": "Créer une offre d'emploi",
+    "form": {
+      "titleLabel": "Titre du poste *",
+      "titlePlaceholder": "Ex. Senior Fullstack Developer (Node.js/React)",
+      "descLabel": "Description du profil recherché *",
+      "descPlaceholder": "Décrivez les compétences, l'expérience requise et les responsabilités du poste...",
+      "titleRequired": "Le titre de l'offre est requis",
+      "descRequired": "La description du profil est requise",
+      "creating": "Création...",
+      "createButton": "Créer l'offre",
+      "apiError": "Titre ou description requis par l'API."
+    }
+  },
+
+  "login": {
+    "title": "Bon retour",
+    "subtitle": "Connectez-vous à votre compte",
+    "emailLabel": "Email",
+    "emailPlaceholder": "vous@entreprise.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Votre mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "signingIn": "Connexion…",
+    "signIn": "Se connecter",
+    "invalidCredentials": "Email ou mot de passe incorrect",
+    "loginFailed": "Échec de connexion. Veuillez réessayer.",
+    "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer."
+  },
+
+  "forgotPassword": {
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "emailLabel": "Email",
+    "backToLogin": "Retour à la connexion",
+    "sending": "Envoi…",
+    "sendButton": "Envoyer le lien de réinitialisation",
+    "sentTitle": "Demande envoyée",
+    "sentMessage": "Si un compte existe avec l'adresse {email}, vous recevrez un email dans quelques instants. Pensez à vérifier vos spams.",
+    "invalidEmail": "Veuillez saisir une adresse email valide.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer."
+  },
+
+  "resetPassword": {
+    "title": "Réinitialiser le mot de passe",
+    "subtitle": "Entrez votre nouveau mot de passe.",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "confirmLabel": "Confirmer le nouveau mot de passe",
+    "resetting": "Réinitialisation…",
+    "resetButton": "Réinitialiser le mot de passe",
+    "invalidLink": {
+      "title": "Ce lien est invalide",
+      "message": "Ce lien de réinitialisation est invalide. Veuillez retourner à la page de connexion.",
+      "backToLogin": "Retour à la connexion"
+    },
+    "expiredLink": {
+      "title": "Lien expiré",
+      "message": "Ce lien a expiré (valable 1 heure). Veuillez faire une nouvelle demande.",
+      "forgotPassword": "Mot de passe oublié ?"
+    },
+    "usedLink": {
+      "title": "Lien déjà utilisé",
+      "message": "Ce lien a déjà été utilisé. Si vous avez besoin de réinitialiser à nouveau votre mot de passe, faites une nouvelle demande.",
+      "forgotPassword": "Mot de passe oublié ?"
+    },
+    "success": {
+      "title": "Mot de passe réinitialisé",
+      "message": "Votre mot de passe a été réinitialisé avec succès.",
+      "loginButton": "Se connecter"
+    },
+    "passwordValidation": "Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre.",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer."
+  },
+
+  "acceptInvite": {
+    "title": "Complétez votre compte",
+    "subtitle": "Vous avez été invité(e) à rejoindre une équipe sur LinkUp",
+    "firstNameLabel": "Prénom",
+    "firstNamePlaceholder": "Jane",
+    "lastNameLabel": "Nom de famille",
+    "lastNamePlaceholder": "Doe",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Min. 8 car., 1 majuscule, 1 chiffre",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "confirmPasswordPlaceholder": "Confirmez votre mot de passe",
+    "creating": "Création du compte…",
+    "submitButton": "Accepter l'invitation et créer le compte",
+    "invalidLink": "Ce lien d'invitation est invalide. Veuillez contacter votre administrateur pour une nouvelle invitation.",
+    "invalidToken": "Lien d'invitation invalide. Aucun token fourni.",
+    "preparingInvitation": "Préparation de votre invitation...",
+    "acceptFailed": "Échec de l'acceptation de l'invitation. Veuillez réessayer.",
+    "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer."
+  },
+
+  "suspension": {
+    "title": "Organisation suspendue",
+    "message": "Votre organisation a été suspendue. Veuillez contacter l'administration LinkUp pour régulariser votre situation.",
+    "logout": "Se déconnecter"
+  },
+
+  "chat": {
+    "headerTitle": "Assistant IA",
+    "clearConfirm": "Confirmer ?",
+    "clearTooltip": "Effacer l'historique",
+    "welcomeMessage": "Bonjour ! Je suis votre assistant IA pour ce poste. Vous pouvez me poser des questions sur les candidats, leurs profils, et qui correspond le mieux à votre recherche.",
+    "chips": {
+      "bestCandidate": "Qui est le meilleur candidat pour ce poste ?",
+      "shortlist": "Quels candidats devrais-je shortlister ?",
+      "compare": "Compare les deux meilleurs candidats",
+      "weakPoints": "Quels sont les points faibles de notre pipeline ?"
+    },
+    "suggestionsLabel": "Suggestions",
+    "inputPlaceholder": "Posez votre question…",
+    "sendAriaLabel": "Envoyer",
+    "stopAriaLabel": "Arrêter",
+    "openChat": "Ouvrir l'assistant IA",
+    "closeChat": "Fermer l'assistant IA",
+    "timeoutError": "La réponse a pris trop longtemps. Veuillez réessayer.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "firstTimePopup": "La réponse peut prendre un peu plus de temps, le temps que l'assistant analyse les candidats.",
+    "fallbackJobTitle": "Poste"
+  },
+
+  "admin": {
+    "dashboard": {
+      "loadError": "Impossible de charger les données du tableau de bord.",
+      "unsuspendFailed": "Échec de la levée de suspension.",
+      "retry": "Réessayer",
+      "kpi": {
+        "totalOrgs": "Total Organisations",
+        "activeOrgs": "Organisations actives",
+        "suspendedOrgs": "Organisations suspendues",
+        "totalUsers": "Utilisateurs total",
+        "cvsThisMonth": "CVs analysés ce mois",
+        "activeOpenings": "Offres actives"
+      },
+      "queueHealth": "Santé de la file d'attente",
+      "pendingJobs": "Jobs en attente",
+      "failedJobs": "Jobs en échec",
+      "queueWarning": "Des erreurs ont été détectées dans la file de traitement. Vérifiez le tableau de bord",
+      "scoringKpis": "KPIs de scoring",
+      "candidatesScored": "Candidats scorés",
+      "avgPlatformScore": "Score moyen plateforme",
+      "strongFitCandidates": "Candidats forte adéquation",
+      "suspendedOrgsTitle": "Organisations suspendues ({count})",
+      "suspendedOn": "Suspendue le {date}",
+      "unsuspend": "Lever la suspension",
+      "recentOrgs": "Organisations récentes",
+      "viewAll": "Voir tout →",
+      "table": {
+        "name": "Nom",
+        "plan": "Plan",
+        "users": "Utilisateurs",
+        "status": "Statut",
+        "createdAt": "Date création",
+        "action": "Action"
+      },
+      "suspended": "Suspendu",
+      "active": "Actif",
+      "view": "Voir",
+      "noOrgs": "Aucune organisation trouvée."
+    },
+    "organisations": {
+      "title": "Organisations",
+      "subtitle": "{count} organisations enregistrées",
+      "searchPlaceholder": "Rechercher…",
+      "filterAll": "Toutes",
+      "filterActive": "Actives",
+      "filterSuspended": "Suspendues",
+      "loadError": "Impossible de charger la liste des organisations.",
+      "retry": "Réessayer",
+      "table": {
+        "name": "Nom",
+        "slug": "Slug",
+        "plan": "Plan",
+        "users": "Utilisateurs",
+        "cvs": "CVs",
+        "jobs": "Offres",
+        "tokensThisMonth": "Tokens ce mois",
+        "createdAt": "Date création",
+        "status": "Statut",
+        "created": "Créée le"
+      },
+      "suspended": "Suspendu",
+      "active": "Actif",
+      "noResults": "Aucune organisation trouvée.",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {total} — {count} résultat{plural}",
+      "createOrg": "Créer une organisation",
+      "createTitle": "Créer une organisation",
+      "createInfoBanner": "Une invitation sera envoyée à l'admin pour qu'il complète son compte (même mécanisme que l'invitation d'un membre).",
+      "orgNameLabel": "Nom de l'organisation *",
+      "slugLabel": "Slug *",
+      "adminEmailLabel": "Email de l'admin *",
+      "createError": "Erreur lors de la création.",
+      "createAndInvite": "Créer & Inviter"
+    },
+    "orgDetail": {
+      "backToList": "← Retour aux organisations",
+      "loadError": "Impossible de charger les détails de l'organisation.",
+      "retry": "Réessayer",
+      "createdAt": "Créée le {date}",
+      "suspendedAt": "Suspendue le {date}",
+      "suspendedReason": "— Raison : {reason}",
+      "plan": "Plan",
+      "status": "Statut",
+      "suspended": "Suspendu",
+      "active": "Actif",
+      "slug": "Slug",
+      "suspend": "Suspendre",
+      "unsuspend": "Lever la suspension",
+      "edit": "Modifier",
+      "suspending": "Suspension…",
+      "unsuspending": "Levée…",
+      "userCount": "{count} utilisateur{plural}",
+      "jobCount": "{count} offre{plural} d'emploi",
+      "cvCount": "{count} CV{plural} analysé{plural}",
+      "membersTitle": "Membres ({count})",
+      "table": {
+        "name": "Nom",
+        "email": "Email",
+        "role": "Rôle",
+        "status": "Statut",
+        "joined": "Inscrit le"
+      },
+      "memberActive": "Actif",
+      "memberInactive": "Inactif",
+      "noMembers": "Aucun utilisateur dans cette organisation.",
+      "suspendSuccess": "Organisation suspendue avec succès.",
+      "suspendFailed": "Échec de la suspension.",
+      "unsuspendSuccess": "Suspension levée avec succès.",
+      "unsuspendFailed": "Échec de la levée de suspension.",
+      "updateSuccess": "Organisation mise à jour.",
+      "updateError": "Erreur lors de la mise à jour.",
+      "suspendModalTitle": "Suspendre cette organisation ?",
+      "suspendModalWarning": "Cette action va immédiatement déconnecter tous les utilisateurs de cette organisation. Ils ne pourront plus accéder à la plateforme tant que la suspension ne sera pas levée.",
+      "suspendReasonLabel": "Raison (optionnel)",
+      "suspendReasonPlaceholder": "Raison interne de la suspension...",
+      "confirmSuspend": "Confirmer la suspension",
+      "editTitle": "Modifier l'organisation",
+      "editNameLabel": "Nom",
+      "editSlugLabel": "Slug",
+      "editPlanLabel": "Plan",
+      "usageTitle": "Utilisation IA",
+      "usageLoadError": "Impossible de charger les données d'utilisation.",
+      "usageHistory": "Historique d'utilisation des tokens (12 derniers mois)",
+      "usageNoData": "Aucune donnée d'utilisation sur cette période.",
+      "usageTotalTokens": "Total Tokens",
+      "usageApiCalls": "Appels d'API"
+    }
+  },
+
+  "jobDetail": {
+    "notFoundTitle": "Offre introuvable",
+    "notFoundBody": "Cette offre d'emploi n'existe pas, a été supprimée ou appartient à une autre organisation.",
+    "backToJobs": "Retour aux offres",
+    "createdOn": "Créé le {date}",
+    "recruiter": "Recruteur",
+    "candidateCount": "{count} candidat",
+    "candidateCountPlural": "{count} candidats",
+    "statusOpen": "Ouverte",
+    "statusClosed": "Clôturée",
+    "closeJob": "Fermer cette offre",
+    "closing": "Clôture...",
+    "closeConfirmTitle": "Clôturer cette offre ?",
+    "closeConfirmBody": "Cette action changera le statut de l'offre « {title} » en Clôturée. Les candidats existants seront conservés. Cette action est irréversible.",
+    "confirmClose": "Confirmer la clôture",
+    "deleteJob": "Supprimer",
+    "deleteConfirmTitle": "Supprimer l'offre ?",
+    "deleteConfirmBody": "Voulez-vous vraiment supprimer l'offre « {title} » et tous ses candidats ? Cette action est irréversible.",
+    "profileDescTitle": "Description du profil recherché",
+    "candidatesTitle": "Candidats",
+    "exportPdf": "Exporter en PDF",
+    "exportingPdf": "Export en cours…",
+    "noResultsToExport": "Aucun résultat à exporter",
+    "exportPdfTooltip": "Exporter les résultats en PDF",
+    "invalidFiles": "Fichiers non valides:",
+    "analyzingProgress": "Analyse en cours... {scored} / {total} candidats scorés",
+    "verdictFilterLabel": "Verdict :",
+    "statusFilterLabel": "Statut :",
+    "sortByLabel": "Trier par :",
+    "sortScore": "Score (décroissant)",
+    "sortName": "Nom (A-Z)",
+    "sortUploadDate": "Date d'upload (récent)",
+    "verdicts": {
+      "all": "Tous",
+      "STRONG_FIT": "Très bon fit",
+      "GOOD_FIT": "Bon fit",
+      "PARTIAL_FIT": "Partiellement adéquat",
+      "WEAK_FIT": "Peu adéquat"
+    },
+    "statuses": {
+      "all": "Tous",
+      "PENDING": "En attente",
+      "SCORED": "Scoré",
+      "FAILED": "Échoué",
+      "NEW": "Nouveau",
+      "SHORTLISTED": "Sélectionné",
+      "REJECTED": "Rejeté",
+      "OFFERED": "Offre"
+    },
+    "table": {
+      "status": "Statut",
+      "name": "Nom du candidat",
+      "email": "Email",
+      "score": "Score",
+      "verdict": "Verdict",
+      "actions": "Actions"
+    },
+    "analyzing": "Analyse en cours...",
+    "notAvailable": "Non disponible",
+    "deleteCandidateTooltip": "Supprimer le candidat",
+    "deleteCandidateTitle": "Supprimer le candidat ?",
+    "deleteCandidateMessage": "Voulez-vous vraiment supprimer ce candidat ? Cette action est irréversible.",
+    "previous": "← Précédent",
+    "next": "Suivant →",
+    "page": "Page",
+    "noCandidatesFound": "Aucun candidat trouvé",
+    "noCandidatesMatch": "Aucun candidat ne correspond aux filtres sélectionnés. Essayez de modifier vos critères.",
+    "uploadMoreCVs": "Uploader d'autres CVs",
+    "dragDropCVs": "Glissez-déposez vos CVs ici",
+    "orClickToSelect": "ou cliquez pour sélectionner des fichiers",
+    "fileConstraints": "PDF, DOCX • Max 5MB par fichier",
+    "selectedFiles": "Fichiers sélectionnés ({count})",
+    "analyzeCVs": "Analyser les CVs",
+    "noCandidatesYet": "Aucun candidat pour l'instant. Uploadez des CVs pour démarrer le processus de sélection.",
+    "uploadDisabledClosed": "L'upload de CVs est désactivé pour les offres clôturées.",
+    "lastUpdated": "Dernière mise à jour : {date}",
+    "fileTypeNotSupported": "Type de fichier non supporté. Acceptés: PDF, DOCX",
+    "fileTooLarge": "Fichier trop volumineux ({size}MB > 5MB)",
+    "loadError": "Impossible de charger l'offre.",
+    "deleteError": "Erreur lors de la suppression",
+    "deleteErrorFallback": "Impossible de supprimer l'offre"
+  },
+
+  "candidateDetail": {
+    "backToCandidates": "Retour aux candidats",
+    "loadingCandidate": "Chargement du candidat...",
+    "emailNotAvailable": "Email non disponible",
+    "phoneNotAvailable": "Téléphone non disponible",
+    "scoreLabel": "Score : {score}",
+    "shortlist": "Shortlister",
+    "reject": "Rejeter",
+    "compareWithOther": "Comparer avec un autre candidat",
+    "downloadCV": "Télécharger le CV",
+    "aiSummaryTitle": "Résumé AI",
+    "summaryNotAvailable": "Résumé non disponible pour le moment.",
+    "scoreAnalysisTitle": "Analyse du score",
+    "matchedCriteriaTitle": "Critères satisfaits",
+    "noMatchedCriteria": "Aucun critère satisfait",
+    "missingCriteriaTitle": "Critères manquants",
+    "noMissingCriteria": "Aucun critère manquant",
+    "strengthsTitle": "Points forts",
+    "noStrengths": "Aucun point fort identifié",
+    "interviewQuestionsTitle": "Questions d'entretien",
+    "questionsNotAvailable": "Les questions d'entretien ne sont pas encore disponibles.",
+    "rawProfileTitle": "Données brutes du profil",
+    "rawProfileSubtitle": "Travail, formation, compétences et langues.",
+    "tabs": {
+      "experience": "Expérience",
+      "education": "Formation",
+      "skills": "Compétences",
+      "languages": "Langues"
+    },
+    "notSpecified": {
+      "position": "Poste non spécifié",
+      "company": "Entreprise non spécifiée",
+      "degree": "Diplôme non spécifié",
+      "institution": "Établissement non spécifié"
+    },
+    "today": "Aujourd'hui",
+    "noExperience": "Aucune expérience professionnelle renseignée.",
+    "noEducation": "Aucune formation renseignée.",
+    "noSkills": "Aucune compétence renseignée.",
+    "noLanguages": "Aucune langue renseignée.",
+    "datesNotSpecified": "Dates non renseignées",
+    "mentionGrade": "Mention : {grade}",
+    "skillsIdentified": "{count} compétence{plural} identifiée{plural}",
+    "exitCompare": "Quitter la comparaison",
+    "compareMode": "Mode comparaison",
+    "loadingCompare": "Chargement de la comparaison...",
+    "compareWith": "Comparer avec…",
+    "searchCandidate": "Rechercher un candidat...",
+    "noCandidatesFound": "Aucun candidat trouvé",
+    "noOtherCandidates": "Aucun autre candidat dans ce poste",
+    "noVerdict": "Pas de verdict"
+  }
+}
+

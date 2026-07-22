@@ -1,8 +1,10 @@
 import { X, ArrowRight } from 'lucide-react';
 import { useNotifications } from '../../lib/NotificationContext';
+import { useTranslation } from '../../i18n/I18nContext';
 
 export function ToastViewport() {
   const { toasts, dismissToast, openNotification } = useNotifications();
+  const { t } = useTranslation();
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3">
@@ -20,7 +22,7 @@ export function ToastViewport() {
               type="button"
               onClick={() => dismissToast(toast.id)}
               className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              aria-label="Fermer"
+              aria-label={t('common.dismiss')}
             >
               <X size={16} />
             </button>
@@ -35,7 +37,7 @@ export function ToastViewport() {
               }}
               className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
             >
-              Voir les résultats
+              {t('common.viewResults')}
               <ArrowRight size={16} />
             </button>
           </div>

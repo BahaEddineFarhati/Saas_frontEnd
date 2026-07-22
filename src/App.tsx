@@ -26,6 +26,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { NotificationProvider } from "./lib/NotificationContext";
 import { ToastViewport } from "./components/ui/Toast";
+import { I18nProvider } from "./i18n/I18nContext";
 import AIChatButton from "./components/ui/AIChatButton";
 
 import "./auth-layout.css";
@@ -254,17 +255,19 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <NotificationProvider>
-            <AppContent
-              darkMode={darkMode}
-              onToggleDark={() => setDarkMode((d) => !d)}
-            />
-            <ToastViewport />
-          </NotificationProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <I18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <NotificationProvider>
+              <AppContent
+                darkMode={darkMode}
+                onToggleDark={() => setDarkMode((d) => !d)}
+              />
+              <ToastViewport />
+            </NotificationProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </I18nProvider>
     </BrowserRouter>
   );
 }

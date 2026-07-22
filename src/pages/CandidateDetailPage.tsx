@@ -21,6 +21,7 @@ import {
   GitCompare,
   X,
 } from "lucide-react";
+import { useTranslation } from "../i18n/I18nContext";
 
 interface CandidateDetail {
   id: string;
@@ -80,37 +81,37 @@ function getVerdictBadgeColor(verdict: string | null) {
   }
 }
 
-function getVerdictLabel(verdict: string | null) {
+function getVerdictLabel(verdict: string | null, t: (key: string) => string) {
   switch (verdict) {
     case "STRONG_FIT":
-      return "Très bon fit";
+      return t("jobDetail.verdicts.STRONG_FIT");
     case "GOOD_FIT":
-      return "Bon fit";
+      return t("jobDetail.verdicts.GOOD_FIT");
     case "PARTIAL_FIT":
-      return "Partiellement adéquat";
+      return t("jobDetail.verdicts.PARTIAL_FIT");
     case "WEAK_FIT":
-      return "Peu adéquat";
+      return t("jobDetail.verdicts.WEAK_FIT");
     default:
-      return "Pas de verdict";
+      return t("candidateDetail.noVerdict");
   }
 }
 
-function getStatusLabel(status: CandidateDetail["status"]) {
+function getStatusLabel(status: CandidateDetail["status"], t: (key: string) => string) {
   switch (status) {
     case "PENDING":
-      return "En attente";
+      return t("jobDetail.statuses.PENDING");
     case "NEW":
-      return "Nouveau";
+      return t("jobDetail.statuses.NEW");
     case "SHORTLISTED":
-      return "Shortlisté";
+      return t("jobDetail.statuses.SHORTLISTED");
     case "REJECTED":
-      return "Rejeté";
+      return t("jobDetail.statuses.REJECTED");
     case "OFFERED":
-      return "Offre";
+      return t("jobDetail.statuses.OFFERED");
     case "SCORED":
-      return "Scoré";
+      return t("jobDetail.statuses.SCORED");
     case "FAILED":
-      return "Échoué";
+      return t("jobDetail.statuses.FAILED");
     default:
       return status;
   }
@@ -173,6 +174,7 @@ async function getAuthToken(): Promise<string> {
 }
 
 export default function CandidateDetailPage() {
+  const { t } = useTranslation();
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -414,13 +416,13 @@ export default function CandidateDetailPage() {
       <div className="jd-back-row">
         <button className="jd-back-link" onClick={handleGoBack}>
           <ArrowLeft size={15} strokeWidth={2} />
-          <span>Retour aux candidats</span>
+          <span>{t("candidateDetail.backToCandidates")}</span>
         </button>
       </div>
 
       {loading ? (
         <div className="db-card" style={{ padding: 24 }}>
-          <Loader2 size={20} className="cand-skeleton-pulse" /> Chargement du candidat...
+          <Loader2 size={20} className="cand-skeleton-pulse" /> {t("candidateDetail.loadingCandidate")}
         </div>
       ) : error ? (
         <div className="db-card" style={{ padding: 24 }}>
@@ -437,7 +439,7 @@ export default function CandidateDetailPage() {
                   {candidate.firstName || ""} {candidate.lastName || ""}
                 </h2>
                 <p style={{ marginTop: 8, color: "var(--lu-text-secondary)" }}>
-                  {candidate.email ?? "Email non disponible"} • {candidate.phone ?? "Téléphone non disponible"}
+                  {candidate.email ?? t("candidateDetail.emailNotAvailable")} • {candidate.phone ?? t("candidateDetail.phoneNotAvailable")}
                 </p>
               </div>
 
@@ -455,7 +457,7 @@ export default function CandidateDetailPage() {
                     color: getScoreBadgeColor(candidate.score).color,
                   }}
                 >
-                  Score : {candidate.score ?? "-"}
+                  {t("candidateDetail.scoreLabel", { score: candidate.score ?? "-" })}
                 </span>
                 <span
                   style={{
@@ -470,7 +472,7 @@ export default function CandidateDetailPage() {
                     color: getVerdictBadgeColor(candidate.scoring.verdict).color,
                   }}
                 >
-                  {getVerdictLabel(candidate.scoring.verdict)}
+                  {getVerdictLabel(candidate.scoring.verdict, t)}
                 </span>
                 <span
                   style={{
@@ -485,7 +487,7 @@ export default function CandidateDetailPage() {
                     color: getStatusBadgeStyle(candidate.status).color,
                   }}
                 >
-                  {getStatusLabel(candidate.status)}
+                  {getStatusLabel(candidate.status, t)}
                 </span>
               </div>
             </div>
@@ -497,7 +499,7 @@ export default function CandidateDetailPage() {
                 className="cand-btn-primary"
                 style={{ opacity: candidate.status === "SHORTLISTED" ? 0.55 : 1 }}
               >
-                Shortlister
+                {t("candidateDetail.shortlist")}
               </button>
               <button
                 onClick={() => handleStatusUpdate("REJECTED")}
@@ -505,7 +507,7 @@ export default function CandidateDetailPage() {
                 className="cand-btn-secondary"
                 style={{ opacity: candidate.status === "REJECTED" ? 0.55 : 1 }}
               >
-                Rejeter
+                {t("candidateDetail.reject")}
               </button>
               <button
                 onClick={handleOpenPicker}
@@ -514,17 +516,17 @@ export default function CandidateDetailPage() {
                 id="compare-trigger-btn"
               >
                 <GitCompare size={15} strokeWidth={2} />
-                <span>Comparer avec un autre candidat</span>
+                <span>{t("candidateDetail.compareWithOther")}</span>
               </button>
               <button
                 onClick={handleDownloadCV}
                 disabled={actionLoading}
                 className="cand-btn-secondary"
                 style={{ display: "inline-flex", alignItems: "center", gap: 7, marginLeft: "auto" }}
-                title="Télécharger le CV"
+                title={t("candidateDetail.downloadCV")}
               >
                 <Download size={15} strokeWidth={2} />
-                <span>Télécharger le CV</span>
+                <span>{t("candidateDetail.downloadCV")}</span>
               </button>
             </div>
 
@@ -539,14 +541,14 @@ export default function CandidateDetailPage() {
             <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <FileText size={18} style={{ color: "var(--lu-accent)" }} />
-                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Résumé AI</h3>
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>{t("candidateDetail.aiSummaryTitle")}</h3>
               </div>
               <div style={{ minHeight: 120, padding: 18, borderRadius: 12, backgroundColor: "var(--lu-bg-secondary)" }}>
                 {candidate.summary ? (
                   <p style={{ margin: 0, lineHeight: 1.7 }}>{candidate.summary}</p>
                 ) : (
                   <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                    Résumé non disponible pour le moment.
+                    {t("candidateDetail.summaryNotAvailable")}
                   </p>
                 )}
               </div>
@@ -557,11 +559,11 @@ export default function CandidateDetailPage() {
             <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Analyse du score</h3>
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>{t("candidateDetail.scoreAnalysisTitle")}</h3>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <div>
-                  <h4 style={{ marginBottom: 12 }}>Critères satisfaits</h4>
+                  <h4 style={{ marginBottom: 12 }}>{t("candidateDetail.matchedCriteriaTitle")}</h4>
                   {candidate.scoring.matchedCriteria.length > 0 ? (
                     <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
                       {candidate.scoring.matchedCriteria.map((item, index) => (
@@ -572,12 +574,12 @@ export default function CandidateDetailPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère satisfait</p>
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>{t("candidateDetail.noMatchedCriteria")}</p>
                   )}
                 </div>
 
                 <div>
-                  <h4 style={{ marginBottom: 12 }}>Critères manquants</h4>
+                  <h4 style={{ marginBottom: 12 }}>{t("candidateDetail.missingCriteriaTitle")}</h4>
                   {candidate.scoring.missingCriteria.length > 0 ? (
                     <ul style={{ margin: 0, paddingLeft: 20, listStyle: "none" }}>
                       {candidate.scoring.missingCriteria.map((item, index) => (
@@ -588,12 +590,12 @@ export default function CandidateDetailPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun critère manquant</p>
+                    <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>{t("candidateDetail.noMissingCriteria")}</p>
                   )}
                 </div>
               </div>
               <div style={{ marginTop: 20 }}>
-                <h4 style={{ marginBottom: 12 }}>Points forts</h4>
+                <h4 style={{ marginBottom: 12 }}>{t("candidateDetail.strengthsTitle")}</h4>
                 {candidate.scoring.strengths.length > 0 ? (
                   <div style={{ display: "grid", gap: 8 }}>
                     {candidate.scoring.strengths.map((item, index) => (
@@ -614,7 +616,7 @@ export default function CandidateDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>Aucun point fort identifié</p>
+                  <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>{t("candidateDetail.noStrengths")}</p>
                 )}
               </div>
             </div>
@@ -624,7 +626,7 @@ export default function CandidateDetailPage() {
             <div className="db-card" style={{ padding: 24, marginTop: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <ShieldCheck size={18} style={{ color: "var(--lu-accent)" }} />
-                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>Questions d'entretien</h3>
+                <h3 style={{ margin: 0, fontSize: "1.05rem" }}>{t("candidateDetail.interviewQuestionsTitle")}</h3>
               </div>
               {candidate.interviewQuestions.length > 0 ? (
                 <div style={{ display: "grid", gap: 12 }}>
@@ -670,7 +672,7 @@ export default function CandidateDetailPage() {
                 </div>
               ) : (
                 <p style={{ margin: 0, color: "var(--lu-text-secondary)" }}>
-                  Les questions d'entretien ne sont pas encore disponibles.
+                  {t("candidateDetail.questionsNotAvailable")}
                 </p>
               )}
             </div>
@@ -698,9 +700,9 @@ export default function CandidateDetailPage() {
                 <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                   <FileText size={18} style={{ color: "var(--lu-accent)" }} />
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                    <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>Données brutes du profil</strong>
+                    <strong style={{ lineHeight: 1.2, fontSize: "1rem" }}>{t("candidateDetail.rawProfileTitle")}</strong>
                     <p style={{ margin: 0, color: "var(--lu-text-secondary)", fontSize: "0.95em", lineHeight: 1.5 }}>
-                      Travail, formation, compétences et langues.
+                      {t("candidateDetail.rawProfileSubtitle")}
                     </p>
                   </div>
                 </div>
@@ -721,10 +723,10 @@ export default function CandidateDetailPage() {
                     overflowX: "auto",
                   }}>
                     {([
-                      { key: "experience", label: "Expérience", icon: <Briefcase size={14} />, count: profileWorkExperience.length },
-                      { key: "education", label: "Formation", icon: <GraduationCap size={14} />, count: profileEducation.length },
-                      { key: "skills", label: "Compétences", icon: <Cpu size={14} />, count: profileSkills.length },
-                      { key: "languages", label: "Langues", icon: <Globe2 size={14} />, count: profileLanguages.length },
+                      { key: "experience", label: t("candidateDetail.tabs.experience"), icon: <Briefcase size={14} />, count: profileWorkExperience.length },
+                      { key: "education", label: t("candidateDetail.tabs.education"), icon: <GraduationCap size={14} />, count: profileEducation.length },
+                      { key: "skills", label: t("candidateDetail.tabs.skills"), icon: <Cpu size={14} />, count: profileSkills.length },
+                      { key: "languages", label: t("candidateDetail.tabs.languages"), icon: <Globe2 size={14} />, count: profileLanguages.length },
                     ] as const).map(tab => (
                       <button
                         key={tab.key}
@@ -807,12 +809,12 @@ export default function CandidateDetailPage() {
                                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
                                   <div>
                                     <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                      {String(item.title || item.position || "Poste non spécifié")}
+                                      {String(item.title || item.position || t("candidateDetail.notSpecified.position"))}
                                     </p>
                                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                                       <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
                                       <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                        {String(item.company || item.employer || "Entreprise non spécifiée")}
+                                        {String(item.company || item.employer || t("candidateDetail.notSpecified.company"))}
                                         {item.location ? ` · ${String(item.location)}` : ""}
                                       </span>
                                     </div>
@@ -828,7 +830,7 @@ export default function CandidateDetailPage() {
                                       whiteSpace: "nowrap",
                                     }}>
                                       {String(item.startDate ?? "?")}{" "}–{" "}
-                                      {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                      {item.current ? t("candidateDetail.today") : String(item.endDate ?? t("candidateDetail.today"))}
                                     </span>
                                   </div>
                                 </div>
@@ -864,7 +866,7 @@ export default function CandidateDetailPage() {
                       ) : (
                         <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
                           <Briefcase size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                          <p style={{ margin: 0 }}>Aucune expérience professionnelle renseignée.</p>
+                          <p style={{ margin: 0 }}>{t("candidateDetail.noExperience")}</p>
                         </div>
                       )
                     )}
@@ -897,7 +899,7 @@ export default function CandidateDetailPage() {
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--lu-text-primary)" }}>
-                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme non spécifié")}
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || t("candidateDetail.notSpecified.degree"))}
                                 </p>
                                 {Boolean(item.fieldOfStudy && item.degree) && (
                                   <p style={{ margin: "3px 0 0", fontSize: "0.9em", fontStyle: "italic", color: "var(--lu-text-secondary)" }}>
@@ -907,7 +909,7 @@ export default function CandidateDetailPage() {
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
                                   <MapPin size={12} style={{ color: "var(--lu-text-tertiary)", flexShrink: 0 }} />
                                   <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                                    {String(item.school || item.institution || item.university || "Établissement non spécifié")}
+                                    {String(item.school || item.institution || item.university || t("candidateDetail.notSpecified.institution"))}
                                     {item.location ? ` · ${String(item.location)}` : ""}
                                   </span>
                                 </div>
@@ -922,7 +924,7 @@ export default function CandidateDetailPage() {
                                   }}>
                                     {item.startDate || item.endDate
                                       ? `${String(item.startDate ?? "")} – ${String(item.endDate ?? "")}`
-                                      : "Dates non renseignées"}
+                                      : t("candidateDetail.datesNotSpecified")}
                                   </span>
                                 </div>
                                 {typeof item.description === "string" && item.description && (
@@ -936,7 +938,7 @@ export default function CandidateDetailPage() {
                                     padding: "3px 10px", borderRadius: 999, fontSize: "0.82em",
                                     fontWeight: 600, backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a",
                                   }}>
-                                    Mention : {item.grade}
+                                    {t("candidateDetail.mentionGrade", { grade: item.grade })}
                                   </span>
                                 )}
                               </div>
@@ -946,7 +948,7 @@ export default function CandidateDetailPage() {
                       ) : (
                         <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
                           <GraduationCap size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                          <p style={{ margin: 0 }}>Aucune formation renseignée.</p>
+                          <p style={{ margin: 0 }}>{t("candidateDetail.noEducation")}</p>
                         </div>
                       )
                     )}
@@ -979,13 +981,13 @@ export default function CandidateDetailPage() {
                             ))}
                           </div>
                           <p style={{ margin: "20px 0 0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-                            {profileSkills.length} compétence{profileSkills.length > 1 ? "s" : ""} identifiée{profileSkills.length > 1 ? "s" : ""}
+                            {t("candidateDetail.skillsIdentified", { count: profileSkills.length, plural: profileSkills.length > 1 ? "s" : "" })}
                           </p>
                         </div>
                       ) : (
                         <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
                           <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                          <p style={{ margin: 0 }}>Aucune compétence renseignée.</p>
+                          <p style={{ margin: 0 }}>{t("candidateDetail.noSkills")}</p>
                         </div>
                       )
                     )}
@@ -995,7 +997,7 @@ export default function CandidateDetailPage() {
                       profileLanguages.length > 0 ? (
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
                           {profileLanguages.map((item, index) => {
-                            const langName = String(item.language || item.name || "Langue inconnue");
+                            const langName = String(item.language || item.name || "?");
                             const level = typeof item.level === "string" ? item.level : null;
                             const levelColors: Record<string, { bg: string; text: string }> = {
                               "native": { bg: "#dcfce7", text: "#166534" },
@@ -1056,7 +1058,7 @@ export default function CandidateDetailPage() {
                       ) : (
                         <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--lu-text-tertiary)" }}>
                           <Globe2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                          <p style={{ margin: 0 }}>Aucune langue renseignée.</p>
+                          <p style={{ margin: 0 }}>{t("candidateDetail.noLanguages")}</p>
                         </div>
                       )
                     )}
@@ -1073,11 +1075,11 @@ export default function CandidateDetailPage() {
               <div className="compare-exit-bar" style={{ marginTop: 20 }}>
                 <span className="compare-exit-bar__label">
                   <GitCompare size={16} />
-                  Mode comparaison
+                  {t("candidateDetail.compareMode")}
                 </span>
                 <button className="compare-exit-btn" onClick={handleExitCompare} id="compare-exit-btn">
                   <X size={14} />
-                  Quitter la comparaison
+                  {t("candidateDetail.exitCompare")}
                 </button>
               </div>
 
@@ -1126,7 +1128,7 @@ export default function CandidateDetailPage() {
                               color: getScoreBadgeColor(cand.score).color,
                             } : undefined}
                           >
-                            Score : {cand.score ?? "-"}
+                            {t("candidateDetail.scoreLabel", { score: cand.score ?? "-" })}
                           </span>
                           <span
                             className="compare-badge"
@@ -1135,7 +1137,7 @@ export default function CandidateDetailPage() {
                               color: getVerdictBadgeColor(cand.scoring.verdict).color,
                             }}
                           >
-                            {getVerdictLabel(cand.scoring.verdict)}
+                            {getVerdictLabel(cand.scoring.verdict, t)}
                           </span>
                         </div>
                       </div>
@@ -1143,7 +1145,7 @@ export default function CandidateDetailPage() {
                       {/* ── Matched Criteria ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <ShieldCheck size={14} /> Critères satisfaits
+                          <ShieldCheck size={14} /> {t("candidateDetail.matchedCriteriaTitle")}
                         </h4>
                         <div className="compare-criteria-list" style={{ marginTop: 8 }}>
                           {cand.scoring.matchedCriteria.length > 0 ? (
@@ -1159,7 +1161,7 @@ export default function CandidateDetailPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="compare-empty">Aucun</span>
+                            <span className="compare-empty">{t("candidateDetail.noMatchedCriteria")}</span>
                           )}
                         </div>
                       </div>
@@ -1167,7 +1169,7 @@ export default function CandidateDetailPage() {
                       {/* ── Missing Criteria ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <XCircle size={14} /> Critères manquants
+                          <XCircle size={14} /> {t("candidateDetail.missingCriteriaTitle")}
                         </h4>
                         <div className="compare-criteria-list" style={{ marginTop: 8 }}>
                           {cand.scoring.missingCriteria.length > 0 ? (
@@ -1183,7 +1185,7 @@ export default function CandidateDetailPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="compare-empty">Aucun</span>
+                            <span className="compare-empty">{t("candidateDetail.noMissingCriteria")}</span>
                           )}
                         </div>
                       </div>
@@ -1191,7 +1193,7 @@ export default function CandidateDetailPage() {
                       {/* ── Skills ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <Cpu size={14} /> Compétences
+                          <Cpu size={14} /> {t("candidateDetail.tabs.skills")}
                         </h4>
                         <div className="compare-criteria-list" style={{ marginTop: 8 }}>
                           {cSkills.length > 0 ? (
@@ -1201,7 +1203,7 @@ export default function CandidateDetailPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="compare-empty">Aucune</span>
+                            <span className="compare-empty">{t("candidateDetail.noSkills")}</span>
                           )}
                         </div>
                       </div>
@@ -1209,40 +1211,40 @@ export default function CandidateDetailPage() {
                       {/* ── Work Experience ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <Briefcase size={14} /> Expérience
+                          <Briefcase size={14} /> {t("candidateDetail.tabs.experience")}
                         </h4>
                         {cWorkExp.length > 0 ? (
                           <div>
                             {cWorkExp.map((item, i) => (
                               <div key={i} className="compare-entry">
                                 <p className="compare-entry-title">
-                                  {String(item.title || item.position || "Poste non spécifié")}
+                                  {String(item.title || item.position || t("candidateDetail.notSpecified.position"))}
                                 </p>
                                 <p className="compare-entry-sub">
                                   {String(item.company || item.employer || "")}
                                 </p>
                                 <p className="compare-entry-dates">
-                                  {String(item.startDate ?? "")} – {item.current ? "Aujourd'hui" : String(item.endDate ?? "Aujourd'hui")}
+                                  {String(item.startDate ?? "")} – {item.current ? t("candidateDetail.today") : String(item.endDate ?? t("candidateDetail.today"))}
                                 </p>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune expérience renseignée</p>
+                          <p className="compare-empty" style={{ marginTop: 8 }}>{t("candidateDetail.noExperience")}</p>
                         )}
                       </div>
 
                       {/* ── Education ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <GraduationCap size={14} /> Formation
+                          <GraduationCap size={14} /> {t("candidateDetail.tabs.education")}
                         </h4>
                         {cEducation.length > 0 ? (
                           <div>
                             {cEducation.map((item, i) => (
                               <div key={i} className="compare-entry">
                                 <p className="compare-entry-title">
-                                  {String(item.degree || item.diploma || item.fieldOfStudy || "Diplôme")}
+                                  {String(item.degree || item.diploma || item.fieldOfStudy || t("candidateDetail.notSpecified.degree"))}
                                 </p>
                                 <p className="compare-entry-sub">
                                   {String(item.fieldOfStudy && item.degree ? item.fieldOfStudy : "")}
@@ -1254,14 +1256,14 @@ export default function CandidateDetailPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="compare-empty" style={{ marginTop: 8 }}>Aucune formation renseignée</p>
+                          <p className="compare-empty" style={{ marginTop: 8 }}>{t("candidateDetail.noEducation")}</p>
                         )}
                       </div>
 
                       {/* ── Languages ── */}
                       <div>
                         <h4 className="compare-section-title">
-                          <Globe2 size={14} /> Langues
+                          <Globe2 size={14} /> {t("candidateDetail.tabs.languages")}
                         </h4>
                         <div className="compare-criteria-list" style={{ marginTop: 8 }}>
                           {cLanguages.length > 0 ? (
@@ -1272,7 +1274,7 @@ export default function CandidateDetailPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="compare-empty">Aucune</span>
+                            <span className="compare-empty">{t("candidateDetail.noLanguages")}</span>
                           )}
                         </div>
                       </div>
@@ -1286,7 +1288,7 @@ export default function CandidateDetailPage() {
           {/* Compare loading indicator */}
           {compareLoading && (
             <div className="db-card" style={{ padding: 24, marginTop: 20, textAlign: "center" }}>
-              <Loader2 size={20} className="cand-skeleton-pulse" /> Chargement de la comparaison...
+              <Loader2 size={20} className="cand-skeleton-pulse" /> {t("candidateDetail.loadingCompare")}
             </div>
           )}
         </>
@@ -1297,7 +1299,7 @@ export default function CandidateDetailPage() {
         <div className="compare-picker-overlay" onClick={() => setPickerOpen(false)}>
           <div className="compare-picker-modal" onClick={(e) => e.stopPropagation()}>
             <div className="compare-picker-header">
-              <h3>Comparer avec…</h3>
+              <h3>{t("candidateDetail.compareWith")}</h3>
               <button className="compare-picker-close" onClick={() => setPickerOpen(false)}>
                 <X size={18} />
               </button>
@@ -1305,7 +1307,7 @@ export default function CandidateDetailPage() {
             <input
               className="compare-picker-search"
               type="text"
-              placeholder="Rechercher un candidat..."
+              placeholder={t("candidateDetail.searchCandidate")}
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
               autoFocus
@@ -1313,7 +1315,7 @@ export default function CandidateDetailPage() {
             <div className="compare-picker-list">
               {pickerLoading ? (
                 <div className="compare-picker-loading">
-                  <Loader2 size={16} className="cand-skeleton-pulse" /> Chargement...
+                  <Loader2 size={16} className="cand-skeleton-pulse" /> {t("common.loading")}
                 </div>
               ) : filteredPickerCandidates.length > 0 ? (
                 filteredPickerCandidates.map((c) => (
@@ -1345,7 +1347,7 @@ export default function CandidateDetailPage() {
                             fontSize: "0.78em",
                           }}
                         >
-                          {getVerdictLabel(c.verdict)}
+                          {getVerdictLabel(c.verdict, t)}
                         </span>
                       )}
                     </div>
@@ -1353,7 +1355,7 @@ export default function CandidateDetailPage() {
                 ))
               ) : (
                 <div className="compare-picker-empty">
-                  {pickerSearch ? "Aucun candidat trouvé" : "Aucun autre candidat dans ce poste"}
+                  {pickerSearch ? t("candidateDetail.noCandidatesFound") : t("candidateDetail.noOtherCandidates")}
                 </div>
               )}
             </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL } from '../config/api'
+import { useTranslation } from '../i18n/I18nContext'
 
 interface FormState {
   email: string
@@ -10,28 +11,26 @@ interface FormState {
 
 type FieldErrors = Partial<Record<keyof FormState | 'credentials' | 'general', string>>
 
-function validate(form: FormState): FieldErrors {
-  const errors: FieldErrors = {}
-
-  if (!form.email.trim()) {
-    errors.email = 'Email is required'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = 'Please enter a valid email address'
-  }
-
-  if (!form.password) {
-    errors.password = 'Password is required'
-  }
-
-  return errors
-}
-
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { setUser, setAccessToken } = useAuth()
   const [form, setForm] = useState<FormState>({ email: '', password: '' })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+
+  function validate(formData: FormState): FieldErrors {
+    const errs: FieldErrors = {}
+    if (!formData.email.trim()) {
+      errs.email = t('validation.emailRequired')
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errs.email = t('validation.validEmailRequired')
+    }
+    if (!formData.password) {
+      errs.password = t('validation.passwordRequired')
+    }
+    return errs
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -94,13 +93,13 @@ export default function Login() {
       }
 
       if (res.status === 401 && data.error?.code === 'INVALID_CREDENTIALS') {
-        setErrors({ credentials: 'Incorrect email or password' })
+        setErrors({ credentials: t('login.invalidCredentials') })
         return
       }
 
-      setErrors({ general: data.error?.message ?? 'Login failed. Please try again.' })
+      setErrors({ general: data.error?.message ?? t('login.loginFailed') })
     } catch {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' })
+      setErrors({ general: t('login.unexpectedError') })
     } finally {
       setIsLoading(false)
     }
@@ -117,8 +116,8 @@ export default function Login() {
         </div>
 
         <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-gray-400 mb-8">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('login.title')}</h1>
+          <p className="text-gray-400 mb-8">{t('login.subtitle')}</p>
 
           {/* Single credentials / general error banner */}
           {(errors.credentials || errors.general) && (
@@ -129,13 +128,13 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('login.emailLabel')}</label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="you@company.com"
+                placeholder={t('login.emailPlaceholder')}
                 autoComplete="email"
                 className={`w-full px-4 py-3 bg-slate-800/60 border ${
                   errors.email ? 'border-red-500' : 'border-purple-500/30'
@@ -145,13 +144,13 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('login.passwordLabel')}</label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Your password"
+                placeholder={t('login.passwordPlaceholder')}
                 autoComplete="current-password"
                 className={`w-full px-4 py-3 bg-slate-800/60 border ${
                   errors.password ? 'border-red-500' : 'border-purple-500/30'
@@ -159,7 +158,7 @@ export default function Login() {
               />
               {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
               <div className="flex justify-end mt-2">
-                <Link to="/forgot-password" className="text-sm text-gray-400 underline">Mot de passe oublié ?</Link>
+                <Link to="/forgot-password" className="text-sm text-gray-400 underline">{t('login.forgotPassword')}</Link>
               </div>
             </div>
 
@@ -168,7 +167,7 @@ export default function Login() {
               disabled={isLoading}
               className="w-full px-8 py-3 mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-none"
             >
-              {isLoading ? 'Signing in…' : 'Sign In'}
+              {isLoading ? t('login.signingIn') : t('login.signIn')}
             </button>
           </form>
         </div>

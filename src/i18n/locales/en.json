@@ -1,0 +1,703 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "loading": "Loading…",
+    "delete": "Delete",
+    "open": "Open",
+    "retry": "Retry",
+    "allRightsReserved": "All rights reserved.",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "logOut": "Log out",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noUnreadNotifications": "No unread notifications.",
+    "relativeTime": {
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    },
+    "dismiss": "Dismiss",
+    "networkError": "Network error. Please try again.",
+    "unexpectedError": "An unexpected error occurred.",
+    "show": "Show",
+    "hide": "Hide",
+    "viewResults": "View results"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "candidatures": "Candidatures",
+    "settings": "Settings",
+    "entreprise": "Company",
+    "organisations": "Organisations",
+    "mainNavigation": "Main navigation"
+  },
+
+  "pageTitles": {
+    "dashboard": "Dashboard",
+    "candidatures": "Candidatures",
+    "settings": "Settings",
+    "entreprise": "Company",
+    "organisations": "Organisations",
+    "jobDetail": "Job Detail",
+    "orgDetail": "Organisation Detail",
+    "default": "LinkUp"
+  },
+
+  "validation": {
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Invalid email format",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordUppercase": "Password must contain at least one uppercase letter",
+    "passwordNumber": "Password must contain at least one number",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "currentPasswordRequired": "Current password is required",
+    "confirmPasswordRequired": "Please confirm your password",
+    "validEmailRequired": "Please enter a valid email address"
+  },
+
+  "settings": {
+    "profile": {
+      "title": "Profile Information",
+      "firstName": {
+        "label": "First Name",
+        "placeholder": "Enter your first name"
+      },
+      "lastName": {
+        "label": "Last Name",
+        "placeholder": "Enter your last name"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "Enter your email address"
+      },
+      "saveButton": "Save changes",
+      "saving": "Saving…"
+    },
+    "password": {
+      "title": "Change Password",
+      "current": {
+        "label": "Current Password",
+        "placeholder": "Enter your current password"
+      },
+      "new": {
+        "label": "New Password",
+        "placeholder": "Enter your new password"
+      },
+      "confirm": {
+        "label": "Confirm New Password",
+        "placeholder": "Confirm your new password"
+      },
+      "changeButton": "Change password",
+      "saving": "Saving…"
+    },
+    "toast": {
+      "profileUpdated": "Profile updated successfully.",
+      "emailTaken": "This email address is already in use.",
+      "profileUpdateFailed": "Failed to update profile.",
+      "profileLoadFailed": "Failed to load profile information.",
+      "passwordChanged": "Password changed successfully.",
+      "wrongPassword": "Current password is incorrect.",
+      "passwordsMismatch": "The new passwords do not match.",
+      "passwordChangeFailed": "Failed to change password."
+    }
+  },
+
+  "entreprise": {
+    "team": {
+      "title": "Team Members",
+      "activeCount": "{count} active member{plural}",
+      "inviteButton": "Invite Member",
+      "loadingMembers": "Loading members…",
+      "loadFailed": "Failed to load team members",
+      "table": {
+        "member": "Member",
+        "email": "Email",
+        "role": "Role",
+        "joined": "Joined",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending",
+        "quit": "Quit",
+        "deactivated": "Deactivated"
+      },
+      "inviteSent": "Invitation sent",
+      "demoteToRecruiter": "Demote to Recruiter",
+      "promoteToAdmin": "Promote to Admin",
+      "deactivateMember": "Deactivate member"
+    },
+    "invite": {
+      "title": "Invite a team member",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "colleague@company.com",
+      "roleLabel": "Role",
+      "recruiter": "Recruiter",
+      "admin": "Admin",
+      "sending": "Sending…",
+      "sendButton": "Send Invitation",
+      "emailRequired": "Email is required",
+      "inviteSentTo": "Invitation sent to {email}",
+      "sendFailed": "Failed to send invitation",
+      "networkError": "Network error. Please try again."
+    },
+    "confirm": {
+      "cancel": "Cancel",
+      "promoteTitle": "Promote {name}?",
+      "demoteTitle": "Demote {name}?",
+      "roleChangeMessage": "Change {firstName} {lastName}'s role from {fromRole} to {toRole}?",
+      "promoteConfirm": "Promote to Admin",
+      "demoteConfirm": "Demote to Recruiter",
+      "roleUpdated": "{name}'s role updated to {role}",
+      "roleUpdateFailed": "Failed to update role",
+      "removeTitle": "Remove {name}?",
+      "removeMessage": "This will deactivate {firstName} {lastName}'s account. They will no longer be able to log in and their active sessions will be terminated immediately. This action cannot be undone.",
+      "removeConfirm": "Remove Member",
+      "deactivated": "{name} has been deactivated",
+      "deactivateFailed": "Failed to deactivate member",
+      "unexpectedError": "An unexpected error occurred"
+    },
+    "org": {
+      "title": "Organisation Information",
+      "subtitle": "Manage your organisation details",
+      "loading": "Loading organisation…",
+      "loadFailed": "Failed to load organisation info",
+      "nameLabel": "Organisation Name",
+      "namePlaceholder": "Acme Corp",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "acme-corp",
+      "slugTaken": "This slug is already taken by another organisation",
+      "planLabel": "Plan",
+      "createdLabel": "Created",
+      "saving": "Saving…",
+      "saveButton": "Save Changes",
+      "noChanges": "No changes to save",
+      "updated": "Organisation updated successfully",
+      "updateFailed": "Failed to update organisation",
+      "networkError": "Network error. Please try again."
+    },
+    "aiUsage": {
+      "title": "AI Usage This Month",
+      "subtitle": "Token consumption for the current month",
+      "loading": "Loading usage data…",
+      "unavailable": "Data unavailable",
+      "totalTokens": "Total Tokens",
+      "cvParsing": "CV Parsing",
+      "cvScoring": "CV Scoring",
+      "enrichment": "Enrichment",
+      "chat": "Chat",
+      "historyTitle": "Token usage history (last 12 months)",
+      "apiCalls": "API Calls",
+      "noUsage": "No usage this month"
+    }
+  },
+
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "summary": "{activeJobs} active opening{jobPlural} · {pendingCandidates} candidate{candidatePlural} pending parsing.",
+    "loadingStats": "Loading statistics…",
+    "statsError": "Failed to load statistics.",
+    "kpi": {
+      "activeOpenings": "Active Openings",
+      "totalOpenings": "out of {count} total",
+      "cvsThisMonth": "CVs This Month",
+      "totalCvs": "{count} total",
+      "timeSaved": "saved",
+      "pendingParsing": "Pending Parsing",
+      "parsingInProgress": "Parsing in progress…",
+      "allParsed": "All parsed ✓",
+      "parsedSuccessfully": "Parsed Successfully",
+      "failedCount": "{count} failed",
+      "noFailures": "No failures"
+    },
+    "teamNote": "{count} member{plural} in the organisation",
+    "timeline": {
+      "title": "Candidatures Received",
+      "subtitle": "Daily volumes of uploaded CVs",
+      "loadError": "Loading error",
+      "loadErrorBody": "Unable to retrieve chart data.",
+      "noCandidates": "No candidatures received",
+      "noCandidatesBody": "No candidatures received in this period."
+    },
+    "ranges": {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+      "period": "Period"
+    },
+    "parsingStatus": {
+      "title": "Parsing Status",
+      "subtitle": "Breakdown by processing status",
+      "noData": "No data",
+      "noDataBody": "Statistics will appear once your first candidatures are uploaded.",
+      "candidates": "candidates"
+    },
+    "donutLabels": {
+      "PENDING": "Pending",
+      "SCORED": "Parsed",
+      "FAILED": "Failed"
+    },
+    "funnel": {
+      "title": "Recruitment Funnel",
+      "subtitle": "Aggregated volumes across all openings",
+      "loadError": "Loading error",
+      "noData": "No data",
+      "noDataBody": "The funnel will be visible once openings and candidatures are created."
+    },
+    "recentJobs": {
+      "title": "Recent Openings",
+      "subtitle": "The 5 most recently updated openings",
+      "loadError": "Loading error",
+      "noJobs": "No job openings",
+      "noJobsBody": "Openings will appear here once created.",
+      "tableTitle": "Title",
+      "tableStatus": "Status",
+      "tableCvs": "CVs",
+      "tableParsed": "Parsed"
+    },
+    "statusLabels": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "ARCHIVED": "Archived"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "subtitle": "Latest events in the organisation",
+      "loadError": "Loading error",
+      "noActivity": "No activity",
+      "noActivityBody": "Activity will appear once openings or candidatures are created."
+    },
+    "tooltipCv": "{count} CV{plural}"
+  },
+
+  "candidatures": {
+    "title": "Job Openings",
+    "subtitle": "Manage and track your company's recruitment openings.",
+    "newJob": "New Opening",
+    "searchPlaceholder": "Search by title...",
+    "statusFilter": "Status filter",
+    "filterAll": "All",
+    "filterOpen": "Active",
+    "filterClosed": "Closed",
+    "table": {
+      "title": "Job Title",
+      "status": "Status",
+      "createdAt": "Created Date",
+      "candidates": "Candidates",
+      "department": "Human Resources"
+    },
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "emptyTitle": "No openings found",
+    "emptyBodyNoJobs": "Start by creating your first job opening to receive candidatures.",
+    "emptyBodyNoMatch": "No openings match the current search criteria.",
+    "deleteTitle": "Delete opening?",
+    "deleteMessage": "Are you sure you want to delete the opening \"{title}\" and all its candidates? This action is irreversible.",
+    "deleteConfirm": "Confirm deletion",
+    "deleteError": "Error deleting opening",
+    "deleteErrorFallback": "Unable to delete opening",
+    "createTitle": "Create a Job Opening",
+    "form": {
+      "titleLabel": "Job Title *",
+      "titlePlaceholder": "E.g. Senior Fullstack Developer (Node.js/React)",
+      "descLabel": "Target Profile Description *",
+      "descPlaceholder": "Describe the skills, required experience, and responsibilities of the position...",
+      "titleRequired": "Job title is required",
+      "descRequired": "Profile description is required",
+      "creating": "Creating...",
+      "createButton": "Create Opening",
+      "apiError": "Title or description required by the API."
+    }
+  },
+
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your account",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Your password",
+    "forgotPassword": "Forgot password?",
+    "signingIn": "Signing in…",
+    "signIn": "Sign In",
+    "invalidCredentials": "Incorrect email or password",
+    "loginFailed": "Login failed. Please try again.",
+    "unexpectedError": "An unexpected error occurred. Please try again."
+  },
+
+  "forgotPassword": {
+    "title": "Forgot password?",
+    "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+    "emailLabel": "Email",
+    "backToLogin": "Back to login",
+    "sending": "Sending…",
+    "sendButton": "Send reset link",
+    "sentTitle": "Request sent",
+    "sentMessage": "If an account exists with the address {email}, you will receive an email shortly. Check your spam folder.",
+    "invalidEmail": "Please enter a valid email address.",
+    "genericError": "An error occurred. Please try again."
+  },
+
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password.",
+    "newPasswordLabel": "New password",
+    "confirmLabel": "Confirm new password",
+    "resetting": "Resetting…",
+    "resetButton": "Reset password",
+    "invalidLink": {
+      "title": "This link is invalid",
+      "message": "This reset link is invalid. Please return to the login page.",
+      "backToLogin": "Back to login"
+    },
+    "expiredLink": {
+      "title": "Link expired",
+      "message": "This link has expired (valid for 1 hour). Please make a new request.",
+      "forgotPassword": "Forgot password?"
+    },
+    "usedLink": {
+      "title": "Link already used",
+      "message": "This link has already been used. If you need to reset your password again, make a new request.",
+      "forgotPassword": "Forgot password?"
+    },
+    "success": {
+      "title": "Password reset",
+      "message": "Your password has been reset successfully.",
+      "loginButton": "Sign in"
+    },
+    "passwordValidation": "Password must contain at least 8 characters, one uppercase letter, and one number.",
+    "passwordMismatch": "Passwords do not match.",
+    "genericError": "An error occurred. Please try again."
+  },
+
+  "acceptInvite": {
+    "title": "Complete your account",
+    "subtitle": "You've been invited to join a team on LinkUp",
+    "firstNameLabel": "First name",
+    "firstNamePlaceholder": "Jane",
+    "lastNameLabel": "Last name",
+    "lastNamePlaceholder": "Doe",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Min. 8 chars, 1 uppercase, 1 number",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "creating": "Creating account…",
+    "submitButton": "Accept Invitation & Create Account",
+    "invalidLink": "This invitation link is invalid. Please contact your administrator for a new invite.",
+    "invalidToken": "Invalid invitation link. No token provided.",
+    "preparingInvitation": "Preparing your invitation...",
+    "acceptFailed": "Failed to accept invitation. Please try again.",
+    "unexpectedError": "An unexpected error occurred. Please try again."
+  },
+
+  "suspension": {
+    "title": "Organisation Suspended",
+    "message": "Your organisation has been suspended. Please contact LinkUp administration to resolve your situation.",
+    "logout": "Log out"
+  },
+
+  "chat": {
+    "headerTitle": "AI Assistant",
+    "clearConfirm": "Confirm?",
+    "clearTooltip": "Clear history",
+    "welcomeMessage": "Hello! I'm your AI assistant for this position. You can ask me questions about the candidates, their profiles, and who best matches your search.",
+    "chips": {
+      "bestCandidate": "Who is the best candidate for this position?",
+      "shortlist": "Which candidates should I shortlist?",
+      "compare": "Compare the two best candidates",
+      "weakPoints": "What are the weak points of our pipeline?"
+    },
+    "suggestionsLabel": "Suggestions",
+    "inputPlaceholder": "Ask your question…",
+    "sendAriaLabel": "Send",
+    "stopAriaLabel": "Stop",
+    "openChat": "Open AI Assistant",
+    "closeChat": "Close AI Assistant",
+    "timeoutError": "The response took too long. Please try again.",
+    "genericError": "An error occurred. Please try again.",
+    "retry": "Retry",
+    "firstTimePopup": "The response may take a bit longer while the assistant analyses the candidates.",
+    "fallbackJobTitle": "Position"
+  },
+
+  "admin": {
+    "dashboard": {
+      "loadError": "Failed to load dashboard data.",
+      "unsuspendFailed": "Failed to unsuspend organisation.",
+      "retry": "Retry",
+      "kpi": {
+        "totalOrgs": "Total Organisations",
+        "activeOrgs": "Active Organisations",
+        "suspendedOrgs": "Suspended Organisations",
+        "totalUsers": "Total Users",
+        "cvsThisMonth": "CVs Analysed This Month",
+        "activeOpenings": "Active Openings"
+      },
+      "queueHealth": "Queue Health",
+      "pendingJobs": "Pending Jobs",
+      "failedJobs": "Failed Jobs",
+      "queueWarning": "Errors detected in the processing queue. Check the",
+      "scoringKpis": "Scoring KPIs",
+      "candidatesScored": "Candidates Scored",
+      "avgPlatformScore": "Average Platform Score",
+      "strongFitCandidates": "Strong Fit Candidates",
+      "suspendedOrgsTitle": "Suspended Organisations ({count})",
+      "suspendedOn": "Suspended on {date}",
+      "unsuspend": "Unsuspend",
+      "recentOrgs": "Recent Organisations",
+      "viewAll": "View all →",
+      "table": {
+        "name": "Name",
+        "plan": "Plan",
+        "users": "Users",
+        "status": "Status",
+        "createdAt": "Created",
+        "action": "Action"
+      },
+      "suspended": "Suspended",
+      "active": "Active",
+      "view": "View",
+      "noOrgs": "No organisations found."
+    },
+    "organisations": {
+      "title": "Organisations",
+      "subtitle": "{count} registered organisations",
+      "searchPlaceholder": "Search…",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterSuspended": "Suspended",
+      "loadError": "Failed to load organisations.",
+      "retry": "Retry",
+      "table": {
+        "name": "Name",
+        "slug": "Slug",
+        "plan": "Plan",
+        "users": "Users",
+        "cvs": "CVs",
+        "jobs": "Openings",
+        "tokensThisMonth": "Tokens This Month",
+        "createdAt": "Created",
+        "status": "Status",
+        "created": "Created"
+      },
+      "suspended": "Suspended",
+      "active": "Active",
+      "noResults": "No organisations found.",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total} — {count} result{plural}",
+      "createOrg": "Create an organisation",
+      "createTitle": "Create an organisation",
+      "createInfoBanner": "An invitation will be sent to the admin to complete their account (same mechanism as inviting a member).",
+      "orgNameLabel": "Organisation name *",
+      "slugLabel": "Slug *",
+      "adminEmailLabel": "Admin email *",
+      "createError": "Error during creation.",
+      "createAndInvite": "Create & Invite"
+    },
+    "orgDetail": {
+      "backToList": "← Back to organisations",
+      "loadError": "Failed to load organisation details.",
+      "retry": "Retry",
+      "createdAt": "Created on {date}",
+      "suspendedAt": "Suspended on {date}",
+      "suspendedReason": "— Reason: {reason}",
+      "plan": "Plan",
+      "status": "Status",
+      "suspended": "Suspended",
+      "active": "Active",
+      "slug": "Slug",
+      "suspend": "Suspend",
+      "unsuspend": "Unsuspend",
+      "edit": "Edit",
+      "suspending": "Suspending…",
+      "unsuspending": "Unsuspending…",
+      "userCount": "{count} user{plural}",
+      "jobCount": "{count} job opening{plural}",
+      "cvCount": "{count} CV{plural} analysed",
+      "membersTitle": "Members ({count})",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "joined": "Joined"
+      },
+      "memberActive": "Active",
+      "memberInactive": "Inactive",
+      "noMembers": "No users in this organisation.",
+      "suspendSuccess": "Organisation suspended successfully.",
+      "suspendFailed": "Failed to suspend.",
+      "unsuspendSuccess": "Suspension lifted successfully.",
+      "unsuspendFailed": "Failed to unsuspend.",
+      "updateSuccess": "Organisation updated.",
+      "updateError": "Error during update.",
+      "suspendModalTitle": "Suspend this organisation?",
+      "suspendModalWarning": "This action will immediately log out all users in this organisation. They will not be able to access the platform until the suspension is lifted.",
+      "suspendReasonLabel": "Reason (optional)",
+      "suspendReasonPlaceholder": "Internal reason for suspension...",
+      "confirmSuspend": "Confirm suspension",
+      "editTitle": "Edit organisation",
+      "editNameLabel": "Name",
+      "editSlugLabel": "Slug",
+      "editPlanLabel": "Plan",
+      "usageTitle": "AI Usage",
+      "usageLoadError": "Failed to load usage data.",
+      "usageHistory": "Token usage history (last 12 months)",
+      "usageNoData": "No usage data for this period.",
+      "usageTotalTokens": "Total Tokens",
+      "usageApiCalls": "API Calls"
+    }
+  },
+
+  "jobDetail": {
+    "notFoundTitle": "Opening Not Found",
+    "notFoundBody": "This job opening does not exist, has been deleted, or belongs to another organisation.",
+    "backToJobs": "Back to openings",
+    "createdOn": "Created on {date}",
+    "recruiter": "Recruiter",
+    "candidateCount": "{count} candidate",
+    "candidateCountPlural": "{count} candidates",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "closeJob": "Close this opening",
+    "closing": "Closing...",
+    "closeConfirmTitle": "Close this opening?",
+    "closeConfirmBody": "This action will change the status of the opening \"{title}\" to Closed. Existing candidates will be preserved. This action is irreversible.",
+    "confirmClose": "Confirm closure",
+    "deleteJob": "Delete",
+    "deleteConfirmTitle": "Delete opening?",
+    "deleteConfirmBody": "Are you sure you want to delete the opening \"{title}\" and all its candidates? This action is irreversible.",
+    "profileDescTitle": "Target Profile Description",
+    "candidatesTitle": "Candidates",
+    "exportPdf": "Export PDF",
+    "exportingPdf": "Exporting PDF…",
+    "noResultsToExport": "No results to export",
+    "exportPdfTooltip": "Export results to PDF",
+    "invalidFiles": "Invalid files:",
+    "analyzingProgress": "Analysis in progress... {scored} / {total} candidates scored",
+    "verdictFilterLabel": "Verdict:",
+    "statusFilterLabel": "Status:",
+    "sortByLabel": "Sort by:",
+    "sortScore": "Score (descending)",
+    "sortName": "Name (A-Z)",
+    "sortUploadDate": "Upload date (recent)",
+    "verdicts": {
+      "all": "All",
+      "STRONG_FIT": "Strong fit",
+      "GOOD_FIT": "Good fit",
+      "PARTIAL_FIT": "Partial fit",
+      "WEAK_FIT": "Weak fit"
+    },
+    "statuses": {
+      "all": "All",
+      "PENDING": "Pending",
+      "SCORED": "Scored",
+      "FAILED": "Failed",
+      "NEW": "New",
+      "SHORTLISTED": "Shortlisted",
+      "REJECTED": "Rejected",
+      "OFFERED": "Offered"
+    },
+    "table": {
+      "status": "Status",
+      "name": "Candidate Name",
+      "email": "Email",
+      "score": "Score",
+      "verdict": "Verdict",
+      "actions": "Actions"
+    },
+    "analyzing": "Analyzing...",
+    "notAvailable": "Not available",
+    "deleteCandidateTooltip": "Delete candidate",
+    "deleteCandidateTitle": "Delete candidate?",
+    "deleteCandidateMessage": "Are you sure you want to delete this candidate? This action is irreversible.",
+    "previous": "← Previous",
+    "next": "Next →",
+    "page": "Page",
+    "noCandidatesFound": "No candidates found",
+    "noCandidatesMatch": "No candidates match the selected filters. Try changing your criteria.",
+    "uploadMoreCVs": "Upload more CVs",
+    "dragDropCVs": "Drag & drop your CVs here",
+    "orClickToSelect": "or click to select files",
+    "fileConstraints": "PDF, DOCX • Max 5MB per file",
+    "selectedFiles": "Selected files ({count})",
+    "analyzeCVs": "Analyze CVs",
+    "noCandidatesYet": "No candidates yet. Upload CVs to start the selection process.",
+    "uploadDisabledClosed": "CV upload is disabled for closed openings.",
+    "lastUpdated": "Last updated: {date}",
+    "fileTypeNotSupported": "File type not supported. Accepted: PDF, DOCX",
+    "fileTooLarge": "File too large ({size}MB > 5MB)",
+    "loadError": "Unable to load opening.",
+    "deleteError": "Error deleting",
+    "deleteErrorFallback": "Unable to delete opening"
+  },
+
+  "candidateDetail": {
+    "backToCandidates": "Back to candidates",
+    "loadingCandidate": "Loading candidate...",
+    "emailNotAvailable": "Email not available",
+    "phoneNotAvailable": "Phone not available",
+    "scoreLabel": "Score: {score}",
+    "shortlist": "Shortlist",
+    "reject": "Reject",
+    "compareWithOther": "Compare with another candidate",
+    "downloadCV": "Download CV",
+    "aiSummaryTitle": "AI Summary",
+    "summaryNotAvailable": "Summary not available at the moment.",
+    "scoreAnalysisTitle": "Score Analysis",
+    "matchedCriteriaTitle": "Matched criteria",
+    "noMatchedCriteria": "No matched criteria",
+    "missingCriteriaTitle": "Missing criteria",
+    "noMissingCriteria": "No missing criteria",
+    "strengthsTitle": "Strengths",
+    "noStrengths": "No strengths identified",
+    "interviewQuestionsTitle": "Interview Questions",
+    "questionsNotAvailable": "Interview questions are not yet available.",
+    "rawProfileTitle": "Raw Profile Data",
+    "rawProfileSubtitle": "Work, education, skills, and languages.",
+    "tabs": {
+      "experience": "Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "languages": "Languages"
+    },
+    "notSpecified": {
+      "position": "Position not specified",
+      "company": "Company not specified",
+      "degree": "Degree not specified",
+      "institution": "Institution not specified"
+    },
+    "today": "Today",
+    "noExperience": "No work experience specified.",
+    "noEducation": "No education specified.",
+    "noSkills": "No skills specified.",
+    "noLanguages": "No languages specified.",
+    "datesNotSpecified": "Dates not specified",
+    "mentionGrade": "Grade: {grade}",
+    "skillsIdentified": "{count} skill{plural} identified",
+    "exitCompare": "Exit comparison",
+    "compareMode": "Comparison mode",
+    "loadingCompare": "Loading comparison...",
+    "compareWith": "Compare with…",
+    "searchCandidate": "Search candidate...",
+    "noCandidatesFound": "No candidates found",
+    "noOtherCandidates": "No other candidates in this opening",
+    "noVerdict": "No verdict"
+  }
+}
+

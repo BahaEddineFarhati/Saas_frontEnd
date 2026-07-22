@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from '../i18n/I18nContext';
 
 export default function SuspensionModal() {
   const { logout } = useAuth();
+  const { t } = useTranslation();
 
   // Block Escape key
   useEffect(() => {
@@ -38,13 +40,12 @@ export default function SuspensionModal() {
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Organisation suspendue
+          {t('suspension.title')}
         </h2>
 
         {/* Message */}
         <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-          Votre organisation a été suspendue. Veuillez contacter
-          l'administration LinkUp pour régulariser votre situation.
+          {t('suspension.message')}
         </p>
 
         {/* Buttons */}
@@ -85,7 +86,7 @@ export default function SuspensionModal() {
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Se déconnecter
+            {t('suspension.logout')}
           </button>
         </div>
       </div>

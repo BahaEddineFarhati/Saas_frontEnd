@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL } from '../config/api'
+import { useTranslation } from '../i18n/I18nContext'
 
 interface FormState {
   firstName: string
@@ -12,32 +13,8 @@ interface FormState {
 
 type FieldErrors = Partial<Record<keyof FormState | 'general', string>>
 
-function validate(form: FormState): FieldErrors {
-  const errors: FieldErrors = {}
-
-  if (!form.firstName.trim()) errors.firstName = 'First name is required'
-  if (!form.lastName.trim()) errors.lastName = 'Last name is required'
-
-  if (!form.password) {
-    errors.password = 'Password is required'
-  } else if (form.password.length < 8) {
-    errors.password = 'Password must be at least 8 characters'
-  } else if (!/[A-Z]/.test(form.password)) {
-    errors.password = 'Password must contain at least one uppercase letter'
-  } else if (!/[0-9]/.test(form.password)) {
-    errors.password = 'Password must contain at least one number'
-  }
-
-  if (!form.passwordConfirmation) {
-    errors.passwordConfirmation = 'Please confirm your password'
-  } else if (form.password !== form.passwordConfirmation) {
-    errors.passwordConfirmation = 'Passwords do not match'
-  }
-
-  return errors
-}
-
 export default function AcceptInvitePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
@@ -54,6 +31,31 @@ export default function AcceptInvitePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+  function validate(formData: FormState): FieldErrors {
+    const errs: FieldErrors = {}
+
+    if (!formData.firstName.trim()) errs.firstName = t('validation.firstNameRequired')
+    if (!formData.lastName.trim()) errs.lastName = t('validation.lastNameRequired')
+
+    if (!formData.password) {
+      errs.password = t('validation.passwordRequired')
+    } else if (formData.password.length < 8) {
+      errs.password = t('validation.passwordMinLength')
+    } else if (!/[A-Z]/.test(formData.password)) {
+      errs.password = t('validation.passwordUppercase')
+    } else if (!/[0-9]/.test(formData.password)) {
+      errs.password = t('validation.passwordNumber')
+    }
+
+    if (!formData.passwordConfirmation) {
+      errs.passwordConfirmation = t('validation.confirmPasswordRequired')
+    } else if (formData.password !== formData.passwordConfirmation) {
+      errs.passwordConfirmation = t('validation.passwordsDoNotMatch')
+    }
+
+    return errs
+  }
+
   // If the user is already authenticated, auto-logout first so they can
   // use the invite link to create a fresh account in the new org.
   useEffect(() => {
@@ -68,9 +70,9 @@ export default function AcceptInvitePage() {
 
   useEffect(() => {
     if (!token) {
-      setErrors({ general: 'Invalid invitation link. No token provided.' })
+      setErrors({ general: t('acceptInvite.invalidToken') })
     }
-  }, [token])
+  }, [token, t])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -119,9 +121,9 @@ export default function AcceptInvitePage() {
         return
       }
 
-      setErrors({ general: data.error?.message ?? 'Failed to accept invitation. Please try again.' })
+      setErrors({ general: data.error?.message ?? t('acceptInvite.acceptFailed') })
     } catch {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' })
+      setErrors({ general: t('acceptInvite.unexpectedError') })
     } finally {
       setIsLoading(false)
     }
@@ -140,7 +142,7 @@ export default function AcceptInvitePage() {
           <div className="mb-4 flex justify-center">
             <div className="h-12 w-12 border-4 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
           </div>
-          <p className="text-gray-400">Preparing your invitation...</p>
+          <p className="text-gray-400">{t('acceptInvite.preparingInvitation')}</p>
         </div>
       </div>
     )
@@ -155,8 +157,8 @@ export default function AcceptInvitePage() {
         </div>
 
         <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
-          <h1 className="text-3xl font-bold text-white mb-2">Complete your account</h1>
-          <p className="text-gray-400 mb-8">You've been invited to join a team on LinkUp</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('acceptInvite.title')}</h1>
+          <p className="text-gray-400 mb-8">{t('acceptInvite.subtitle')}</p>
 
           {errors.general && (
             <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg">
@@ -168,25 +170,25 @@ export default function AcceptInvitePage() {
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">First name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('acceptInvite.firstNameLabel')}</label>
                   <input
                     type="text"
                     name="firstName"
                     value={form.firstName}
                     onChange={handleChange}
-                    placeholder="Jane"
+                    placeholder={t('acceptInvite.firstNamePlaceholder')}
                     className={inputClass('firstName')}
                   />
                   {errors.firstName && <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Last name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('acceptInvite.lastNameLabel')}</label>
                   <input
                     type="text"
                     name="lastName"
                     value={form.lastName}
                     onChange={handleChange}
-                    placeholder="Doe"
+                    placeholder={t('acceptInvite.lastNamePlaceholder')}
                     className={inputClass('lastName')}
                   />
                   {errors.lastName && <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>}
@@ -194,13 +196,13 @@ export default function AcceptInvitePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('acceptInvite.passwordLabel')}</label>
                 <input
                   type="password"
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Min. 8 chars, 1 uppercase, 1 number"
+                  placeholder={t('acceptInvite.passwordPlaceholder')}
                   autoComplete="new-password"
                   className={inputClass('password')}
                 />
@@ -208,13 +210,13 @@ export default function AcceptInvitePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Confirm password</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('acceptInvite.confirmPasswordLabel')}</label>
                 <input
                   type="password"
                   name="passwordConfirmation"
                   value={form.passwordConfirmation}
                   onChange={handleChange}
-                  placeholder="Re-enter your password"
+                  placeholder={t('acceptInvite.confirmPasswordPlaceholder')}
                   autoComplete="new-password"
                   className={inputClass('passwordConfirmation')}
                 />
@@ -228,12 +230,12 @@ export default function AcceptInvitePage() {
                 disabled={isLoading}
                 className="w-full px-8 py-3 mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-none"
               >
-                {isLoading ? 'Creating account…' : 'Accept Invitation & Create Account'}
+                {isLoading ? t('acceptInvite.creating') : t('acceptInvite.submitButton')}
               </button>
             </form>
           ) : (
             <p className="text-center text-gray-400">
-              This invitation link is invalid. Please contact your administrator for a new invite.
+              {t('acceptInvite.invalidLink')}
             </p>
           )}
         </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { API_BASE_URL } from '../config/api'
+import { useTranslation } from '../i18n/I18nContext'
 
 export default function ForgotPassword() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -17,7 +19,7 @@ export default function ForgotPassword() {
     setError('')
 
     if (!email.trim() || !validateEmail(email)) {
-      setError("Veuillez saisir une adresse email valide.")
+      setError(t('forgotPassword.invalidEmail'))
       return
     }
 
@@ -34,9 +36,9 @@ export default function ForgotPassword() {
         return
       }
 
-      setError("Une erreur s'est produite. Veuillez réessayer.")
-    } catch (err) {
-      setError("Une erreur s'est produite. Veuillez réessayer.")
+      setError(t('forgotPassword.genericError'))
+    } catch {
+      setError(t('forgotPassword.genericError'))
     } finally {
       setIsLoading(false)
     }
@@ -47,9 +49,9 @@ export default function ForgotPassword() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
-            <h2 className="text-2xl font-semibold mb-4">Demande envoyée</h2>
-            <p className="mb-6">Si un compte existe avec l'adresse {email}, vous recevrez un email dans quelques instants. Pensez à vérifier vos spams.</p>
-            <Link to="/login" className="text-purple-400">Retour à la connexion</Link>
+            <h2 className="text-2xl font-semibold mb-4">{t('forgotPassword.sentTitle')}</h2>
+            <p className="mb-6">{t('forgotPassword.sentMessage', { email })}</p>
+            <Link to="/login" className="text-purple-400">{t('forgotPassword.backToLogin')}</Link>
           </div>
         </div>
       </div>
@@ -67,12 +69,12 @@ export default function ForgotPassword() {
         </div>
 
         <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
-          <h1 className="text-3xl font-bold text-white mb-2">Mot de passe oublié ?</h1>
-          <p className="text-gray-400 mb-6">Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('forgotPassword.title')}</h1>
+          <p className="text-gray-400 mb-6">{t('forgotPassword.subtitle')}</p>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('forgotPassword.emailLabel')}</label>
               <input
                 type="email"
                 value={email}
@@ -87,7 +89,7 @@ export default function ForgotPassword() {
 
             <div>
               <div className="mb-2">
-                <Link to="/login" className="text-sm text-gray-400 underline">Retour à la connexion</Link>
+                <Link to="/login" className="text-sm text-gray-400 underline">{t('forgotPassword.backToLogin')}</Link>
               </div>
 
               <div>
@@ -96,7 +98,7 @@ export default function ForgotPassword() {
                   disabled={isLoading}
                   className="w-full px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-60"
                 >
-                  {isLoading ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
+                  {isLoading ? t('forgotPassword.sending') : t('forgotPassword.sendButton')}
                 </button>
               </div>
             </div>

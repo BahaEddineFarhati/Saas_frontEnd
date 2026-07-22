@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Sparkles, X } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import AIChatPanel from "./AIChatPanel";
+import { useTranslation } from "../../i18n/I18nContext";
 
 /**
  * Regex to match job-opening pages and extract the jobId.
@@ -14,6 +15,7 @@ const JOB_ROUTE_RE = /^\/candidatures\/([^/]+)(?:\/candidats\/[^/]+)?$/;
 export default function AIChatButton() {
   const { pathname } = useLocation();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   // Extract jobId from the current pathname (null if not on a job page)
@@ -44,7 +46,7 @@ export default function AIChatButton() {
         type="button"
         className={`ai-chat-btn${isOpen ? " ai-chat-btn--open" : ""}`}
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={isOpen ? "Fermer l'assistant IA" : "Ouvrir l'assistant IA"}
+        aria-label={isOpen ? t('chat.closeChat') : t('chat.openChat')}
       >
         <span className="ai-chat-btn__icon">
           {isOpen ? <X size={24} strokeWidth={2} /> : <Sparkles size={24} strokeWidth={2} />}
