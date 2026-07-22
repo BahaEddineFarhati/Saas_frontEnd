@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Plus, X, Loader2, AlertCircle, ExternalLink, Trash2 } from "lucide-react";
 import type { JobOpening } from "./types";
 import { API_BASE_URL } from "./config/api";
+import { useTranslation } from "./i18n/I18nContext";
 
 // Active auth promise to handle concurrent calls during StrictMode
 let activeAuthPromise: Promise<string> | null = null;
@@ -42,6 +43,7 @@ async function getAuthToken(): Promise<string> {
 }
 
 export default function CandidaturesPage() {
+  const { t } = useTranslation();
   // Page Data States
   const [jobs, setJobs] = useState<JobOpening[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -144,11 +146,11 @@ export default function CandidaturesPage() {
 
     // Client-side validations
     if (!formTitle.trim()) {
-      setTitleValidationError("Le titre de l'offre est requis");
+      setTitleValidationError(t('candidatures.form.titleRequired'));
       hasErrors = true;
     }
     if (!formDesc.trim()) {
-      setDescValidationError("La description du profil est requise");
+      setDescValidationError(t('candidatures.form.descRequired'));
       hasErrors = true;
     }
 
@@ -175,7 +177,7 @@ export default function CandidaturesPage() {
       const resData = await res.json();
 
       if (!res.ok) {
-        throw new Error(resData?.error?.message || "Titre ou description requis par l'API.");
+        throw new Error(resData?.error?.message || t('candidatures.form.apiError'));
       }
 
       if (resData?.success && resData?.data) {
@@ -230,14 +232,14 @@ export default function CandidaturesPage() {
 
       const resData = await res.json();
       if (!res.ok) {
-        throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+        throw new Error(resData?.error?.message || t('candidatures.deleteError'));
       }
 
       // Remove from list
       setJobs((prev) => prev.filter((j) => j.id !== jobToDelete.id));
       setJobToDelete(null);
     } catch (err: any) {
-      setDeleteError(err.message || 'Impossible de supprimer l\'offre');
+      setDeleteError(err.message || t('candidatures.deleteErrorFallback'));
     } finally {
       setIsDeletingJob(false);
     }
@@ -249,8 +251,8 @@ export default function CandidaturesPage() {
       {/* Header controls row */}
       <div className="cand-header-row">
         <div>
-          <h2 className="db-welcome-heading">Offres d'emploi</h2>
-          <p className="db-welcome-sub">Gérez et suivez les offres de recrutement de votre entreprise.</p>
+          <h2 className="db-welcome-heading">{t('candidatures.title')}</h2>
+          <p className="db-welcome-sub">{t('candidatures.subtitle')}</p>
         </div>
         <button 
           onClick={() => setIsPanelOpen(true)}
@@ -258,7 +260,7 @@ export default function CandidaturesPage() {
           id="btn-new-job"
         >
           <Plus size={16} strokeWidth={2.4} />
-          <span>Nouvelle offre</span>
+          <span>{t('candidatures.newJob')}</span>
         </button>
       </div>
 
@@ -279,34 +281,34 @@ export default function CandidaturesPage() {
           <input
             type="text"
             className="cand-search-input"
-            placeholder="Rechercher par titre..."
+            placeholder={t('candidatures.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             id="search-jobs"
           />
         </div>
 
-        <div className="cand-filter-group" role="group" aria-label="Status filter">
+        <div className="cand-filter-group" role="group" aria-label={t('candidatures.statusFilter')}>
           <button
             onClick={() => setStatusFilter("ALL")}
             className={`cand-filter-btn ${statusFilter === "ALL" ? "cand-filter-btn--active" : ""}`}
             id="filter-all"
           >
-            Tous
+            {t('candidatures.filterAll')}
           </button>
           <button
             onClick={() => setStatusFilter("OPEN")}
             className={`cand-filter-btn ${statusFilter === "OPEN" ? "cand-filter-btn--active" : ""}`}
             id="filter-open"
           >
-            Actifs
+            {t('candidatures.filterOpen')}
           </button>
           <button
             onClick={() => setStatusFilter("CLOSED")}
             className={`cand-filter-btn ${statusFilter === "CLOSED" ? "cand-filter-btn--active" : ""}`}
             id="filter-closed"
           >
-            Clôturés
+            {t('candidatures.filterClosed')}
           </button>
         </div>
       </div>
@@ -320,10 +322,10 @@ export default function CandidaturesPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Titre de l'offre</th>
-                  <th>Statut</th>
-                  <th>Date de création</th>
-                  <th className="db-th-num">Candidats</th>
+                  <th>{t('candidatures.table.title')}</th>
+                  <th>{t('candidatures.table.status')}</th>
+                  <th>{t('candidatures.table.createdAt')}</th>
+                  <th className="db-th-num">{t('candidatures.table.candidates')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -371,11 +373,11 @@ export default function CandidaturesPage() {
                 <line x1="8" y1="12" x2="16" y2="12" />
                 <line x1="12" y1="8" x2="12" y2="16" />
               </svg>
-              <h3 className="lu-empty-title">Aucune offre trouvée</h3>
+              <h3 className="lu-empty-title">{t('candidatures.emptyTitle')}</h3>
               <p className="lu-empty-body">
                 {jobs.length === 0 
-                  ? "Commencez par créer votre première offre d'emploi pour recevoir des candidatures." 
-                  : "Aucune offre ne correspond aux critères de recherche actuels."}
+                  ? t('candidatures.emptyBodyNoJobs') 
+                  : t('candidatures.emptyBodyNoMatch')}
               </p>
               {jobs.length === 0 && (
                 <button 
@@ -384,7 +386,7 @@ export default function CandidaturesPage() {
                   style={{ marginTop: "16px" }}
                 >
                   <Plus size={14} strokeWidth={2.4} />
-                  <span>Nouvelle offre</span>
+                  <span>{t('candidatures.newJob')}</span>
                 </button>
               )}
             </div>
@@ -395,10 +397,10 @@ export default function CandidaturesPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Titre de l'offre</th>
-                  <th>Statut</th>
-                  <th>Date de création</th>
-                  <th className="db-th-num">Candidats</th>
+                  <th>{t('candidatures.table.title')}</th>
+                  <th>{t('candidatures.table.status')}</th>
+                  <th>{t('candidatures.table.createdAt')}</th>
+                  <th className="db-th-num">{t('candidatures.table.candidates')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -407,11 +409,11 @@ export default function CandidaturesPage() {
                   <tr key={job.id}>
                     <td>
                       <p className="db-job-title">{job.title}</p>
-                      <p className="db-job-dept">Ressources Humaines</p>
+                      <p className="db-job-dept">{t('candidatures.table.department')}</p>
                     </td>
                     <td>
                       <span className={`db-badge ${(job.status ?? "OPEN").toUpperCase() === "OPEN" ? "badge--green" : "badge--gray"}`}>
-                        {(job.status ?? "OPEN").toUpperCase() === "OPEN" ? "Ouverte" : "Clôturée"}
+                        {(job.status ?? "OPEN").toUpperCase() === "OPEN" ? t('candidatures.statusOpen') : t('candidatures.statusClosed')}
                       </span>
                     </td>
                     <td>
@@ -425,11 +427,11 @@ export default function CandidaturesPage() {
                         <a
                           href={`/candidatures/${job.id}`}
                           className="db-open-link"
-                          aria-label={`Ouvrir ${job.title}`}
+                          aria-label={`${t('common.open')} ${job.title}`}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 28 }}
                         >
                           <ExternalLink size={13} strokeWidth={2} />
-                          <span>Ouvrir</span>
+                          <span>{t('common.open')}</span>
                         </a>
 
                         <button
@@ -438,7 +440,7 @@ export default function CandidaturesPage() {
                             setJobToDelete(job);
                           }}
                           className="cand-btn-danger"
-                          title={`Supprimer ${job.title}`}
+                          title={`${t('common.delete')} ${job.title}`}
                           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 28, width: 28, padding: 0 }}
                         >
                           <Trash2 size={13} />
@@ -462,13 +464,13 @@ export default function CandidaturesPage() {
           />
           <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
             <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-              <h3 style={{ marginTop: 0 }}>Supprimer l'offre ?</h3>
-              <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer l'offre « <strong>{jobToDelete.title}</strong> » et tous ses candidats ? Cette action est irréversible.</p>
+              <h3 style={{ marginTop: 0 }}>{t('candidatures.deleteTitle')}</h3>
+              <p style={{ marginTop: 8 }}>{t('candidatures.deleteMessage', { title: jobToDelete.title })}</p>
               {deleteError && <div className="cand-error-alert" style={{ marginTop: 12 }}>{deleteError}</div>}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-                <button className="cand-btn-secondary" onClick={() => setJobToDelete(null)} disabled={isDeletingJob}>Annuler</button>
+                <button className="cand-btn-secondary" onClick={() => setJobToDelete(null)} disabled={isDeletingJob}>{t('common.cancel')}</button>
                 <button className="cand-btn-danger" onClick={performDeleteJob} disabled={isDeletingJob}>
-                  {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                  {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : t('candidatures.deleteConfirm')}
                 </button>
               </div>
             </div>
@@ -487,12 +489,12 @@ export default function CandidaturesPage() {
       {/* Side Panel Drawer */}
       <div className={`cand-drawer ${isPanelOpen ? "cand-drawer--open" : ""}`} id="create-job-panel">
         <div className="cand-drawer-header">
-          <h3 className="cand-drawer-title">Créer une offre d'emploi</h3>
+          <h3 className="cand-drawer-title">{t('candidatures.createTitle')}</h3>
           <button 
             onClick={() => setIsPanelOpen(false)}
             className="cand-drawer-close"
             disabled={formSubmitting}
-            aria-label="Fermer"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -513,12 +515,12 @@ export default function CandidaturesPage() {
 
             {/* Title Field */}
             <div className="cand-form-group">
-              <label htmlFor="job-title" className="cand-label">Titre du poste *</label>
+              <label htmlFor="job-title" className="cand-label">{t('candidatures.form.titleLabel')}</label>
               <input
                 type="text"
                 id="job-title"
                 className="cand-input"
-                placeholder="Ex. Senior Fullstack Developer (Node.js/React)"
+                placeholder={t('candidatures.form.titlePlaceholder')}
                 value={formTitle}
                 onChange={(e) => {
                   setFormTitle(e.target.value);
@@ -533,11 +535,11 @@ export default function CandidaturesPage() {
 
             {/* Profile Description Field */}
             <div className="cand-form-group">
-              <label htmlFor="job-desc" className="cand-label">Description du profil recherché *</label>
+              <label htmlFor="job-desc" className="cand-label">{t('candidatures.form.descLabel')}</label>
               <textarea
                 id="job-desc"
                 className="cand-input cand-textarea"
-                placeholder="Décrivez les compétences, l'expérience requise et les responsabilités du poste..."
+                placeholder={t('candidatures.form.descPlaceholder')}
                 value={formDesc}
                 onChange={(e) => {
                   setFormDesc(e.target.value);
@@ -559,7 +561,7 @@ export default function CandidaturesPage() {
               onClick={() => setIsPanelOpen(false)}
               disabled={formSubmitting}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -570,10 +572,10 @@ export default function CandidaturesPage() {
               {formSubmitting ? (
                 <>
                   <Loader2 size={16} className="cand-skeleton-pulse" />
-                  <span>Création...</span>
+                  <span>{t('candidatures.form.creating')}</span>
                 </>
               ) : (
-                <span>Créer l'offre</span>
+                <span>{t('candidatures.form.createButton')}</span>
               )}
             </button>
           </div>

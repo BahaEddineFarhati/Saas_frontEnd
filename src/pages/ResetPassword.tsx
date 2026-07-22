@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { API_BASE_URL } from '../config/api'
+import { useTranslation } from '../i18n/I18nContext'
 
 export default function ResetPassword() {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
   const navigate = useNavigate()
@@ -28,11 +30,11 @@ export default function ResetPassword() {
     setError('')
 
     if (!validatePassword(newPassword)) {
-      setError('Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre.')
+      setError(t('resetPassword.passwordValidation'))
       return
     }
     if (newPassword !== confirmNewPassword) {
-      setError('Les mots de passe ne correspondent pas.')
+      setError(t('resetPassword.passwordMismatch'))
       return
     }
 
@@ -55,9 +57,9 @@ export default function ResetPassword() {
       if (code === 'RESET_TOKEN_INVALID') setStatus('invalid')
       else if (code === 'RESET_TOKEN_EXPIRED') setStatus('expired')
       else if (code === 'RESET_TOKEN_ALREADY_USED') setStatus('used')
-      else setError("Une erreur s'est produite. Veuillez réessayer.")
-    } catch (err) {
-      setError("Une erreur s'est produite. Veuillez réessayer.")
+      else setError(t('resetPassword.genericError'))
+    } catch {
+      setError(t('resetPassword.genericError'))
     } finally {
       setIsLoading(false)
     }
@@ -75,44 +77,44 @@ export default function ResetPassword() {
         <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
           {status === 'invalid' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Ce lien est invalide</h2>
-              <p className="mb-6">Ce lien de réinitialisation est invalide. Veuillez retourner à la page de connexion.</p>
-              <Link to="/login" className="text-purple-400">Retour à la connexion</Link>
+              <h2 className="text-xl font-semibold mb-4">{t('resetPassword.invalidLink.title')}</h2>
+              <p className="mb-6">{t('resetPassword.invalidLink.message')}</p>
+              <Link to="/login" className="text-purple-400">{t('resetPassword.invalidLink.backToLogin')}</Link>
             </div>
           )}
 
           {status === 'expired' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Lien expiré</h2>
-              <p className="mb-6">Ce lien a expiré (valable 1 heure). Veuillez faire une nouvelle demande.</p>
-              <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
+              <h2 className="text-xl font-semibold mb-4">{t('resetPassword.expiredLink.title')}</h2>
+              <p className="mb-6">{t('resetPassword.expiredLink.message')}</p>
+              <Link to="/forgot-password" className="text-purple-400">{t('resetPassword.expiredLink.forgotPassword')}</Link>
             </div>
           )}
 
           {status === 'used' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Lien déjà utilisé</h2>
-              <p className="mb-6">Ce lien a déjà été utilisé. Si vous avez besoin de réinitialiser à nouveau votre mot de passe, faites une nouvelle demande.</p>
-              <Link to="/forgot-password" className="text-purple-400">Mot de passe oublié ?</Link>
+              <h2 className="text-xl font-semibold mb-4">{t('resetPassword.usedLink.title')}</h2>
+              <p className="mb-6">{t('resetPassword.usedLink.message')}</p>
+              <Link to="/forgot-password" className="text-purple-400">{t('resetPassword.usedLink.forgotPassword')}</Link>
             </div>
           )}
 
           {status === 'success' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Mot de passe réinitialisé</h2>
-              <p className="mb-6">Votre mot de passe a été réinitialisé avec succès.</p>
-              <button onClick={() => navigate('/login')} className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg">Se connecter</button>
+              <h2 className="text-xl font-semibold mb-4">{t('resetPassword.success.title')}</h2>
+              <p className="mb-6">{t('resetPassword.success.message')}</p>
+              <button onClick={() => navigate('/login')} className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg">{t('resetPassword.success.loginButton')}</button>
             </div>
           )}
 
           {status === 'form' && (
             <>
-              <h1 className="text-3xl font-bold text-white mb-2">Réinitialiser le mot de passe</h1>
-              <p className="text-gray-400 mb-6">Entrez votre nouveau mot de passe.</p>
+              <h1 className="text-3xl font-bold text-white mb-2">{t('resetPassword.title')}</h1>
+              <p className="text-gray-400 mb-6">{t('resetPassword.subtitle')}</p>
 
               <form onSubmit={handleSubmit} noValidate className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Nouveau mot de passe</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('resetPassword.newPasswordLabel')}</label>
                   <div className="relative">
                     <input
                       type={showNew ? 'text' : 'password'}
@@ -120,12 +122,12 @@ export default function ResetPassword() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className={`w-full px-4 py-3 bg-slate-800/60 border ${error ? 'border-red-500' : 'border-purple-500/30'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`}
                     />
-                    <button type="button" onClick={() => setShowNew((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showNew ? 'Hide' : 'Show'}</button>
+                    <button type="button" onClick={() => setShowNew((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showNew ? t('common.hide') : t('common.show')}</button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Confirmer le nouveau mot de passe</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('resetPassword.confirmLabel')}</label>
                   <div className="relative">
                     <input
                       type={showConfirm ? 'text' : 'password'}
@@ -133,11 +135,11 @@ export default function ResetPassword() {
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       className={`w-full px-4 py-3 bg-slate-800/60 border ${error ? 'border-red-500' : 'border-purple-500/30'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition`}
                       onBlur={() => {
-                        if (confirmNewPassword && confirmNewPassword !== newPassword) setError('Les mots de passe ne correspondent pas.')
+                        if (confirmNewPassword && confirmNewPassword !== newPassword) setError(t('resetPassword.passwordMismatch'))
                         else setError('')
                       }}
                     />
-                    <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showConfirm ? 'Hide' : 'Show'}</button>
+                    <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-3 top-3 text-sm text-gray-400">{showConfirm ? t('common.hide') : t('common.show')}</button>
                   </div>
                 </div>
 
@@ -148,7 +150,7 @@ export default function ResetPassword() {
                   disabled={isLoading}
                   className="w-full px-8 py-3 mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-60"
                 >
-                  {isLoading ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
+                  {isLoading ? t('resetPassword.resetting') : t('resetPassword.resetButton')}
                 </button>
               </form>
             </>

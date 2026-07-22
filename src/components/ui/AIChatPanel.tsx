@@ -7,6 +7,7 @@ import {
   fetchJobTitle,
   ChatMessage,
 } from "../../api/chatApi";
+import { useTranslation } from "../../i18n/I18nContext";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -14,27 +15,11 @@ const MAX_CHARS = 1000;
 const CHAR_WARN_THRESHOLD = 800;
 const LLM_TIMEOUT_MS = 120_000;
 
-const WELCOME_MESSAGE =
-  "Bonjour ! Je suis votre assistant IA pour ce poste. Vous pouvez me poser des questions sur les candidats, leurs profils, et qui correspond le mieux à votre recherche.";
-
-const INITIAL_CHIPS = [
-  "Qui est le meilleur candidat pour ce poste ?",
-  "Quels candidats devrais-je shortlister ?",
-  "Compare les deux meilleurs candidats",
-  "Quels sont les points faibles de notre pipeline ?",
-];
+// WELCOME_MESSAGE and INITIAL_CHIPS now resolved via t() at render time
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(value: string): string {
-  const diffMs = Date.now() - new Date(value).getTime();
-  const diffMinutes = Math.max(1, Math.round(diffMs / 60_000));
-  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return `Il y a ${diffHours} h`;
-  const diffDays = Math.round(diffHours / 24);
-  return `Il y a ${diffDays} j`;
-}
+// formatRelativeTime is now handled via t() at render time
 
 // Truncate function
 function truncate(text: string, max: number): string {
@@ -60,6 +45,26 @@ interface AIChatPanelProps {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
+  const { t } = useTranslation();
+
+  // Resolved at render so translations are live
+  const WELCOME_MESSAGE = t('chat.welcomeMessage');
+  const INITIAL_CHIPS = [
+    t('chat.chips.bestCandidate'),
+    t('chat.chips.shortlist'),
+    t('chat.chips.compare'),
+    t('chat.chips.weakPoints'),
+  ];
+
+  function formatRelativeTime(value: string): string {
+    const diffMs = Date.now() - new Date(value).getTime();
+    const diffMinutes = Math.max(1, Math.round(diffMs / 60_000));
+    if (diffMinutes < 60) return t('common.relativeTime.minutesAgo', { count: diffMinutes });
+    const diffHours = Math.round(diffMinutes / 60);
+    if (diffHours < 24) return t('common.relativeTime.hoursAgo', { count: diffHours });
+    const diffDays = Math.round(diffHours / 24);
+    return t('common.relativeTime.daysAgo', { count: diffDays });
+  }
   // State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -117,7 +122,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
         if (!cancelled) setJobTitle(title);
       })
       .catch(() => {
-        if (!cancelled) setJobTitle("Poste");
+        if (!cancelled) setJobTitle(t('chat.fallbackJobTitle'));
       });
     return () => { cancelled = true; };
   }, [jobId]);
@@ -235,7 +240,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
     // Set timeout
     timeoutRef.current = setTimeout(() => {
       setIsPending(false);
-      setError("La réponse a pris trop longtemps. Veuillez réessayer.");
+      setError(t('chat.timeoutError'));
     }, LLM_TIMEOUT_MS);
 
     // Instantiate AbortController
@@ -289,7 +294,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
         return;
       }
 
-      setError("Une erreur s'est produite. Veuillez réessayer.");
+      setError(t('chat.genericError'));
     } finally {
       setIsPending(false);
       abortControllerRef.current = null;
@@ -342,7 +347,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
     <div
       className={`ai-chat-panel ${isOpen ? "ai-chat-panel--open" : "ai-chat-panel--closed"}`}
       role="dialog"
-      aria-label="Assistant IA"
+      aria-label={t('chat.headerTitle')}
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="ai-chat-header">
@@ -350,7 +355,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
           <Sparkles size={18} strokeWidth={2} />
         </span>
         <span className="ai-chat-header__title">
-          Assistant IA — {truncate(jobTitle, 30) || "…"}
+          {t('chat.headerTitle')} — {truncate(jobTitle, 30) || "…"}
         </span>
         {showClearConfirm ? (
           <button
@@ -359,14 +364,14 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
             onClick={handleClear}
             onBlur={() => setShowClearConfirm(false)}
           >
-            Confirmer ?
+            {t('chat.clearConfirm')}
           </button>
         ) : (
           <button
             type="button"
             className="ai-chat-header__clear-btn"
             onClick={() => setShowClearConfirm(true)}
-            title="Effacer l'historique"
+            title={t('chat.clearTooltip')}
           >
             <Trash2 size={16} strokeWidth={1.8} />
           </button>
@@ -439,7 +444,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
                     onClick={handleRetry}
                   >
                     <RotateCw size={12} strokeWidth={2} />
-                    Réessayer
+                    {t('chat.retry')}
                   </button>
                 )}
               </div>
@@ -453,7 +458,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
       {/* ── Contextual Suggestions ─────────────────────────── */}
       {suggestions.length > 0 && !isPending && (
         <div className="ai-chat-suggestions-bar">
-          <span className="ai-chat-suggestions-bar__label">Suggestions</span>
+          <span className="ai-chat-suggestions-bar__label">{t('chat.suggestionsLabel')}</span>
           {suggestions.map((s: string) => (
             <button
               key={s}
@@ -472,13 +477,13 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
         <div className="ai-chat-first-time-popup">
           <Info size={16} strokeWidth={2} className="ai-chat-first-time-popup__icon" />
           <span className="ai-chat-first-time-popup__text">
-            La réponse peut prendre un peu plus de temps, le temps que l'assistant analyse les candidats.
+            {t('chat.firstTimePopup')}
           </span>
           <button
             type="button"
             className="ai-chat-first-time-popup__close"
             onClick={() => setShowFirstTimePopup(false)}
-            title="Fermer"
+            title={t('common.dismiss')}
           >
             <XIcon size={14} strokeWidth={2} />
           </button>
@@ -491,7 +496,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
           <textarea
             ref={textareaRef}
             className="ai-chat-textarea"
-            placeholder="Posez votre question…"
+            placeholder={t('chat.inputPlaceholder')}
             value={input}
             onChange={(e) => {
               if (e.target.value.length <= MAX_CHARS) {
@@ -507,7 +512,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
               type="button"
               className="ai-chat-send-btn ai-chat-send-btn--stop"
               onClick={cancelPendingRequest}
-              aria-label="Arrêter"
+              aria-label={t('chat.stopAriaLabel')}
             >
               <Square size={16} fill="currentColor" strokeWidth={2} />
             </button>
@@ -517,7 +522,7 @@ export default function AIChatPanel({ jobId, isOpen }: AIChatPanelProps) {
               className="ai-chat-send-btn"
               disabled={!input.trim()}
               onClick={() => handleSend()}
-              aria-label="Envoyer"
+              aria-label={t('chat.sendAriaLabel')}
             >
               <SendHorizontal size={18} strokeWidth={2} />
             </button>

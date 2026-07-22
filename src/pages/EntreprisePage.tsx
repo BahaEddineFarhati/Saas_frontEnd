@@ -33,6 +33,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { useTranslation } from '../i18n/I18nContext'
 
 /* ── types ─────────────────────────────────────────────────────────────── */
 interface Member {
@@ -101,7 +102,7 @@ function ToastBanner({ toast, onClose }: { toast: Toast; onClose: () => void }) 
         <AlertTriangle size={16} strokeWidth={2} />
       )}
       <span>{toast.message}</span>
-      <button onClick={onClose} className="ent-toast-close" aria-label="Close">
+      <button onClick={onClose} className="ent-toast-close" aria-label={t('common.close')}>
         <X size={14} />
       </button>
     </div>
@@ -118,6 +119,7 @@ function InviteModal({
   onClose: () => void
   onInvited: (msg: string) => void
 }) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'RECRUITER' | 'ADMIN'>('RECRUITER')
   const [error, setError] = useState('')
@@ -128,7 +130,7 @@ function InviteModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) {
-      setError('Email is required')
+      setError(t('entreprise.invite.emailRequired'))
       return
     }
 
@@ -144,15 +146,15 @@ function InviteModal({
       const data = await res.json()
 
       if (res.ok && data.success) {
-        onInvited(`Invitation sent to ${email}`)
+        onInvited(t('entreprise.invite.inviteSentTo', { email }))
         setEmail('')
         setRole('RECRUITER')
         onClose()
       } else {
-        setError(data.error?.message ?? 'Failed to send invitation')
+        setError(data.error?.message ?? t('entreprise.invite.sendFailed'))
       }
     } catch {
-      setError('Network error. Please try again.')
+      setError(t('entreprise.invite.networkError'))
     } finally {
       setLoading(false)
     }
@@ -165,8 +167,8 @@ function InviteModal({
           <div className="ent-modal-icon">
             <Mail size={20} strokeWidth={1.8} />
           </div>
-          <h3>Invite a team member</h3>
-          <button className="ent-modal-close" onClick={onClose} aria-label="Close">
+          <h3>{t('entreprise.invite.title')}</h3>
+          <button className="ent-modal-close" onClick={onClose} aria-label={t('common.close')}>
             <X size={18} />
           </button>
         </div>
@@ -180,7 +182,7 @@ function InviteModal({
           )}
 
           <div className="ent-field">
-            <label>Email address</label>
+            <label>{t('entreprise.invite.emailLabel')}</label>
             <input
               type="email"
               value={email}
@@ -188,27 +190,27 @@ function InviteModal({
                 setEmail(e.target.value)
                 setError('')
               }}
-              placeholder="colleague@company.com"
+              placeholder={t('entreprise.invite.emailPlaceholder')}
               autoFocus
             />
           </div>
 
           <div className="ent-field">
-            <label>Role</label>
+            <label>{t('entreprise.invite.roleLabel')}</label>
             <div className="ent-role-pills">
               <button
                 type="button"
                 className={`ent-role-pill ${role === 'RECRUITER' ? 'ent-role-pill--active' : ''}`}
                 onClick={() => setRole('RECRUITER')}
               >
-                <ShieldOff size={14} /> Recruiter
+                <ShieldOff size={14} /> {t('entreprise.invite.recruiter')}
               </button>
               <button
                 type="button"
                 className={`ent-role-pill ${role === 'ADMIN' ? 'ent-role-pill--active' : ''}`}
                 onClick={() => setRole('ADMIN')}
               >
-                <Shield size={14} /> Admin
+                <Shield size={14} /> {t('entreprise.invite.admin')}
               </button>
             </div>
           </div>
@@ -216,11 +218,11 @@ function InviteModal({
           <button type="submit" disabled={loading} className="ent-btn ent-btn--primary ent-btn--full">
             {loading ? (
               <>
-                <Loader2 size={16} className="ent-spin" /> Sending…
+                <Loader2 size={16} className="ent-spin" /> {t('entreprise.invite.sending')}
               </>
             ) : (
               <>
-                <UserPlus size={16} /> Send Invitation
+                <UserPlus size={16} /> {t('entreprise.invite.sendButton')}
               </>
             )}
           </button>
@@ -236,6 +238,7 @@ function ConfirmModal({
   title,
   message,
   confirmLabel,
+  cancelLabel,
   danger,
   loading,
   onConfirm,
@@ -245,6 +248,7 @@ function ConfirmModal({
   title: string
   message: string
   confirmLabel: string
+  cancelLabel: string
   danger?: boolean
   loading: boolean
   onConfirm: () => void
@@ -265,7 +269,7 @@ function ConfirmModal({
           <p className="ent-confirm-text">{message}</p>
           <div className="ent-confirm-actions">
             <button className="ent-btn ent-btn--ghost" onClick={onCancel} disabled={loading}>
-              Cancel
+              {cancelLabel}
             </button>
             <button
               className={`ent-btn ${danger ? 'ent-btn--danger' : 'ent-btn--primary'}`}
@@ -287,6 +291,7 @@ function ConfirmModal({
    ══════════════════════════════════════════════════════════════════════════ */
 export default function EntreprisePage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   /* ── state ── */
   const [members, setMembers] = useState<Member[]>([])
@@ -340,11 +345,11 @@ export default function EntreprisePage() {
         setPendingInvites(data.data.pendingInvites ?? [])
       }
     } catch {
-      setToast({ message: 'Failed to load team members', type: 'error' })
+      setToast({ message: t('entreprise.team.loadFailed'), type: 'error' })
     } finally {
       setLoadingMembers(false)
     }
-  }, [navigate])
+  }, [navigate, t])
 
   const fetchOrg = useCallback(async () => {
     setLoadingOrg(true)
@@ -362,11 +367,11 @@ export default function EntreprisePage() {
         setOrgSlug(data.data.slug)
       }
     } catch {
-      setToast({ message: 'Failed to load organisation info', type: 'error' })
+      setToast({ message: t('entreprise.org.loadFailed'), type: 'error' })
     } finally {
       setLoadingOrg(false)
     }
-  }, [navigate])
+  }, [navigate, t])
 
   useEffect(() => {
     fetchMembers()
@@ -400,9 +405,18 @@ export default function EntreprisePage() {
 
     setConfirm({
       open: true,
-      title: `${action === 'promote' ? 'Promote' : 'Demote'} ${member.firstName}?`,
-      message: `Change ${member.firstName} ${member.lastName}'s role from ${member.role} to ${newRole}?`,
-      confirmLabel: action === 'promote' ? 'Promote to Admin' : 'Demote to Recruiter',
+      title: action === 'promote'
+        ? t('entreprise.confirm.promoteTitle', { name: member.firstName })
+        : t('entreprise.confirm.demoteTitle', { name: member.firstName }),
+      message: t('entreprise.confirm.roleChangeMessage', {
+        firstName: member.firstName,
+        lastName: member.lastName,
+        fromRole: member.role,
+        toRole: newRole,
+      }),
+      confirmLabel: action === 'promote'
+        ? t('entreprise.confirm.promoteConfirm')
+        : t('entreprise.confirm.demoteConfirm'),
       danger: action === 'demote',
       action: async () => {
         const res = await fetch(`${API_BASE_URL}/organisation/members/${member.id}/role`, {
@@ -412,7 +426,7 @@ export default function EntreprisePage() {
         })
         const data = await res.json()
         if (res.ok && data.success) {
-          setToast({ message: `${member.firstName}'s role updated to ${newRole}`, type: 'success' })
+          setToast({ message: t('entreprise.confirm.roleUpdated', { name: member.firstName, role: newRole }), type: 'success' })
 
           // Detect self-demotion
           let isSelfDemotion = false
@@ -438,7 +452,7 @@ export default function EntreprisePage() {
             fetchMembers()
           }
         } else {
-          setToast({ message: data.error?.message ?? 'Failed to update role', type: 'error' })
+          setToast({ message: data.error?.message ?? t('entreprise.confirm.roleUpdateFailed'), type: 'error' })
         }
       },
     })
@@ -447,9 +461,9 @@ export default function EntreprisePage() {
   async function handleDeactivate(member: Member) {
     setConfirm({
       open: true,
-      title: `Remove ${member.firstName}?`,
-      message: `This will deactivate ${member.firstName} ${member.lastName}'s account. They will no longer be able to log in and their active sessions will be terminated immediately. This action cannot be undone.`,
-      confirmLabel: 'Remove Member',
+      title: t('entreprise.confirm.removeTitle', { name: member.firstName }),
+      message: t('entreprise.confirm.removeMessage', { firstName: member.firstName, lastName: member.lastName }),
+      confirmLabel: t('entreprise.confirm.removeConfirm'),
       danger: true,
       action: async () => {
         const res = await fetch(`${API_BASE_URL}/organisation/members/${member.id}`, {
@@ -458,10 +472,10 @@ export default function EntreprisePage() {
         })
         const data = await res.json()
         if (res.ok && data.success) {
-          setToast({ message: `${member.firstName} has been deactivated`, type: 'success' })
+          setToast({ message: t('entreprise.confirm.deactivated', { name: member.firstName }), type: 'success' })
           fetchMembers()
         } else {
-          setToast({ message: data.error?.message ?? 'Failed to deactivate member', type: 'error' })
+          setToast({ message: data.error?.message ?? t('entreprise.confirm.deactivateFailed'), type: 'error' })
         }
       },
     })
@@ -472,7 +486,7 @@ export default function EntreprisePage() {
     try {
       await confirm.action()
     } catch {
-      setToast({ message: 'An unexpected error occurred', type: 'error' })
+      setToast({ message: t('entreprise.confirm.unexpectedError'), type: 'error' })
     } finally {
       setConfirmLoading(false)
       setConfirm((c) => ({ ...c, open: false }))
@@ -491,7 +505,7 @@ export default function EntreprisePage() {
       if (orgSlug !== org?.slug) body.slug = orgSlug
 
       if (Object.keys(body).length === 0) {
-        setToast({ message: 'No changes to save', type: 'error' })
+        setToast({ message: t('entreprise.org.noChanges'), type: 'error' })
         setSavingOrg(false)
         return
       }
@@ -507,14 +521,14 @@ export default function EntreprisePage() {
         setOrg(data.data)
         setOrgName(data.data.name)
         setOrgSlug(data.data.slug)
-        setToast({ message: 'Organisation updated successfully', type: 'success' })
+        setToast({ message: t('entreprise.org.updated'), type: 'success' })
       } else if (data.error?.code === 'SLUG_TAKEN') {
-        setSlugError('This slug is already taken by another organisation')
+        setSlugError(t('entreprise.org.slugTaken'))
       } else {
-        setToast({ message: data.error?.message ?? 'Failed to update organisation', type: 'error' })
+        setToast({ message: data.error?.message ?? t('entreprise.org.updateFailed'), type: 'error' })
       }
     } catch {
-      setToast({ message: 'Network error. Please try again.', type: 'error' })
+      setToast({ message: t('entreprise.org.networkError'), type: 'error' })
     } finally {
       setSavingOrg(false)
     }
@@ -536,33 +550,33 @@ export default function EntreprisePage() {
               <Users size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <h2 className="ent-section-title">Team Members</h2>
+              <h2 className="ent-section-title">{t('entreprise.team.title')}</h2>
               <p className="ent-section-sub">
-                {activeMembers.length} active member{activeMembers.length !== 1 ? 's' : ''}
+                {activeMembers.length} {t('entreprise.team.activeCount', { count: activeMembers.length, plural: activeMembers.length !== 1 ? 's' : '' })}
               </p>
             </div>
           </div>
           <button className="ent-btn ent-btn--primary" onClick={() => setInviteOpen(true)}>
-            <UserPlus size={16} /> Invite Member
+            <UserPlus size={16} /> {t('entreprise.team.inviteButton')}
           </button>
         </div>
 
         {loadingMembers ? (
           <div className="ent-loading">
             <Loader2 size={24} className="ent-spin" />
-            <span>Loading members…</span>
+            <span>{t('entreprise.team.loadingMembers')}</span>
           </div>
         ) : (
           <div className="ent-table-wrap">
             <table className="ent-table">
               <thead>
                 <tr>
-                  <th>Member</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Joined</th>
-                  <th>Status</th>
-                  <th className="ent-th-actions">Actions</th>
+                  <th>{t('entreprise.team.table.member')}</th>
+                  <th>{t('entreprise.team.table.email')}</th>
+                  <th>{t('entreprise.team.table.role')}</th>
+                  <th>{t('entreprise.team.table.joined')}</th>
+                  <th>{t('entreprise.team.table.status')}</th>
+                  <th className="ent-th-actions">{t('entreprise.team.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -583,25 +597,25 @@ export default function EntreprisePage() {
                     <td>
                       <span className={`ent-badge ${m.role === 'ADMIN' ? 'ent-badge--purple' : 'ent-badge--blue'}`}>
                         {m.role === 'ADMIN' ? <Shield size={12} /> : <ShieldOff size={12} />}
-                        {m.role}
+                        {m.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
                     <td className="ent-td-date">{formatDate(m.createdAt)}</td>
                     <td>
-                      <span className="ent-badge ent-badge--green">Active</span>
+                      <span className="ent-badge ent-badge--green">{t('entreprise.team.status.active')}</span>
                     </td>
                     <td className="ent-td-actions">
                       <button
                         className="ent-action-btn ent-action-btn--role"
                         onClick={() => handleRoleChange(m)}
-                        title={m.role === 'ADMIN' ? 'Demote to Recruiter' : 'Promote to Admin'}
+                        title={m.role === 'ADMIN' ? t('entreprise.team.demoteToRecruiter') : t('entreprise.team.promoteToAdmin')}
                       >
                         {m.role === 'ADMIN' ? <ShieldOff size={14} /> : <Shield size={14} />}
                       </button>
                       <button
                         className="ent-action-btn ent-action-btn--remove"
                         onClick={() => handleDeactivate(m)}
-                        title="Deactivate member"
+                        title={t('entreprise.team.deactivateMember')}
                       >
                         <UserX size={14} />
                       </button>
@@ -616,20 +630,20 @@ export default function EntreprisePage() {
                           <Clock size={14} />
                         </div>
                         <span className="ent-member-name" style={{ fontStyle: 'italic', opacity: 0.7 }}>
-                          Invitation envoyée
+                          {t('entreprise.team.inviteSent')}
                         </span>
                       </div>
                     </td>
                     <td className="ent-td-email">{inv.email}</td>
                     <td>
                       <span className={`ent-badge ${inv.role === 'ADMIN' ? 'ent-badge--purple' : 'ent-badge--blue'}`}>
-                        {inv.role}
+                        {inv.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
                     <td className="ent-td-date">{formatDate(inv.createdAt)}</td>
                     <td>
                       <span className="ent-badge ent-badge--amber">
-                        <Clock size={10} /> Pending
+                        <Clock size={10} /> {t('entreprise.team.status.pending')}
                       </span>
                     </td>
                     <td className="ent-td-actions">—</td>
@@ -651,13 +665,13 @@ export default function EntreprisePage() {
                     <td className="ent-td-email">{m.email}</td>
                     <td>
                       <span className="ent-badge ent-badge--gray">
-                        {m.role}
+                        {m.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
                     <td className="ent-td-date">{formatDate(m.createdAt)}</td>
                     <td>
                       <span className={`ent-badge ${m.departureStatus === 'QUIT' ? 'ent-badge--amber' : 'ent-badge--red'}`}>
-                        {m.departureStatus === 'QUIT' ? 'Quit' : 'Deactivated'}
+                        {m.departureStatus === 'QUIT' ? t('entreprise.team.status.quit') : t('entreprise.team.status.deactivated')}
                       </span>
                     </td>
                     <td className="ent-td-actions">—</td>
@@ -677,8 +691,8 @@ export default function EntreprisePage() {
               <Building2 size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <h2 className="ent-section-title">Organisation Information</h2>
-              <p className="ent-section-sub">Manage your organisation details</p>
+              <h2 className="ent-section-title">{t('entreprise.org.title')}</h2>
+              <p className="ent-section-sub">{t('entreprise.org.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -686,23 +700,23 @@ export default function EntreprisePage() {
         {loadingOrg ? (
           <div className="ent-loading">
             <Loader2 size={24} className="ent-spin" />
-            <span>Loading organisation…</span>
+            <span>{t('entreprise.org.loading')}</span>
           </div>
         ) : org ? (
           <form onSubmit={handleSaveOrg} className="ent-org-form">
             <div className="ent-org-grid">
               <div className="ent-field">
-                <label>Organisation Name</label>
+                <label>{t('entreprise.org.nameLabel')}</label>
                 <input
                   type="text"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Acme Corp"
+                  placeholder={t('entreprise.org.namePlaceholder')}
                 />
               </div>
 
               <div className="ent-field">
-                <label>Slug</label>
+                <label>{t('entreprise.org.slugLabel')}</label>
                 <input
                   type="text"
                   value={orgSlug}
@@ -710,7 +724,7 @@ export default function EntreprisePage() {
                     setOrgSlug(e.target.value)
                     setSlugError('')
                   }}
-                  placeholder="acme-corp"
+                  placeholder={t('entreprise.org.slugPlaceholder')}
                 />
                 {slugError && (
                   <p className="ent-field-error">
@@ -722,11 +736,11 @@ export default function EntreprisePage() {
 
             <div className="ent-org-info-row">
               <div className="ent-org-info-item">
-                <span className="ent-org-info-label">Plan</span>
+                <span className="ent-org-info-label">{t('entreprise.org.planLabel')}</span>
                 <span className="ent-badge ent-badge--amber">{org.plan}</span>
               </div>
               <div className="ent-org-info-item">
-                <span className="ent-org-info-label">Created</span>
+                <span className="ent-org-info-label">{t('entreprise.org.createdLabel')}</span>
                 <span className="ent-org-info-value">{formatDate(org.createdAt)}</span>
               </div>
             </div>
@@ -734,11 +748,11 @@ export default function EntreprisePage() {
             <button type="submit" disabled={savingOrg} className="ent-btn ent-btn--primary">
               {savingOrg ? (
                 <>
-                  <Loader2 size={16} className="ent-spin" /> Saving…
+                  <Loader2 size={16} className="ent-spin" /> {t('entreprise.org.saving')}
                 </>
               ) : (
                 <>
-                  <Save size={16} /> Save Changes
+                  <Save size={16} /> {t('entreprise.org.saveButton')}
                 </>
               )}
             </button>
@@ -754,8 +768,8 @@ export default function EntreprisePage() {
               <Sparkles size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <h2 className="ent-section-title">Utilisation IA ce mois</h2>
-              <p className="ent-section-sub">Token consumption for the current month</p>
+              <h2 className="ent-section-title">{t('entreprise.aiUsage.title')}</h2>
+              <p className="ent-section-sub">{t('entreprise.aiUsage.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -763,12 +777,12 @@ export default function EntreprisePage() {
         {aiUsageLoading ? (
           <div className="ent-loading">
             <Loader2 size={24} className="ent-spin" />
-            <span>Loading usage data…</span>
+            <span>{t('entreprise.aiUsage.loading')}</span>
           </div>
         ) : aiUsageUnavailable ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
             <AlertTriangle size={20} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-            Données non disponibles
+            {t('entreprise.aiUsage.unavailable')}
           </div>
         ) : aiUsage ? (
           <div style={{ padding: '1.25rem' }}>
@@ -780,7 +794,7 @@ export default function EntreprisePage() {
               marginBottom: '1rem',
             }}>
               <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted, #94a3b8)', marginBottom: 4 }}>
-                Total Tokens
+                {t('entreprise.aiUsage.totalTokens')}
               </p>
               <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary, #e2e8f0)' }}>
                 {new Intl.NumberFormat('fr-FR').format(aiUsage.totalTokens)}
@@ -790,10 +804,10 @@ export default function EntreprisePage() {
             {/* Feature breakdown */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
               {[
-                { label: 'CV Parsing', value: aiUsage.cvParsingTokens, accent: '#6366f1' },
-                { label: 'CV Scoring', value: aiUsage.cvScoringTokens, accent: '#8b5cf6' },
-                { label: 'Enrichment', value: aiUsage.cvEnrichmentTokens, accent: '#f59e0b' },
-                { label: 'Chat', value: aiUsage.chatTokens, accent: '#10b981' },
+                { label: t('entreprise.aiUsage.cvParsing'), value: aiUsage.cvParsingTokens, accent: '#6366f1' },
+                { label: t('entreprise.aiUsage.cvScoring'), value: aiUsage.cvScoringTokens, accent: '#8b5cf6' },
+                { label: t('entreprise.aiUsage.enrichment'), value: aiUsage.cvEnrichmentTokens, accent: '#f59e0b' },
+                { label: t('entreprise.aiUsage.chat'), value: aiUsage.chatTokens, accent: '#10b981' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -833,7 +847,7 @@ export default function EntreprisePage() {
                   color: 'var(--text-primary, #e2e8f0)',
                   marginBottom: '1rem',
                 }}>
-                  Historique d'utilisation des tokens (12 derniers mois)
+                  {t('entreprise.aiUsage.historyTitle')}
                 </h4>
                 <div style={{ width: '100%', height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -880,11 +894,11 @@ export default function EntreprisePage() {
                                 ))}
                               </div>
                               <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
-                                <span>Total Tokens</span>
+                                <span>{t('entreprise.aiUsage.totalTokens')}</span>
                                 <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
                               </div>
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
-                                <span>Appels d'API</span>
+                                <span>{t('entreprise.aiUsage.apiCalls')}</span>
                                 <span>{payload[0]?.payload?.callCount ?? 0}</span>
                               </div>
                             </div>
@@ -898,10 +912,10 @@ export default function EntreprisePage() {
                         iconSize={8}
                         wrapperStyle={{ fontSize: 12 }}
                       />
-                      <Bar name="CV Parsing" dataKey="cvParsingTokens" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
-                      <Bar name="CV Scoring" dataKey="cvScoringTokens" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
-                      <Bar name="Enrichment" dataKey="cvEnrichmentTokens" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
-                      <Bar name="Chat" dataKey="chatTokens" stackId="a" fill="#10b981" radius={[3, 3, 0, 0]} />
+                      <Bar name={t('entreprise.aiUsage.cvParsing')} dataKey="cvParsingTokens" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+                      <Bar name={t('entreprise.aiUsage.cvScoring')} dataKey="cvScoringTokens" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                      <Bar name={t('entreprise.aiUsage.enrichment')} dataKey="cvEnrichmentTokens" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                      <Bar name={t('entreprise.aiUsage.chat')} dataKey="chatTokens" stackId="a" fill="#10b981" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -910,7 +924,7 @@ export default function EntreprisePage() {
           </div>
         ) : (
           <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
-            Aucune utilisation ce mois
+            {t('entreprise.aiUsage.noUsage')}
           </div>
         )}
       </section>
@@ -930,6 +944,7 @@ export default function EntreprisePage() {
         title={confirm.title}
         message={confirm.message}
         confirmLabel={confirm.confirmLabel}
+        cancelLabel={t('entreprise.confirm.cancel')}
         danger={confirm.danger}
         loading={confirmLoading}
         onConfirm={handleConfirmAction}

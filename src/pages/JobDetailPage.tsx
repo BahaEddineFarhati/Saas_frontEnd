@@ -19,6 +19,8 @@ import {
   Download,
 } from "lucide-react";
 
+import { useTranslation } from "../i18n/I18nContext";
+
 // ── Config ──────────────────────────────────────────────
 const ALLOWED_FILE_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -49,17 +51,17 @@ function getVerdictBadgeColor(verdict: string): { bg: string; text: string } {
   }
 }
 
-/** Get verdict label in French */
-function getVerdictLabel(verdict: string): string {
+/** Get verdict label */
+function getVerdictLabel(verdict: string, t: (key: string) => string): string {
   switch (verdict) {
     case "STRONG_FIT":
-      return "Très bon fit";
+      return t("jobDetail.verdicts.STRONG_FIT");
     case "GOOD_FIT":
-      return "Bon fit";
+      return t("jobDetail.verdicts.GOOD_FIT");
     case "PARTIAL_FIT":
-      return "Partiellement adéquat";
+      return t("jobDetail.verdicts.PARTIAL_FIT");
     case "WEAK_FIT":
-      return "Peu adéquat";
+      return t("jobDetail.verdicts.WEAK_FIT");
     default:
       return verdict;
   }
@@ -145,7 +147,7 @@ function formatDateRelative(dateString: string): string {
 
 // ── File validation helpers ─────────────────────────────
 
-function validateFiles(files: File[]): {
+function validateFiles(files: File[], t: (key: string, params?: Record<string, string | number>) => string): {
   valid: File[];
   errors: FileValidationError[];
 } {
@@ -156,7 +158,7 @@ function validateFiles(files: File[]): {
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       errors.push({
         fileName: file.name,
-        reason: `Type de fichier non supporté. Acceptés: PDF, DOCX`,
+        reason: t("jobDetail.fileTypeNotSupported"),
       });
       return;
     }
@@ -164,7 +166,7 @@ function validateFiles(files: File[]): {
     if (file.size > MAX_FILE_SIZE) {
       errors.push({
         fileName: file.name,
-        reason: `Fichier trop volumineux (${(file.size / (1024 * 1024)).toFixed(2)}MB > 5MB)`,
+        reason: t("jobDetail.fileTooLarge", { size: (file.size / (1024 * 1024)).toFixed(2) }),
       });
       return;
     }
@@ -183,6 +185,7 @@ function formatFileSize(bytes: number): string {
 
 // ── Component ───────────────────────────────────────────
 export default function JobDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -583,7 +586,7 @@ export default function JobDetailPage() {
 
   const addFiles = (files: File[]) => {
     setFileValidationErrors([]);
-    const { valid, errors } = validateFiles(files);
+    const { valid, errors } = validateFiles(files, t);
 
     if (errors.length > 0) {
       setFileValidationErrors(errors);
@@ -1073,14 +1076,13 @@ export default function JobDetailPage() {
           <div className="jd-not-found-icon">
             <XCircle size={48} strokeWidth={1.4} />
           </div>
-          <h2 className="jd-not-found-title">Offre introuvable</h2>
+          <h2 className="jd-not-found-title">{t("jobDetail.notFoundTitle")}</h2>
           <p className="jd-not-found-body">
-            Cette offre d'emploi n'existe pas, a été supprimée ou appartient à
-            une autre organisation.
+            {t("jobDetail.notFoundBody")}
           </p>
           <Link to="/candidatures" className="cand-btn-primary" style={{ marginTop: "20px" }}>
             <ArrowLeft size={14} strokeWidth={2.4} />
-            <span>Retour aux offres</span>
+            <span>{t("jobDetail.backToJobs")}</span>
           </Link>
         </div>
       </div>
@@ -1096,13 +1098,13 @@ export default function JobDetailPage() {
         <div className="jd-back-row">
           <Link to="/candidatures" className="jd-back-link">
             <ArrowLeft size={15} strokeWidth={2} />
-            <span>Retour aux offres</span>
+            <span>{t("jobDetail.backToJobs")}</span>
           </Link>
         </div>
         <div className="cand-error-alert">
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <AlertCircle size={16} />
-            <span>{error || "Impossible de charger l'offre."}</span>
+            <span>{error || t("jobDetail.loadError")}</span>
           </div>
         </div>
       </div>
@@ -1118,7 +1120,7 @@ export default function JobDetailPage() {
       <div className="jd-back-row">
         <Link to="/candidatures" className="jd-back-link" id="back-to-list">
           <ArrowLeft size={15} strokeWidth={2} />
-          <span>Retour aux offres</span>
+          <span>{t("jobDetail.backToJobs")}</span>
         </Link>
       </div>
 
@@ -1130,17 +1132,18 @@ export default function JobDetailPage() {
             <div className="jd-meta-row">
               <span className="jd-meta-item">
                 <Calendar size={13} strokeWidth={2} />
-                <span>Créé le {formatDate(job.createdAt ?? "")}</span>
+                <span>{t("jobDetail.createdOn", { date: formatDate(job.createdAt ?? "") })}</span>
               </span>
               <span className="jd-meta-item">
                 <User size={13} strokeWidth={2} />
-                <span>Recruteur</span>
+                <span>{t("jobDetail.recruiter")}</span>
               </span>
               <span className="jd-meta-item">
                 <Users size={13} strokeWidth={2} />
                 <span>
-                  {job.candidateCount}{" "}
-                  {job.candidateCount === 1 ? "candidat" : "candidats"}
+                  {job.candidateCount === 1
+                    ? t("jobDetail.candidateCount", { count: job.candidateCount })
+                    : t("jobDetail.candidateCountPlural", { count: job.candidateCount })}
                 </span>
               </span>
             </div>
@@ -1151,7 +1154,7 @@ export default function JobDetailPage() {
               className={`db-badge jd-status-badge ${job.status === "OPEN" ? "badge--green" : "badge--gray"
                 }`}
             >
-              {job.status === "OPEN" ? "Ouverte" : "Clôturée"}
+              {job.status === "OPEN" ? t("jobDetail.statusOpen") : t("jobDetail.statusClosed")}
             </span>
 
             {canClose && (
@@ -1161,7 +1164,7 @@ export default function JobDetailPage() {
                 id="btn-close-job"
               >
                 <Lock size={14} strokeWidth={2.2} />
-                <span>Fermer cette offre</span>
+                <span>{t("jobDetail.closeJob")}</span>
               </button>
             )}
             {canDelete && (
@@ -1172,7 +1175,7 @@ export default function JobDetailPage() {
                 style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}
               >
                 <Trash2 size={14} />
-                <span>Supprimer</span>
+                <span>{t("jobDetail.deleteJob")}</span>
               </button>
             )}
           </div>
@@ -1200,12 +1203,9 @@ export default function JobDetailPage() {
             <div className="jd-confirm-icon">
               <Lock size={24} strokeWidth={1.8} />
             </div>
-            <h3 className="jd-confirm-title">Clôturer cette offre ?</h3>
+            <h3 className="jd-confirm-title">{t("jobDetail.closeConfirmTitle")}</h3>
             <p className="jd-confirm-body">
-              Cette action changera le statut de l'offre «&nbsp;
-              <strong>{job.title}</strong>&nbsp;» en <strong>Clôturée</strong>.
-              Les candidats existants seront conservés. Cette action est
-              irréversible.
+              {t("jobDetail.closeConfirmBody", { title: job.title })}
             </p>
             <div className="jd-confirm-actions">
               <button
@@ -1213,7 +1213,7 @@ export default function JobDetailPage() {
                 onClick={() => setShowCloseConfirm(false)}
                 disabled={isClosing}
               >
-                Annuler
+                {t("common.cancel")}
               </button>
               <button
                 className="jd-btn-confirm-close"
@@ -1224,12 +1224,12 @@ export default function JobDetailPage() {
                 {isClosing ? (
                   <>
                     <Loader2 size={14} className="cand-skeleton-pulse" />
-                    <span>Clôture...</span>
+                    <span>{t("jobDetail.closing")}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={14} strokeWidth={2.2} />
-                    <span>Confirmer la clôture</span>
+                    <span>{t("jobDetail.confirmClose")}</span>
                   </>
                 )}
               </button>
@@ -1246,7 +1246,7 @@ export default function JobDetailPage() {
             strokeWidth={2}
             style={{ color: "var(--lu-accent)" }}
           />
-          <h3 className="jd-section-title">Description du profil recherché</h3>
+          <h3 className="jd-section-title">{t("jobDetail.profileDescTitle")}</h3>
         </div>
         <div className="jd-description-content">
           {job.profileDescription.split("\n").map((paragraph, i) => (
@@ -1267,7 +1267,7 @@ export default function JobDetailPage() {
               style={{ color: "var(--lu-accent)" }}
             />
             <h3 className="jd-section-title">
-              Candidats{" "}
+              {t("jobDetail.candidatesTitle")}{" "}
               <span className="jd-section-count">({candidates.length})</span>
             </h3>
           </div>
@@ -1276,8 +1276,8 @@ export default function JobDetailPage() {
             disabled={!scoringStatus || scoringStatus.scoredCount === 0 || isExporting}
             title={
               !scoringStatus || scoringStatus.scoredCount === 0
-                ? "Aucun résultat à exporter"
-                : "Exporter les résultats en PDF"
+                ? t("jobDetail.noResultsToExport")
+                : t("jobDetail.exportPdfTooltip")
             }
             style={{
               display: "inline-flex",
@@ -1312,7 +1312,7 @@ export default function JobDetailPage() {
             ) : (
               <Download size={14} />
             )}
-            {isExporting ? "Export en cours…" : "Exporter en PDF"}
+            {isExporting ? t("jobDetail.exportingPdf") : t("jobDetail.exportPdf")}
           </button>
         </div>
 
@@ -1322,7 +1322,7 @@ export default function JobDetailPage() {
             <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
               <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <strong>Fichiers non valides:</strong>
+                <strong>{t("jobDetail.invalidFiles")}</strong>
                 <ul style={{ marginTop: "8px", marginLeft: "20px", fontSize: "0.9em" }}>
                   {fileValidationErrors.map((err, i) => (
                     <li key={i}>
@@ -1368,7 +1368,7 @@ export default function JobDetailPage() {
                   style={{ color: "var(--lu-accent)", flexShrink: 0 }}
                 />
                 <span style={{ fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-                  Analyse en cours... {scoringStatus.scoredCount} / {scoringStatus.totalCandidates} candidats scorés
+                  {t("jobDetail.analyzingProgress", { scored: scoringStatus.scoredCount, total: scoringStatus.totalCandidates })}
                 </span>
               </div>
             )}
@@ -1385,7 +1385,7 @@ export default function JobDetailPage() {
             >
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Verdict :
+                  {t("jobDetail.verdictFilterLabel")}
                 </label>
                 <select
                   value={verdictFilter}
@@ -1400,17 +1400,17 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="All">Tous</option>
-                  <option value="STRONG_FIT">Très bon fit</option>
-                  <option value="GOOD_FIT">Bon fit</option>
-                  <option value="PARTIAL_FIT">Partiellement adéquat</option>
-                  <option value="WEAK_FIT">Peu adéquat</option>
+                  <option value="All">{t("jobDetail.verdicts.all")}</option>
+                  <option value="STRONG_FIT">{t("jobDetail.verdicts.STRONG_FIT")}</option>
+                  <option value="GOOD_FIT">{t("jobDetail.verdicts.GOOD_FIT")}</option>
+                  <option value="PARTIAL_FIT">{t("jobDetail.verdicts.PARTIAL_FIT")}</option>
+                  <option value="WEAK_FIT">{t("jobDetail.verdicts.WEAK_FIT")}</option>
                 </select>
               </div>
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Statut :
+                  {t("jobDetail.statusFilterLabel")}
                 </label>
                 <select
                   value={statusFilter}
@@ -1425,20 +1425,20 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="All">Tous</option>
-                  <option value="PENDING">En attente</option>
-                  <option value="NEW">Nouveau</option>
-                  <option value="SHORTLISTED">Sélectionné</option>
-                  <option value="REJECTED">Rejeté</option>
-                  <option value="OFFERED">Offre</option>
-                  <option value="SCORED">Scoré</option>
-                  <option value="FAILED">Échoué</option>
+                  <option value="All">{t("jobDetail.statuses.all")}</option>
+                  <option value="PENDING">{t("jobDetail.statuses.PENDING")}</option>
+                  <option value="NEW">{t("jobDetail.statuses.NEW")}</option>
+                  <option value="SHORTLISTED">{t("jobDetail.statuses.SHORTLISTED")}</option>
+                  <option value="REJECTED">{t("jobDetail.statuses.REJECTED")}</option>
+                  <option value="OFFERED">{t("jobDetail.statuses.OFFERED")}</option>
+                  <option value="SCORED">{t("jobDetail.statuses.SCORED")}</option>
+                  <option value="FAILED">{t("jobDetail.statuses.FAILED")}</option>
                 </select>
               </div>
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Trier par :
+                  {t("jobDetail.sortByLabel")}
                 </label>
                 <select
                   value={sortBy}
@@ -1453,15 +1453,15 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="score">Score (décroissant)</option>
-                  <option value="name">Nom (A-Z)</option>
-                  <option value="uploadDate">Date d'upload (récent)</option>
+                  <option value="score">{t("jobDetail.sortScore")}</option>
+                  <option value="name">{t("jobDetail.sortName")}</option>
+                  <option value="uploadDate">{t("jobDetail.sortUploadDate")}</option>
                 </select>
               </div>
             </div>
 
             <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
-              Candidats ({totalCandidates} total)
+              {t("jobDetail.candidatesTitle")} ({totalCandidates} total)
             </h4>
             <div style={{ overflowX: "auto" }}>
               <table
@@ -1486,7 +1486,7 @@ export default function JobDetailPage() {
                         color: "var(--lu-text-secondary)",
                       }}
                     >
-                      Statut
+                      {t("jobDetail.table.status")}
                     </th>
                     <th
                       style={{
@@ -1496,7 +1496,7 @@ export default function JobDetailPage() {
                         color: "var(--lu-text-secondary)",
                       }}
                     >
-                      Nom du candidat
+                      {t("jobDetail.table.name")}
                     </th>
                     <th
                       style={{
@@ -1506,7 +1506,7 @@ export default function JobDetailPage() {
                         color: "var(--lu-text-secondary)",
                       }}
                     >
-                      Email
+                      {t("jobDetail.table.email")}
                     </th>
                     <th
                       style={{
@@ -1516,7 +1516,7 @@ export default function JobDetailPage() {
                         color: "var(--lu-text-secondary)",
                       }}
                     >
-                      Score
+                      {t("jobDetail.table.score")}
                     </th>
                     <th
                       style={{
@@ -1526,7 +1526,7 @@ export default function JobDetailPage() {
                         color: "var(--lu-text-secondary)",
                       }}
                     >
-                      Verdict
+                      {t("jobDetail.table.verdict")}
                     </th>
                     <th
                       style={{
@@ -1537,7 +1537,7 @@ export default function JobDetailPage() {
                         width: "80px",
                       }}
                     >
-                      Actions
+                      {t("jobDetail.table.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -1577,7 +1577,7 @@ export default function JobDetailPage() {
                                 className="cand-spinner"
                                 style={{ color: "var(--lu-accent)" }}
                               />
-                              <span style={{ fontSize: "0.9em" }}>PENDING</span>
+                              <span style={{ fontSize: "0.9em" }}>{t("jobDetail.statuses.PENDING")}</span>
                             </>
                           )}
                           {candidate.status === "SCORED" && (
@@ -1587,7 +1587,7 @@ export default function JobDetailPage() {
                                 style={{ color: "#22c55e" }}
                                 strokeWidth={2.5}
                               />
-                              <span style={{ fontSize: "0.9em", color: "#22c55e" }}>SCORED</span>
+                              <span style={{ fontSize: "0.9em", color: "#22c55e" }}>{t("jobDetail.statuses.SCORED")}</span>
                             </>
                           )}
                           {candidate.status === "FAILED" && (
@@ -1597,20 +1597,20 @@ export default function JobDetailPage() {
                                 style={{ color: "#ef4444" }}
                                 strokeWidth={2.5}
                               />
-                              <span style={{ fontSize: "0.9em", color: "#ef4444" }}>FAILED</span>
+                              <span style={{ fontSize: "0.9em", color: "#ef4444" }}>{t("jobDetail.statuses.FAILED")}</span>
                             </>
                           )}
                           {candidate.status === "NEW" && (
-                            <span style={{ fontSize: "0.9em" }}>NOUVEAU</span>
+                            <span style={{ fontSize: "0.9em" }}>{t("jobDetail.statuses.NEW")}</span>
                           )}
                           {candidate.status === "SHORTLISTED" && (
-                            <span style={{ fontSize: "0.9em", color: "#3b82f6" }}>SÉLECTIONNÉ</span>
+                            <span style={{ fontSize: "0.9em", color: "#3b82f6" }}>{t("jobDetail.statuses.SHORTLISTED")}</span>
                           )}
                           {candidate.status === "REJECTED" && (
-                            <span style={{ fontSize: "0.9em", color: "#ef4444" }}>REJETÉ</span>
+                            <span style={{ fontSize: "0.9em", color: "#ef4444" }}>{t("jobDetail.statuses.REJECTED")}</span>
                           )}
                           {candidate.status === "OFFERED" && (
-                            <span style={{ fontSize: "0.9em", color: "#22c55e" }}>OFFRE</span>
+                            <span style={{ fontSize: "0.9em", color: "#22c55e" }}>{t("jobDetail.statuses.OFFERED")}</span>
                           )}
                         </div>
                       </td>
@@ -1621,8 +1621,8 @@ export default function JobDetailPage() {
                           {candidate.parsedName || (
                             <span style={{ color: "var(--lu-text-tertiary)" }}>
                               {candidate.status === "PENDING"
-                                ? "Analyse en cours..."
-                                : "Non disponible"}
+                                ? t("jobDetail.analyzing")
+                                : t("jobDetail.notAvailable")}
                             </span>
                           )}
                         </div>
@@ -1693,7 +1693,7 @@ export default function JobDetailPage() {
                               ...getVerdictBadgeColor(candidate.verdict),
                             }}
                           >
-                            {getVerdictLabel(candidate.verdict)}
+                            {getVerdictLabel(candidate.verdict, t)}
                           </div>
                         ) : (
                           <div
@@ -1714,7 +1714,7 @@ export default function JobDetailPage() {
                             handleDeleteCandidate(candidate.id);
                           }}
                           className="cand-btn-danger"
-                          title="Supprimer le candidat"
+                          title={t("jobDetail.deleteCandidateTooltip")}
                           style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
                         >
                           <Trash2 size={14} />
@@ -1750,7 +1750,7 @@ export default function JobDetailPage() {
                     cursor: currentPage === 1 ? "not-allowed" : "pointer",
                   }}
                 >
-                  ← Précédent
+                  {t("jobDetail.previous")}
                 </button>
 
                 <div
@@ -1762,7 +1762,7 @@ export default function JobDetailPage() {
                     color: "var(--lu-text-secondary)",
                   }}
                 >
-                  <span>Page</span>
+                  <span>{t("jobDetail.page")}</span>
                   <input
                     type="number"
                     min={1}
@@ -1797,7 +1797,7 @@ export default function JobDetailPage() {
                     cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                   }}
                 >
-                  Suivant →
+                  {t("jobDetail.next")}
                 </button>
               </div>
             )}
@@ -1819,7 +1819,7 @@ export default function JobDetailPage() {
             >
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Verdict :
+                  {t("jobDetail.verdictFilterLabel")}
                 </label>
                 <select
                   value={verdictFilter}
@@ -1834,17 +1834,17 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="All">Tous</option>
-                  <option value="STRONG_FIT">Très bon fit</option>
-                  <option value="GOOD_FIT">Bon fit</option>
-                  <option value="PARTIAL_FIT">Partiellement adéquat</option>
-                  <option value="WEAK_FIT">Peu adéquat</option>
+                  <option value="All">{t("jobDetail.verdicts.all")}</option>
+                  <option value="STRONG_FIT">{t("jobDetail.verdicts.STRONG_FIT")}</option>
+                  <option value="GOOD_FIT">{t("jobDetail.verdicts.GOOD_FIT")}</option>
+                  <option value="PARTIAL_FIT">{t("jobDetail.verdicts.PARTIAL_FIT")}</option>
+                  <option value="WEAK_FIT">{t("jobDetail.verdicts.WEAK_FIT")}</option>
                 </select>
               </div>
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Statut :
+                  {t("jobDetail.statusFilterLabel")}
                 </label>
                 <select
                   value={statusFilter}
@@ -1859,20 +1859,20 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="All">Tous</option>
-                  <option value="PENDING">En attente</option>
-                  <option value="NEW">Nouveau</option>
-                  <option value="SHORTLISTED">Sélectionné</option>
-                  <option value="REJECTED">Rejeté</option>
-                  <option value="OFFERED">Offre</option>
-                  <option value="SCORED">Scoré</option>
-                  <option value="FAILED">Échoué</option>
+                  <option value="All">{t("jobDetail.statuses.all")}</option>
+                  <option value="PENDING">{t("jobDetail.statuses.PENDING")}</option>
+                  <option value="NEW">{t("jobDetail.statuses.NEW")}</option>
+                  <option value="SHORTLISTED">{t("jobDetail.statuses.SHORTLISTED")}</option>
+                  <option value="REJECTED">{t("jobDetail.statuses.REJECTED")}</option>
+                  <option value="OFFERED">{t("jobDetail.statuses.OFFERED")}</option>
+                  <option value="SCORED">{t("jobDetail.statuses.SCORED")}</option>
+                  <option value="FAILED">{t("jobDetail.statuses.FAILED")}</option>
                 </select>
               </div>
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
                 <label style={{ fontSize: "0.9em", fontWeight: 500, color: "var(--lu-text-secondary)" }}>
-                  Trier par :
+                  {t("jobDetail.sortByLabel")}
                 </label>
                 <select
                   value={sortBy}
@@ -1887,9 +1887,9 @@ export default function JobDetailPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="score">Score (décroissant)</option>
-                  <option value="name">Nom (A-Z)</option>
-                  <option value="uploadDate">Date d'upload (récent)</option>
+                  <option value="score">{t("jobDetail.sortScore")}</option>
+                  <option value="name">{t("jobDetail.sortName")}</option>
+                  <option value="uploadDate">{t("jobDetail.sortUploadDate")}</option>
                 </select>
               </div>
             </div>
@@ -1906,10 +1906,10 @@ export default function JobDetailPage() {
             >
               <Users size={32} strokeWidth={1.4} style={{ margin: "0 auto 12px", color: "var(--lu-text-tertiary)" }} />
               <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600, color: "var(--lu-text-secondary)" }}>
-                Aucun candidat trouvé
+                {t("jobDetail.noCandidatesFound")}
               </h4>
               <p style={{ margin: "0", fontSize: "0.9em", color: "var(--lu-text-tertiary)" }}>
-                Aucun candidat ne correspond aux filtres sélectionnés. Essayez de modifier vos critères.
+                {t("jobDetail.noCandidatesMatch")}
               </p>
             </div>
           </div>
@@ -1944,14 +1944,14 @@ export default function JobDetailPage() {
           />
           <h4 style={{ margin: "0 0 8px 0", fontSize: "1em", fontWeight: 600 }}>
             {candidates.length > 0
-              ? "Uploader d'autres CVs"
-              : "Glissez-déposez vos CVs ici"}
+              ? t("jobDetail.uploadMoreCVs")
+              : t("jobDetail.dragDropCVs")}
           </h4>
           <p style={{ margin: "0 0 12px 0", fontSize: "0.9em", color: "var(--lu-text-secondary)" }}>
-            ou cliquez pour sélectionner des fichiers
+            {t("jobDetail.orClickToSelect")}
           </p>
           <p style={{ margin: "0", fontSize: "0.85em", color: "var(--lu-text-tertiary)" }}>
-            PDF, DOCX • Max 5MB par fichier
+            {t("jobDetail.fileConstraints")}
           </p>
         </div>
 
@@ -1959,7 +1959,7 @@ export default function JobDetailPage() {
         {selectedFiles.length > 0 && (
           <div style={{ marginBottom: "16px", marginTop: "16px" }}>
             <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95em", fontWeight: 600 }}>
-              Fichiers sélectionnés ({selectedFiles.length})
+              {t("jobDetail.selectedFiles", { count: selectedFiles.length })}
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {selectedFiles.map(({ file, id }) => (
@@ -2018,12 +2018,12 @@ export default function JobDetailPage() {
               {isUploading ? (
                 <>
                   <Loader2 size={14} className="cand-skeleton-pulse" />
-                  <span>Analyse en cours...</span>
+                  <span>{t("jobDetail.analyzing")}</span>
                 </>
               ) : (
                 <>
                   <Upload size={14} strokeWidth={2.4} />
-                  <span>Analyser les CVs</span>
+                  <span>{t("jobDetail.analyzeCVs")}</span>
                 </>
               )}
             </button>
@@ -2062,8 +2062,7 @@ export default function JobDetailPage() {
               marginTop: "16px",
             }}
           >
-            Aucun candidat pour l'instant. Uploadez des CVs pour démarrer
-            le processus de sélection.
+            {t("jobDetail.noCandidatesYet")}
           </p>
         )}
 
@@ -2077,7 +2076,7 @@ export default function JobDetailPage() {
               marginTop: "16px",
             }}
           >
-            L'upload de CVs est désactivé pour les offres clôturées.
+            {t("jobDetail.uploadDisabledClosed")}
           </p>
         )}
 
@@ -2100,13 +2099,13 @@ export default function JobDetailPage() {
             />
             <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
               <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                <h3 style={{ marginTop: 0 }}>Supprimer le candidat ?</h3>
-                <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer ce candidat ? Cette action est irréversible.</p>
+                <h3 style={{ marginTop: 0 }}>{t("jobDetail.deleteCandidateTitle")}</h3>
+                <p style={{ marginTop: 8 }}>{t("jobDetail.deleteCandidateMessage")}</p>
                 {deleteCandidateError && <div className="cand-error-alert" style={{ marginTop: 12 }}>{deleteCandidateError}</div>}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-                  <button className="cand-btn-secondary" onClick={() => setCandidateToDelete(null)} disabled={isDeletingCandidate}>Annuler</button>
+                  <button className="cand-btn-secondary" onClick={() => setCandidateToDelete(null)} disabled={isDeletingCandidate}>{t("common.cancel")}</button>
                   <button className="cand-btn-danger" onClick={performDeleteCandidate} disabled={isDeletingCandidate}>
-                    {isDeletingCandidate ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                    {isDeletingCandidate ? <Loader2 size={14} className="cand-skeleton-pulse" /> : t("candidatures.deleteConfirm")}
                   </button>
                 </div>
               </div>
@@ -2123,12 +2122,12 @@ export default function JobDetailPage() {
             />
             <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
               <div style={{ width: 420, background: 'var(--lu-bg-page)', border: '1px solid var(--lu-border)', borderRadius: 8, padding: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                <h3 style={{ marginTop: 0 }}>Supprimer l'offre ?</h3>
-                <p style={{ marginTop: 8 }}>Voulez-vous vraiment supprimer l'offre « <strong>{job?.title}</strong> » et tous ses candidats ? Cette action est irréversible.</p>
+                <h3 style={{ marginTop: 0 }}>{t("jobDetail.deleteConfirmTitle")}</h3>
+                <p style={{ marginTop: 8 }}>{t("jobDetail.deleteConfirmBody", { title: job?.title })}</p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-                  <button className="cand-btn-secondary" onClick={() => setShowDeleteJobConfirm(false)} disabled={isDeletingJob}>Annuler</button>
+                  <button className="cand-btn-secondary" onClick={() => setShowDeleteJobConfirm(false)} disabled={isDeletingJob}>{t("common.cancel")}</button>
                   <button className="cand-btn-danger" onClick={performDeleteJob} disabled={isDeletingJob}>
-                    {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : 'Confirmer la suppression'}
+                    {isDeletingJob ? <Loader2 size={14} className="cand-skeleton-pulse" /> : t("candidatures.deleteConfirm")}
                   </button>
                 </div>
               </div>
@@ -2139,7 +2138,7 @@ export default function JobDetailPage() {
 
       {/* ── Last updated ── */}
       <p className="jd-updated-note">
-        Dernière mise à jour : {formatDateRelative(job.updatedAt ?? "")}
+        {t("jobDetail.lastUpdated", { date: formatDateRelative(job.updatedAt ?? "") })}
       </p>
     </div>
   );

@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { apiClient } from '../../api/apiClient';
+import { useTranslation } from '../../i18n/I18nContext';
 import {
   fetchUsageDetail,
   fetchUsageHistory,
@@ -63,6 +64,7 @@ const planColors: Record<string, string> = {
 
 export default function AdminOrgDetail() {
   const { orgId } = useParams<{ orgId: string }>();
+  const { t } = useTranslation();
   const [org, setOrg] = useState<OrgDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export default function AdminOrgDetail() {
       setOrg(data);
       setEditForm({ name: data.name, slug: data.slug, plan: data.plan });
     } catch {
-      setError('Impossible de charger les détails de l\'organisation.');
+      setError(t('admin.orgDetail.loadError'));
     } finally {
       setLoading(false);
     }
@@ -147,10 +149,10 @@ export default function AdminOrgDetail() {
       });
       setShowSuspend(false);
       setSuspendReason('');
-      setToast('Organisation suspendue avec succès.');
+      setToast(t('admin.orgDetail.suspendSuccess'));
       await fetchOrg();
     } catch {
-      setError('Échec de la suspension.');
+      setError(t('admin.orgDetail.suspendFailed'));
     } finally {
       setSuspending(false);
     }
@@ -161,10 +163,10 @@ export default function AdminOrgDetail() {
     try {
       setUnsuspending(true);
       await apiClient.post(`/admin/organisations/${orgId}/unsuspend`);
-      setToast('Suspension levée avec succès.');
+      setToast(t('admin.orgDetail.unsuspendSuccess'));
       await fetchOrg();
     } catch {
-      setError('Échec de la levée de suspension.');
+      setError(t('admin.orgDetail.unsuspendFailed'));
     } finally {
       setUnsuspending(false);
     }
@@ -178,13 +180,13 @@ export default function AdminOrgDetail() {
       setEditError(null);
       await apiClient.patch(`/admin/organisations/${orgId}`, editForm);
       setShowEdit(false);
-      setToast('Organisation mise à jour.');
+      setToast(t('admin.orgDetail.updateSuccess'));
       await fetchOrg();
     } catch (err: any) {
       const msg =
         err.response?.data?.error?.message ||
         err.response?.data?.message ||
-        'Erreur lors de la mise à jour.';
+        t('admin.orgDetail.updateError');
       setEditError(msg);
     } finally {
       setSaving(false);
@@ -222,7 +224,7 @@ export default function AdminOrgDetail() {
           to="/admin/organisations"
           className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-4"
         >
-          <ArrowLeft size={16} /> Retour aux organisations
+          <ArrowLeft size={16} /> {t('admin.orgDetail.backToList')}
         </Link>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-5 flex items-center gap-3">
           <AlertTriangle className="text-red-500 shrink-0" size={20} />
@@ -231,7 +233,7 @@ export default function AdminOrgDetail() {
             onClick={fetchOrg}
             className="ml-auto text-sm font-medium text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
           >
-            <RefreshCw size={14} /> Réessayer
+            <RefreshCw size={14} /> {t('admin.orgDetail.retry')}
           </button>
         </div>
       </div>
@@ -263,7 +265,7 @@ export default function AdminOrgDetail() {
         to="/admin/organisations"
         className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
       >
-        <ArrowLeft size={16} /> Retour aux organisations
+        <ArrowLeft size={16} /> {t('admin.orgDetail.backToList')}
       </Link>
 
       {/* Org Info Card */}
@@ -277,43 +279,43 @@ export default function AdminOrgDetail() {
               {org.suspended ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  Suspendu
+                  {t('admin.orgDetail.suspended')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Actif
+                  {t('admin.orgDetail.active')}
                 </span>
               )}
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span>
-                Slug : <span className="font-mono text-gray-700 dark:text-gray-300">{org.slug}</span>
+                {t('admin.orgDetail.slug')} : <span className="font-mono text-gray-700 dark:text-gray-300">{org.slug}</span>
               </span>
               <span
                 className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${planColors[org.plan] || planColors.FREE}`}
               >
                 {org.plan}
               </span>
-              <span>Créée le {formatDate(org.createdAt)}</span>
+              <span>{t('admin.orgDetail.createdAt', { date: formatDate(org.createdAt) })}</span>
             </div>
 
             {org.suspended && org.suspendedAt && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                Suspendue le {formatDate(org.suspendedAt)}
+                {t('admin.orgDetail.suspendedAt', { date: formatDate(org.suspendedAt) })}
                 {org.suspendedReason && (
                   <span className="ml-2 text-gray-500 dark:text-gray-400">
-                    — Raison : {org.suspendedReason}
+                    {t('admin.orgDetail.suspendedReason', { reason: org.suspendedReason })}
                   </span>
                 )}
               </p>
             )}
 
             <div className="flex gap-6 text-sm text-gray-600 dark:text-gray-400 pt-1">
-              <span>{org.users.length} utilisateur{org.users.length > 1 ? 's' : ''}</span>
-              <span>{org._count.jobOpenings} offre{org._count.jobOpenings > 1 ? 's' : ''} d'emploi</span>
-              <span>{org._count.candidates} CV{org._count.candidates > 1 ? 's' : ''} analysé{org._count.candidates > 1 ? 's' : ''}</span>
+              <span>{t('admin.orgDetail.userCount', { count: org.users.length, plural: org.users.length > 1 ? 's' : '' })}</span>
+              <span>{t('admin.orgDetail.jobCount', { count: org._count.jobOpenings, plural: org._count.jobOpenings > 1 ? 's' : '' })}</span>
+              <span>{t('admin.orgDetail.cvCount', { count: org._count.candidates, plural: org._count.candidates > 1 ? 's' : '' })}</span>
             </div>
           </div>
 
@@ -330,7 +332,7 @@ export default function AdminOrgDetail() {
                 ) : (
                   <Unlock size={14} />
                 )}
-                Lever la suspension
+                {t('admin.orgDetail.unsuspend')}
               </button>
             ) : (
               <button
@@ -338,7 +340,7 @@ export default function AdminOrgDetail() {
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
               >
                 <Lock size={14} />
-                Suspendre
+                {t('admin.orgDetail.suspend')}
               </button>
             )}
             <button
@@ -350,7 +352,7 @@ export default function AdminOrgDetail() {
               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition"
             >
               <Edit size={14} />
-              Modifier
+              {t('admin.orgDetail.edit')}
             </button>
           </div>
         </div>
@@ -361,7 +363,7 @@ export default function AdminOrgDetail() {
         <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center gap-2">
           <Sparkles size={18} className="text-indigo-500" />
           <h3 className="font-semibold text-gray-900 dark:text-white">
-            Utilisation IA
+            {t('admin.orgDetail.usageTitle')}
           </h3>
         </div>
 
@@ -372,7 +374,7 @@ export default function AdminOrgDetail() {
         ) : usageError ? (
           <div className="px-5 py-8 text-center text-sm text-red-500 dark:text-red-400 flex items-center justify-center gap-2">
             <AlertTriangle size={16} />
-            Impossible de charger les données d'utilisation.
+            {t('admin.orgDetail.usageLoadError')}
           </div>
         ) : (
           <div className="p-5 space-y-6">
@@ -402,11 +404,11 @@ export default function AdminOrgDetail() {
             {/* History Chart */}
             <div className="pt-2">
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
-                Historique d'utilisation des tokens (12 derniers mois)
+                {t('admin.orgDetail.usageHistory')}
               </h4>
               {usageHistory.length === 0 || usageHistory.every(h => h.totalTokens === 0) ? (
                 <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50/50 dark:bg-slate-900/10">
-                  Aucune donnée d'utilisation sur cette période.
+                  {t('admin.orgDetail.usageNoData')}
                 </div>
               ) : (
                 <div className="w-full h-[320px]">
@@ -451,11 +453,11 @@ export default function AdminOrgDetail() {
                                 ))}
                               </div>
                               <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
-                                <span>Total Tokens</span>
+                                <span>{t('admin.orgDetail.usageTotalTokens')}</span>
                                 <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
                               </div>
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
-                                <span>Appels d'API</span>
+                                <span>{t('admin.orgDetail.usageApiCalls')}</span>
                                 <span>{payload[0]?.payload?.callCount ?? 0}</span>
                               </div>
                             </div>
@@ -486,7 +488,7 @@ export default function AdminOrgDetail() {
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700">
           <h3 className="font-semibold text-gray-900 dark:text-white">
-            Membres ({org.users.length})
+            {t('admin.orgDetail.membersTitle', { count: org.users.length })}
           </h3>
         </div>
 
@@ -495,16 +497,16 @@ export default function AdminOrgDetail() {
             <thead>
               <tr className="bg-gray-50 dark:bg-slate-700/50 text-left">
                 <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">
-                  Nom
+                  {t('admin.orgDetail.table.name')}
                 </th>
                 <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">
-                  Email
+                  {t('admin.orgDetail.table.email')}
                 </th>
                 <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">
-                  Rôle
+                  {t('admin.orgDetail.table.role')}
                 </th>
                 <th className="px-5 py-3 font-medium text-gray-500 dark:text-gray-400">
-                  Statut
+                  {t('admin.orgDetail.table.status')}
                 </th>
               </tr>
             </thead>
@@ -535,12 +537,12 @@ export default function AdminOrgDetail() {
                     {u.isActive ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Actif
+                        {t('admin.orgDetail.memberActive')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        Inactif
+                        {t('admin.orgDetail.memberInactive')}
                       </span>
                     )}
                   </td>
@@ -552,7 +554,7 @@ export default function AdminOrgDetail() {
                     colSpan={4}
                     className="px-5 py-10 text-center text-gray-400 dark:text-gray-500"
                   >
-                    Aucun utilisateur dans cette organisation.
+                    {t('admin.orgDetail.noMembers')}
                   </td>
                 </tr>
               )}
@@ -567,7 +569,7 @@ export default function AdminOrgDetail() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 w-full max-w-md mx-4">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Suspendre cette organisation ?
+                {t('admin.orgDetail.suspendModalTitle')}
               </h2>
               <button
                 onClick={() => {
@@ -587,21 +589,19 @@ export default function AdminOrgDetail() {
                   className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"
                 />
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  Cette action va immédiatement déconnecter tous les utilisateurs de cette
-                  organisation. Ils ne pourront plus accéder à la plateforme tant que la
-                  suspension ne sera pas levée.
+                  {t('admin.orgDetail.suspendModalWarning')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Raison (optionnel)
+                  {t('admin.orgDetail.suspendReasonLabel')}
                 </label>
                 <textarea
                   value={suspendReason}
                   onChange={(e) => setSuspendReason(e.target.value)}
                   rows={3}
-                  placeholder="Raison interne de la suspension..."
+                  placeholder={t('admin.orgDetail.suspendReasonPlaceholder')}
                   className="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 />
               </div>
@@ -614,7 +614,7 @@ export default function AdminOrgDetail() {
                   }}
                   className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSuspend}
@@ -624,7 +624,7 @@ export default function AdminOrgDetail() {
                   {suspending && (
                     <RefreshCw size={14} className="animate-spin" />
                   )}
-                  Confirmer la suspension
+                  {t('admin.orgDetail.confirmSuspend')}
                 </button>
               </div>
             </div>
@@ -638,7 +638,7 @@ export default function AdminOrgDetail() {
           <div className="bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 w-full max-w-md h-full shadow-xl animate-[slideIn_0.2s_ease-out]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Modifier l'organisation
+                {t('admin.orgDetail.editTitle')}
               </h2>
               <button
                 onClick={() => {
@@ -660,7 +660,7 @@ export default function AdminOrgDetail() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nom
+                  {t('admin.orgDetail.editNameLabel')}
                 </label>
                 <input
                   type="text"
@@ -675,7 +675,7 @@ export default function AdminOrgDetail() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Slug
+                  {t('admin.orgDetail.editSlugLabel')}
                 </label>
                 <input
                   type="text"
@@ -690,7 +690,7 @@ export default function AdminOrgDetail() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Plan
+                  {t('admin.orgDetail.editPlanLabel')}
                 </label>
                 <select
                   value={editForm.plan}
@@ -714,7 +714,7 @@ export default function AdminOrgDetail() {
                   }}
                   className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -724,7 +724,7 @@ export default function AdminOrgDetail() {
                   {saving && (
                     <RefreshCw size={14} className="animate-spin" />
                   )}
-                  Enregistrer
+                  {t('common.save')}
                 </button>
               </div>
             </form>
