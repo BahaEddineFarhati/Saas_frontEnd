@@ -102,7 +102,7 @@ function ToastBanner({ toast, onClose }: { toast: Toast; onClose: () => void }) 
         <AlertTriangle size={16} strokeWidth={2} />
       )}
       <span>{toast.message}</span>
-      <button onClick={onClose} className="ent-toast-close" aria-label={t('common.close')}>
+      <button onClick={onClose} className="ent-toast-close" aria-label="Close">
         <X size={14} />
       </button>
     </div>

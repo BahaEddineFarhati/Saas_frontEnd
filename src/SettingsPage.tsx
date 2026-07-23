@@ -17,6 +17,7 @@ interface Toast {
 }
 
 function Toast({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const timer = setTimeout(onDismiss, 4000);
     return () => clearTimeout(timer);

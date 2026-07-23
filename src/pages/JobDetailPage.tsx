@@ -1142,8 +1142,8 @@ export default function JobDetailPage() {
                 <Users size={13} strokeWidth={2} />
                 <span>
                   {job.candidateCount === 1
-                    ? t("jobDetail.candidateCount", { count: job.candidateCount })
-                    : t("jobDetail.candidateCountPlural", { count: job.candidateCount })}
+                    ? t("jobDetail.candidateCount", { count: job.candidateCount ?? 0 })
+                    : t("jobDetail.candidateCountPlural", { count: job.candidateCount ?? 0 })}
                 </span>
               </span>
             </div>
