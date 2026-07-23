@@ -79,6 +79,8 @@ body {
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background var(--lu-dur) var(--lu-ease),
+              color var(--lu-dur) var(--lu-ease);
 }
 
 /* ══════════════════════════════════════════════════════
