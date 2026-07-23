@@ -13,6 +13,7 @@ html {
 }
 
 body {
+  background-color: var(--lu-bg-page, #F5F6FA);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
