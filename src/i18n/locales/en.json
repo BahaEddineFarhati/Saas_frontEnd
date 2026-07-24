@@ -227,12 +227,12 @@
     },
     "teamNote": "{count} member{plural} in the organisation",
     "timeline": {
-      "title": "Candidatures Received",
+      "title": "Applications Received",
       "subtitle": "Daily volumes of uploaded CVs",
       "loadError": "Loading error",
       "loadErrorBody": "Unable to retrieve chart data.",
-      "noCandidates": "No candidatures received",
-      "noCandidatesBody": "No candidatures received in this period."
+      "noCandidates": "No applications received",
+      "noCandidatesBody": "No applications received during this period."
     },
     "ranges": {
       "7d": "7 days",
@@ -244,7 +244,7 @@
       "title": "Parsing Status",
       "subtitle": "Breakdown by processing status",
       "noData": "No data",
-      "noDataBody": "Statistics will appear once your first candidatures are uploaded.",
+      "noDataBody": "Statistics will appear once your first applications are uploaded.",
       "candidates": "candidates"
     },
     "donutLabels": {
@@ -257,7 +257,7 @@
       "subtitle": "Aggregated volumes across all openings",
       "loadError": "Loading error",
       "noData": "No data",
-      "noDataBody": "The funnel will be visible once openings and candidatures are created."
+      "noDataBody": "The funnel will be visible once openings and applications are created."
     },
     "recentJobs": {
       "title": "Recent Openings",
@@ -280,7 +280,7 @@
       "subtitle": "Latest events in the organisation",
       "loadError": "Loading error",
       "noActivity": "No activity",
-      "noActivityBody": "Activity will appear once openings or candidatures are created."
+      "noActivityBody": "Activity will appear once openings or applications are created."
     },
     "tooltipCv": "{count} CV{plural}"
   },
@@ -297,14 +297,14 @@
     "table": {
       "title": "Job Title",
       "status": "Status",
-      "createdAt": "Created Date",
-      "candidates": "Candidates",
+      "createdAt": "Date Created",
+      "candidates": "Applicants",
       "department": "Human Resources"
     },
     "statusOpen": "Open",
     "statusClosed": "Closed",
     "emptyTitle": "No openings found",
-    "emptyBodyNoJobs": "Start by creating your first job opening to receive candidatures.",
+    "emptyBodyNoJobs": "Start by creating your first job opening to receive applications.",
     "emptyBodyNoMatch": "No openings match the current search criteria.",
     "deleteTitle": "Delete opening?",
     "deleteMessage": "Are you sure you want to delete the opening \"{title}\" and all its candidates? This action is irreversible.",
