@@ -297,7 +297,7 @@
     "table": {
       "title": "Job Title",
       "status": "Status",
-      "createdAt": "Date Created",
+      "createdAt": "Creation Date",
       "candidates": "Applicants",
       "department": "Human Resources"
     },
