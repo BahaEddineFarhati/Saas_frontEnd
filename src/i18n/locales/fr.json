@@ -26,7 +26,8 @@
     "unexpectedError": "Une erreur inattendue s'est produite.",
     "show": "Afficher",
     "hide": "Masquer",
-    "viewResults": "Voir les résultats"
+    "viewResults": "Voir les résultats",
+    "switchLanguage": "Changer de langue"
   },
 
   "nav": {

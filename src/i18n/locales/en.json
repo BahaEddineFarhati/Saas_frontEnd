@@ -26,7 +26,8 @@
     "unexpectedError": "An unexpected error occurred.",
     "show": "Show",
     "hide": "Hide",
-    "viewResults": "View results"
+    "viewResults": "View results",
+    "switchLanguage": "Switch language"
   },
 
   "nav": {

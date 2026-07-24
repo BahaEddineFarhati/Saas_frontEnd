@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { API_BASE_URL } from '../config/api'
 import { useTranslation } from '../i18n/I18nContext'
+import LanguageToggleFloating from '../components/LanguageToggleFloating'
 
 export default function ForgotPassword() {
   const { t } = useTranslation()
@@ -47,6 +48,7 @@ export default function ForgotPassword() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+        <LanguageToggleFloating />
         <div className="w-full max-w-md">
           <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl p-8 backdrop-blur-md">
             <h2 className="text-2xl font-semibold mb-4">{t('forgotPassword.sentTitle')}</h2>
@@ -60,6 +62,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+      <LanguageToggleFloating />
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">

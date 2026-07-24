@@ -190,6 +190,81 @@ html.dark .lu-nav-item--active {
   color: var(--lu-accent);
 }
 
+/* ── language toggle ──────────────────────────────────── */
+.lu-lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lu-text-secondary);
+  margin-bottom: 16px;
+  transition: background var(--lu-dur), color var(--lu-dur);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.lu-lang-toggle:hover {
+  background: var(--lu-accent-light);
+  color: var(--lu-accent);
+}
+
+.lu-lang-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--lu-accent-light);
+  color: var(--lu-accent);
+  line-height: 1;
+}
+
+.lu-lang-toggle:hover .lu-lang-badge {
+  background: var(--lu-accent);
+  color: #fff;
+}
+
+/* ── floating language toggle (guest pages) ──────────── */
+.lu-lang-toggle-floating {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.lu-lang-toggle-floating:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: scale(1.04);
+}
+
+.lu-lang-toggle-floating:active {
+  transform: scale(0.97);
+}
+
 /* ── sidebar user footer ──────────────────────────────── */
 .lu-sidebar-footer {
   display: flex;

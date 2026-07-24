@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { API_BASE_URL } from '../config/api'
 import { useTranslation } from '../i18n/I18nContext'
+import LanguageToggleFloating from '../components/LanguageToggleFloating'
 
 export default function ResetPassword() {
   const { t } = useTranslation()
@@ -67,6 +68,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+      <LanguageToggleFloating />
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <Link to="/">

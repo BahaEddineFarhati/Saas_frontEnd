@@ -11,7 +11,9 @@ import {
   Sun,
   Moon,
   Bell,
+  Languages,
 } from "lucide-react";
+import type { Locale } from "./i18n/I18nContext";
 import { useNotifications } from "./lib/NotificationContext";
 import { useTranslation } from "./i18n/I18nContext";
 
@@ -50,7 +52,7 @@ interface AuthLayoutProps {
 }
 
 export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: AuthLayoutProps) {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const location = useLocation();
   const { notifications, unreadCount, markAllAsRead, markOneAsRead, openNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -150,6 +152,17 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
             : <Moon size={16} strokeWidth={1.8} />
           }
           <span>{darkMode ? t("common.lightMode") : t("common.darkMode")}</span>
+        </button>
+
+        {/* language toggle */}
+        <button
+          className="lu-lang-toggle"
+          onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr' as Locale)}
+          aria-label={t('common.switchLanguage')}
+        >
+          <Languages size={16} strokeWidth={1.8} />
+          <span>{locale === 'fr' ? 'English' : 'Français'}</span>
+          <span className="lu-lang-badge">{locale.toUpperCase()}</span>
         </button>
 
         {/* user footer */}
