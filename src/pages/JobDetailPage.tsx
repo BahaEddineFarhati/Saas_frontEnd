@@ -119,9 +119,9 @@ async function getAuthToken(): Promise<string> {
   return activeAuthPromise;
 }
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string, locale: string = "fr-FR"): string {
   try {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
+    return new Date(dateString).toLocaleDateString(locale, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -131,9 +131,9 @@ function formatDate(dateString: string): string {
   }
 }
 
-function formatDateRelative(dateString: string): string {
+function formatDateRelative(dateString: string, locale: string = "fr-FR"): string {
   try {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
+    return new Date(dateString).toLocaleDateString(locale, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -185,7 +185,7 @@ function formatFileSize(bytes: number): string {
 
 // ── Component ───────────────────────────────────────────
 export default function JobDetailPage() {
-  const { t } = useTranslation();
+  const { t, localeTag } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -844,14 +844,14 @@ export default function JobDetailPage() {
 
       const resData = await res.json();
       if (!res.ok) {
-        throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+        throw new Error(resData?.error?.message || t('jobDetail.deleteError'));
       }
 
       // Re-fetch current page to ensure consistent list & pagination
       await fetchCandidates(currentPage);
       setCandidateToDelete(null);
     } catch (err: any) {
-      setDeleteCandidateError(err.message || 'Impossible de supprimer le candidat');
+      setDeleteCandidateError(err.message || t('jobDetail.deleteCandidateError'));
     } finally {
       setIsDeletingCandidate(false);
     }
@@ -884,10 +884,10 @@ export default function JobDetailPage() {
       }
 
       const resData = await res.json();
-      if (!res.ok) throw new Error(resData?.error?.message || 'Erreur lors de la suppression');
+      if (!res.ok) throw new Error(resData?.error?.message || t('jobDetail.deleteError'));
       navigate('/candidatures');
     } catch (err: any) {
-      alert(err.message || 'Impossible de supprimer l\'offre');
+      alert(err.message || t('jobDetail.deleteErrorFallback'));
     } finally {
       setIsDeletingJob(false);
       setShowDeleteJobConfirm(false);
@@ -981,7 +981,7 @@ export default function JobDetailPage() {
       console.log("[PDF Export] Download triggered:", fileName, pdfBlob.size, "bytes");
     } catch (err: any) {
       console.error("[PDF Export] Error:", err);
-      alert(err.message || "Impossible d'exporter le PDF.");
+      alert(err.message || t('jobDetail.exportPdfError'));
     } finally {
       setIsExporting(false);
     }
@@ -1132,7 +1132,7 @@ export default function JobDetailPage() {
             <div className="jd-meta-row">
               <span className="jd-meta-item">
                 <Calendar size={13} strokeWidth={2} />
-                <span>{t("jobDetail.createdOn", { date: formatDate(job.createdAt ?? "") })}</span>
+                <span>{t("jobDetail.createdOn", { date: formatDate(job.createdAt ?? "", localeTag) })}</span>
               </span>
               <span className="jd-meta-item">
                 <User size={13} strokeWidth={2} />
@@ -2138,7 +2138,7 @@ export default function JobDetailPage() {
 
       {/* ── Last updated ── */}
       <p className="jd-updated-note">
-        {t("jobDetail.lastUpdated", { date: formatDateRelative(job.updatedAt ?? "") })}
+        {t("jobDetail.lastUpdated", { date: formatDateRelative(job.updatedAt ?? "", localeTag) })}
       </p>
     </div>
   );

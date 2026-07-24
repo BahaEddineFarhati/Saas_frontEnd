@@ -56,7 +56,7 @@ const planColors: Record<string, string> = {
 
 export default function AdminOrganisations() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, localeTag } = useTranslation();
   const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -160,7 +160,7 @@ export default function AdminOrganisations() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+    return new Date(dateStr).toLocaleDateString(localeTag, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -175,7 +175,7 @@ export default function AdminOrganisations() {
   };
 
   const formatTokens = (n: number) =>
-    new Intl.NumberFormat('fr-FR').format(n);
+    new Intl.NumberFormat(localeTag).format(n);
 
   const getTokenColor = (tokens: number) => {
     if (tokens > 200_000) return 'bg-red-500';

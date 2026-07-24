@@ -61,7 +61,7 @@ const planColors: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
-  const { t } = useTranslation();
+  const { t, localeTag } = useTranslation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [suspendedOrgs, setSuspendedOrgs] = useState<Organisation[]>([]);
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+    return new Date(dateStr).toLocaleDateString(localeTag, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
               {card.icon}
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {card.value.toLocaleString('fr-FR')}
+              {card.value.toLocaleString(localeTag)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
               {card.label}
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
               <Clock size={22} />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {(stats?.queuePendingJobs ?? 0).toLocaleString('fr-FR')}
+              {(stats?.queuePendingJobs ?? 0).toLocaleString(localeTag)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
               {t('admin.dashboard.pendingJobs')}
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
                   : 'text-gray-900 dark:text-white'
               }`}
             >
-              {(stats?.queueFailedJobs ?? 0).toLocaleString('fr-FR')}
+              {(stats?.queueFailedJobs ?? 0).toLocaleString(localeTag)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
               {t('admin.dashboard.failedJobs')}
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
               <Target size={22} />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {(stats?.totalCandidatesScored ?? 0).toLocaleString('fr-FR')}
+              {(stats?.totalCandidatesScored ?? 0).toLocaleString(localeTag)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
               {t('admin.dashboard.candidatesScored')}
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
               <Award size={22} />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {(stats?.strongFitCandidates ?? 0).toLocaleString('fr-FR')}
+              {(stats?.strongFitCandidates ?? 0).toLocaleString(localeTag)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">
               {t('admin.dashboard.strongFitCandidates')}

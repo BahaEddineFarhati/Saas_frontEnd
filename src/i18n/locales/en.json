@@ -32,7 +32,7 @@
 
   "nav": {
     "dashboard": "Dashboard",
-    "candidatures": "Candidatures",
+    "candidatures": "Job Openings",
     "settings": "Settings",
     "entreprise": "Company",
     "organisations": "Organisations",
@@ -41,7 +41,7 @@
 
   "pageTitles": {
     "dashboard": "Dashboard",
-    "candidatures": "Candidatures",
+    "candidatures": "Job Openings",
     "settings": "Settings",
     "entreprise": "Company",
     "organisations": "Organisations",
@@ -645,7 +645,9 @@
     "fileTooLarge": "File too large ({size}MB > 5MB)",
     "loadError": "Unable to load opening.",
     "deleteError": "Error deleting",
-    "deleteErrorFallback": "Unable to delete opening"
+    "deleteErrorFallback": "Unable to delete opening",
+    "deleteCandidateError": "Unable to delete candidate",
+    "exportPdfError": "Unable to export PDF."
   },
 
   "candidateDetail": {
@@ -658,6 +660,7 @@
     "reject": "Reject",
     "compareWithOther": "Compare with another candidate",
     "downloadCV": "Download CV",
+    "downloadError": "Unable to download CV",
     "aiSummaryTitle": "AI Summary",
     "summaryNotAvailable": "Summary not available at the moment.",
     "scoreAnalysisTitle": "Score Analysis",

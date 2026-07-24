@@ -10,6 +10,9 @@ type TranslationDict = Record<string, unknown>;
 
 const TRANSLATIONS: Record<Locale, TranslationDict> = { fr, en };
 
+/** Maps our internal locale codes to BCP 47 tags for Intl / toLocaleDateString. */
+const LOCALE_TAGS: Record<Locale, string> = { fr: 'fr-FR', en: 'en-GB' };
+
 const STORAGE_KEY = 'linkup_lang';
 const DEFAULT_LOCALE: Locale = 'fr';
 
@@ -59,6 +62,8 @@ interface I18nContextValue {
   t: (key: string, params?: Record<string, string | number>) => string;
   /** Current locale */
   locale: Locale;
+  /** BCP 47 locale tag for Intl APIs (e.g. 'fr-FR', 'en-GB') */
+  localeTag: string;
   /** Switch the locale */
   setLocale: (locale: Locale) => void;
 }
@@ -102,7 +107,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [locale],
   );
 
-  const value = useMemo(() => ({ t, locale, setLocale }), [t, locale, setLocale]);
+  const localeTag = LOCALE_TAGS[locale];
+  const value = useMemo(() => ({ t, locale, localeTag, setLocale }), [t, locale, localeTag, setLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

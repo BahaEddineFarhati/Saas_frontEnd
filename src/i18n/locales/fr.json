@@ -645,7 +645,9 @@
     "fileTooLarge": "Fichier trop volumineux ({size}MB > 5MB)",
     "loadError": "Impossible de charger l'offre.",
     "deleteError": "Erreur lors de la suppression",
-    "deleteErrorFallback": "Impossible de supprimer l'offre"
+    "deleteErrorFallback": "Impossible de supprimer l'offre",
+    "deleteCandidateError": "Impossible de supprimer le candidat",
+    "exportPdfError": "Impossible d'exporter le PDF."
   },
 
   "candidateDetail": {
@@ -658,6 +660,7 @@
     "reject": "Rejeter",
     "compareWithOther": "Comparer avec un autre candidat",
     "downloadCV": "Télécharger le CV",
+    "downloadError": "Impossible de télécharger le CV",
     "aiSummaryTitle": "Résumé AI",
     "summaryNotAvailable": "Résumé non disponible pour le moment.",
     "scoreAnalysisTitle": "Analyse du score",

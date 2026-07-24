@@ -327,7 +327,7 @@ export default function CandidateDetailPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(err.message || 'Impossible de télécharger le CV');
+      alert(err.message || t('candidateDetail.downloadError'));
     }
   };
 

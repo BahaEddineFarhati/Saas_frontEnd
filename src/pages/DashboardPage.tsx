@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, type ReactNode, type CSSProperties } from "react";
+import { memo, useCallback, useMemo, useState, type ReactNode, type CSSProperties } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
@@ -108,8 +108,8 @@ const KPI_NOTE_STYLE: CSSProperties = { marginTop: "auto" };
 const ICON_TITLE_STYLE: CSSProperties = { verticalAlign: "middle", marginRight: 6 };
 const KPI_GRID_STYLE: CSSProperties = { display: "grid", alignItems: "stretch" };
 
-function formatTickDate(v: string): string {
-  return new Date(v).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+function formatTickDate(v: string, locale: string): string {
+  return new Date(v).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 function formatBarCount(v: ReactNode): string {
@@ -296,8 +296,10 @@ const TeamFootnote = memo(function TeamFootnote() {
 // screen (instead of flashing back to a skeleton) while the new range loads.
 
 const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
-  const { t } = useTranslation();
+  const { t, localeTag } = useTranslation();
   const [range, setRange] = useState<TimeRange>("30d");
+
+  const tickFormatter = useCallback((v: string) => formatTickDate(v, localeTag), [localeTag]);
 
   const timelineQ = useQuery({
     queryKey: ["dashboard", "timeline", range],
@@ -362,7 +364,7 @@ const CandidatesTimelineChart = memo(function CandidatesTimelineChart() {
               tickLine={false}
               axisLine={false}
               interval={tickInterval}
-              tickFormatter={formatTickDate}
+              tickFormatter={tickFormatter}
             />
             <YAxis
               type="number"

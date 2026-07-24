@@ -64,7 +64,7 @@ const planColors: Record<string, string> = {
 
 export default function AdminOrgDetail() {
   const { orgId } = useParams<{ orgId: string }>();
-  const { t } = useTranslation();
+  const { t, localeTag } = useTranslation();
   const [org, setOrg] = useState<OrgDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +194,7 @@ export default function AdminOrgDetail() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+    return new Date(dateStr).toLocaleDateString(localeTag, {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
@@ -202,11 +202,11 @@ export default function AdminOrgDetail() {
   };
 
   const formatTokens = (n: number) =>
-    new Intl.NumberFormat('fr-FR').format(n);
+    new Intl.NumberFormat(localeTag).format(n);
 
   const formatMonthYear = (m: number, y: number) => {
     const d = new Date(y, m - 1);
-    return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    return d.toLocaleDateString(localeTag, { month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -381,11 +381,11 @@ export default function AdminOrgDetail() {
             {/* Metric Tiles */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { label: 'Total Tokens', value: usageSummary?.totalTokens ?? 0, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-300' },
-                { label: 'CV Parsing', value: usageSummary?.cvParsingTokens ?? 0, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-300' },
-                { label: 'CV Scoring', value: usageSummary?.cvScoringTokens ?? 0, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-300' },
-                { label: 'Enrichment', value: usageSummary?.cvEnrichmentTokens ?? 0, color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-300' },
-                { label: 'Chat', value: usageSummary?.chatTokens ?? 0, color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-300' },
+                { label: t('entreprise.aiUsage.totalTokens'), value: usageSummary?.totalTokens ?? 0, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-300' },
+                { label: t('entreprise.aiUsage.cvParsing'), value: usageSummary?.cvParsingTokens ?? 0, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-300' },
+                { label: t('entreprise.aiUsage.cvScoring'), value: usageSummary?.cvScoringTokens ?? 0, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-300' },
+                { label: t('entreprise.aiUsage.enrichment'), value: usageSummary?.cvEnrichmentTokens ?? 0, color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-300' },
+                { label: t('entreprise.aiUsage.chat'), value: usageSummary?.chatTokens ?? 0, color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-300' },
               ].map((tile) => (
                 <div
                   key={tile.label}
@@ -447,14 +447,14 @@ export default function AdminOrgDetail() {
                                       <span>{entry.name}</span>
                                     </div>
                                     <span className="font-mono font-medium text-gray-900 dark:text-white">
-                                      {new Intl.NumberFormat('fr-FR').format(entry.value)}
+                                      {new Intl.NumberFormat(localeTag).format(entry.value)}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                               <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
                                 <span>{t('admin.orgDetail.usageTotalTokens')}</span>
-                                <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
+                                <span className="font-mono">{new Intl.NumberFormat(localeTag).format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
                               </div>
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
                                 <span>{t('admin.orgDetail.usageApiCalls')}</span>

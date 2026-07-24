@@ -72,8 +72,8 @@ function authHeaders() {
   }
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+function formatDate(iso: string, locale: string = 'fr-FR') {
+  return new Date(iso).toLocaleDateString(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -291,7 +291,7 @@ function ConfirmModal({
    ══════════════════════════════════════════════════════════════════════════ */
 export default function EntreprisePage() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, localeTag } = useTranslation()
 
   /* ── state ── */
   const [members, setMembers] = useState<Member[]>([])
@@ -600,7 +600,7 @@ export default function EntreprisePage() {
                         {m.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
-                    <td className="ent-td-date">{formatDate(m.createdAt)}</td>
+                    <td className="ent-td-date">{formatDate(m.createdAt, localeTag)}</td>
                     <td>
                       <span className="ent-badge ent-badge--green">{t('entreprise.team.status.active')}</span>
                     </td>
@@ -640,7 +640,7 @@ export default function EntreprisePage() {
                         {inv.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
-                    <td className="ent-td-date">{formatDate(inv.createdAt)}</td>
+                    <td className="ent-td-date">{formatDate(inv.createdAt, localeTag)}</td>
                     <td>
                       <span className="ent-badge ent-badge--amber">
                         <Clock size={10} /> {t('entreprise.team.status.pending')}
@@ -668,7 +668,7 @@ export default function EntreprisePage() {
                         {m.role === 'ADMIN' ? t('entreprise.invite.admin') : t('entreprise.invite.recruiter')}
                       </span>
                     </td>
-                    <td className="ent-td-date">{formatDate(m.createdAt)}</td>
+                    <td className="ent-td-date">{formatDate(m.createdAt, localeTag)}</td>
                     <td>
                       <span className={`ent-badge ${m.departureStatus === 'QUIT' ? 'ent-badge--amber' : 'ent-badge--red'}`}>
                         {m.departureStatus === 'QUIT' ? t('entreprise.team.status.quit') : t('entreprise.team.status.deactivated')}
@@ -741,7 +741,7 @@ export default function EntreprisePage() {
               </div>
               <div className="ent-org-info-item">
                 <span className="ent-org-info-label">{t('entreprise.org.createdLabel')}</span>
-                <span className="ent-org-info-value">{formatDate(org.createdAt)}</span>
+                <span className="ent-org-info-value">{formatDate(org.createdAt, localeTag)}</span>
               </div>
             </div>
 
@@ -797,7 +797,7 @@ export default function EntreprisePage() {
                 {t('entreprise.aiUsage.totalTokens')}
               </p>
               <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary, #e2e8f0)' }}>
-                {new Intl.NumberFormat('fr-FR').format(aiUsage.totalTokens)}
+                {new Intl.NumberFormat(localeTag).format(aiUsage.totalTokens)}
               </p>
             </div>
 
@@ -828,7 +828,7 @@ export default function EntreprisePage() {
                     </span>
                   </div>
                   <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary, #e2e8f0)' }}>
-                    {new Intl.NumberFormat('fr-FR').format(item.value)}
+                    {new Intl.NumberFormat(localeTag).format(item.value)}
                   </p>
                 </div>
               ))}
@@ -856,7 +856,7 @@ export default function EntreprisePage() {
                         ...h,
                         name: (() => {
                           const d = new Date(h.year, h.month - 1);
-                          return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+                          return d.toLocaleDateString(localeTag, { month: 'short', year: 'numeric' });
                         })(),
                       }))}
                       margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -888,14 +888,14 @@ export default function EntreprisePage() {
                                       <span>{entry.name}</span>
                                     </div>
                                     <span className="font-mono font-medium text-gray-900 dark:text-white">
-                                      {new Intl.NumberFormat('fr-FR').format(entry.value)}
+                                      {new Intl.NumberFormat(localeTag).format(entry.value)}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                               <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between font-bold text-gray-950 dark:text-white">
                                 <span>{t('entreprise.aiUsage.totalTokens')}</span>
-                                <span className="font-mono">{new Intl.NumberFormat('fr-FR').format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
+                                <span className="font-mono">{new Intl.NumberFormat(localeTag).format(payload.reduce((sum: number, e: any) => sum + e.value, 0))}</span>
                               </div>
                               <div className="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5 flex justify-between">
                                 <span>{t('entreprise.aiUsage.apiCalls')}</span>
