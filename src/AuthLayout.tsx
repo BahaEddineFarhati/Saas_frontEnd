@@ -16,6 +16,7 @@ import {
 import type { Locale } from "./i18n/I18nContext";
 import { useNotifications } from "./lib/NotificationContext";
 import { useTranslation } from "./i18n/I18nContext";
+import { formatNotification } from "./lib/notificationUtils";
 
 // ── nav item definitions (icons only — labels come from i18n) ──────────────
 const baseNavDefs = [
@@ -229,22 +230,25 @@ export default function AuthLayout({ user, onLogout, darkMode, onToggleDark }: A
                 {notifications.length === 0 ? (
                   <p className="px-2 py-3 text-sm text-slate-500 dark:text-slate-400">{t("common.noUnreadNotifications")}</p>
                 ) : (
-                  notifications.map((notification) => (
-                    <button
-                      key={notification.id}
-                      type="button"
-                      className="w-full rounded-lg border border-slate-100 dark:border-slate-700 p-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                      onClick={async () => {
-                        await markOneAsRead(notification.id);
-                        setIsDropdownOpen(false);
-                        await openNotification(notification);
-                      }}
-                    >
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{notification.title}</p>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{notification.message}</p>
-                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(notification.createdAt)}</p>
-                    </button>
-                  ))
+                  notifications.map((notification) => {
+                    const formatted = formatNotification(notification, t);
+                    return (
+                      <button
+                        key={notification.id}
+                        type="button"
+                        className="w-full rounded-lg border border-slate-100 dark:border-slate-700 p-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                        onClick={async () => {
+                          await markOneAsRead(notification.id);
+                          setIsDropdownOpen(false);
+                          await openNotification(notification);
+                        }}
+                      >
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatted.title}</p>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{formatted.message}</p>
+                        <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(notification.createdAt)}</p>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>,

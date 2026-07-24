@@ -702,6 +702,17 @@
     "noCandidatesFound": "Aucun candidat trouvé",
     "noOtherCandidates": "Aucun autre candidat dans ce poste",
     "noVerdict": "Pas de verdict"
+  },
+
+  "notifications": {
+    "title": {
+      "JOB_PARSING_COMPLETED": "Analyse terminée",
+      "JOB_PARSING_FAILED": "Analyse échouée"
+    },
+    "message": {
+      "parsingCompleted": "L'analyse de {total} CV{plural} pour le poste {jobTitle} est terminée. {success} candidat{successPlural} analysé{successPlural} avec succès, {failed} en échec.",
+      "parsingFailed": "L'analyse des CVs pour le poste {jobTitle} a échoué."
+    }
   }
 }
 

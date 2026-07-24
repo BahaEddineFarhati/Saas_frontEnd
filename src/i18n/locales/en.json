@@ -702,6 +702,17 @@
     "noCandidatesFound": "No candidates found",
     "noOtherCandidates": "No other candidates in this opening",
     "noVerdict": "No verdict"
+  },
+
+  "notifications": {
+    "title": {
+      "JOB_PARSING_COMPLETED": "Analysis completed",
+      "JOB_PARSING_FAILED": "Analysis failed"
+    },
+    "message": {
+      "parsingCompleted": "Parsing of {total} CV{plural} for position {jobTitle} completed. {success} candidate{successPlural} analyzed successfully, {failed} failed.",
+      "parsingFailed": "Parsing of CVs for position {jobTitle} failed."
+    }
   }
 }
 
